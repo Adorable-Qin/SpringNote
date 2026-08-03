@@ -1318,6 +1318,8 @@ class _MemoryConversationNavState extends State<_MemoryConversationNav> {
               const SizedBox(width: 6),
               // The fixed-width slot keeps the label in place no matter how
               // long the dash is; the dash itself changes instantly.
+              // Inactive dashes alternate thick (3px) and thin (1.5px) by
+              // index parity, giving the rail a quiet rhythm.
               SizedBox(
                 width: 8,
                 child: Align(
@@ -1326,7 +1328,7 @@ class _MemoryConversationNavState extends State<_MemoryConversationNav> {
                     duration: const Duration(milliseconds: 140),
                     curve: Curves.easeOutCubic,
                     width: active ? 8 : 5.6,
-                    height: 3,
+                    height: active || index.isEven ? 3 : 1.5,
                     decoration: BoxDecoration(
                       color: active
                           ? colors.text

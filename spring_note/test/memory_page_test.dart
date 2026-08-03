@@ -850,6 +850,11 @@ void main() {
     // window slid down and the final dash is the long active one.
     expect(dashes, findsNWidgets(9));
     expect(tester.getSize(dashes.at(8)).width, 8);
+
+    // Inactive dashes alternate thick (3px) and thin (1.5px) by parity:
+    // the window starts at round 3, so the first dash is the thin one.
+    expect(tester.getSize(dashes.at(0)).height, 1.5);
+    expect(tester.getSize(dashes.at(1)).height, 3);
   });
 
   testWidgets('conversation nav card scrollbar stays clear of the dashes', (
