@@ -939,8 +939,15 @@ class _MemoryPageState extends State<MemoryPage> {
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOutCubic,
     ).whenComplete(() {
-      _navJumpInProgress = false;
-      _updateActiveNavIndex();
+      // The tapped round keeps the highlight after the jump: recomputing
+      // from the scroll position here would stomp the explicit choice with
+      // whatever round happens to sit lowest on screen (e.g. tapping round
+      // 3 but landing on round 4). Defer the handoff one frame so scroll
+      // updates scheduled by the final animation frames drain while still
+      // suppressed; position-based tracking resumes on the next scroll.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navJumpInProgress = false;
+      });
     });
   }
 

@@ -649,6 +649,70 @@ void main() {
     expect(fades().every((fade) => fade.opacity == 0), isTrue);
   });
 
+  testWidgets('conversation nav keeps the tapped round highlighted', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    String longAnswer(int index) =>
+        '回答 $index\n${List.filled(12, '这是一段很长的回答内容，用来撑开滚动高度。').join('\n')}';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryPage(
+            localDataState: _localDataState(),
+            conversationService: _FakeMemoryConversationService(
+              initialMessages: [
+                for (var index = 1; index <= 8; index++) ...[
+                  MemoryMessage(
+                    role: 'user',
+                    content: '问题 $index',
+                    createdAt: DateTime(2026, 7, 8, 10, index),
+                  ),
+                  MemoryMessage(
+                    role: 'ai',
+                    content: longAnswer(index),
+                    createdAt: DateTime(2026, 7, 8, 11, index),
+                  ),
+                ],
+              ],
+            ),
+            searchService: const _FakeMemorySearchService(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final nav = find.byKey(const ValueKey('memory-conversation-nav'));
+    final dashes = find.descendant(
+      of: nav,
+      matching: find.byType(AnimatedContainer),
+    );
+    final chatScrollable = tester
+        .stateList<ScrollableState>(find.byType(Scrollable))
+        .firstWhere((state) => state.position.maxScrollExtent > 0);
+
+    // Position the list so rounds 3 and 4 are both on screen and round 4
+    // is the lowest round past the active threshold.
+    final top = tester.getTopLeft(find.text('问题 4').first).dy;
+    chatScrollable.position.jumpTo(top + chatScrollable.position.pixels - 650);
+    await tester.pumpAndSettle();
+    expect(tester.getSize(dashes.at(3)).width, 8);
+
+    // Tap round 3: it is already visible, so the list does not even
+    // scroll — the highlight must stay on round 3 instead of snapping
+    // back to round 4, the lowest round on screen.
+    await tester.tap(dashes.at(2));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(dashes.at(2)).width, 8);
+    expect(tester.getSize(dashes.at(3)).width, 5.6);
+  });
+
   testWidgets('conversation nav stays hidden below three rounds', (
     tester,
   ) async {
