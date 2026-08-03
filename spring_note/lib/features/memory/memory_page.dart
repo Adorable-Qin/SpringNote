@@ -117,6 +117,21 @@ class _MemoryPageState extends State<MemoryPage> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _entryFocusNode = FocusNode();
   final FocusNode _chatFocusNode = FocusNode();
+  final GlobalKey _chatListKey = GlobalKey();
+
+  /// Scroll anchors for the right-side conversation nav: one GlobalKey per
+  /// user message (keyed by its index in `_messages`), so a nav tap can
+  /// scroll that round into view.
+  final Map<int, GlobalKey> _navAnchorKeys = {};
+  int _activeNavIndex = 0;
+
+  /// True while a nav tap jump is scrolling: the tapped entry keeps the
+  /// highlight for the whole glide instead of waiting for the threshold.
+  bool _navJumpInProgress = false;
+
+  /// Deduplicates post-frame highlight syncs so a scroll burst schedules at
+  /// most one recalculation per frame.
+  bool _navUpdateScheduled = false;
 
   List<MemoryMessage> _messages = [];
   bool _loading = true;
@@ -133,6 +148,7 @@ class _MemoryPageState extends State<MemoryPage> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_scheduleActiveNavUpdate);
     _loadMessages();
   }
 
@@ -165,6 +181,8 @@ class _MemoryPageState extends State<MemoryPage> {
         _messages = messages;
         _waitingForMemoryResponse = false;
         _loading = false;
+        _navAnchorKeys.removeWhere((index, _) => index >= messages.length);
+        _activeNavIndex = 0;
       });
     }
   }
@@ -181,6 +199,8 @@ class _MemoryPageState extends State<MemoryPage> {
       _messages = [];
       _answering = false;
       _waitingForMemoryResponse = false;
+      _navAnchorKeys.clear();
+      _activeNavIndex = 0;
       _entryController.clear();
       _chatController.clear();
     });
@@ -817,101 +837,234 @@ class _MemoryPageState extends State<MemoryPage> {
     );
   }
 
+  bool _isVisibleChatMessage(MemoryMessage message) {
+    return message.role == 'user' ||
+        message.role == 'ai' ||
+        (message.role == 'assistant' &&
+            (message.content.trim().isNotEmpty ||
+                message.reasoningContent.trim().isNotEmpty ||
+                message.toolCalls.isNotEmpty));
+  }
+
+  GlobalKey _navKeyFor(int messageIndex) {
+    return _navAnchorKeys.putIfAbsent(messageIndex, GlobalKey.new);
+  }
+
+  /// One nav entry per user question: the question text is what identifies
+  /// each round of the conversation in the right-side history nav.
+  List<_MemoryConversationNavEntry> _conversationNavEntries() {
+    final entries = <_MemoryConversationNavEntry>[];
+    for (var i = 0; i < _messages.length; i++) {
+      final message = _messages[i];
+      if (message.role != 'user') {
+        continue;
+      }
+      final label = message.content.trim().replaceAll(RegExp(r'\s+'), ' ');
+      if (label.isEmpty) {
+        continue;
+      }
+      entries.add(
+        _MemoryConversationNavEntry(label: label, anchorKey: _navKeyFor(i)),
+      );
+    }
+    return entries;
+  }
+
+  /// Scroll listeners fire mid-frame, before the layout for the new scroll
+  /// offset exists, so reading bubble geometry there is one frame stale —
+  /// at the end of a scroll that leaves the highlight one round behind.
+  /// Defer the recalculation to after the frame instead.
+  void _scheduleActiveNavUpdate() {
+    if (_navUpdateScheduled) {
+      return;
+    }
+    _navUpdateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navUpdateScheduled = false;
+      _updateActiveNavIndex();
+    });
+  }
+
+  /// Keeps the nav highlight in sync with the scroll position: the active
+  /// round is the last one whose question bubble has entered the viewport,
+  /// so the final round also lights up at the end of the list even when its
+  /// bubble is still sitting low on the screen.
+  void _updateActiveNavIndex() {
+    // During a nav tap jump the tapped entry owns the highlight; skip
+    // position-based updates until the scroll settles.
+    if (!mounted || _navJumpInProgress) {
+      return;
+    }
+    final entries = _conversationNavEntries();
+    final listContext = _chatListKey.currentContext;
+    if (entries.isEmpty || listContext == null) {
+      return;
+    }
+    final listBox = listContext.findRenderObject();
+    if (listBox is! RenderBox || !listBox.attached) {
+      return;
+    }
+    final viewportBottom =
+        listBox.localToGlobal(Offset.zero).dy + listBox.size.height;
+    var active = 0;
+    for (var i = 0; i < entries.length; i++) {
+      final anchorContext = entries[i].anchorKey.currentContext;
+      if (anchorContext == null) {
+        continue;
+      }
+      final box = anchorContext.findRenderObject();
+      if (box is! RenderBox || !box.attached) {
+        continue;
+      }
+      if (box.localToGlobal(Offset.zero).dy <= viewportBottom - 60) {
+        active = i;
+      }
+    }
+    if (active != _activeNavIndex) {
+      setState(() => _activeNavIndex = active);
+    }
+  }
+
+  void _jumpToConversation(GlobalKey anchorKey, int navIndex) {
+    final anchorContext = anchorKey.currentContext;
+    if (anchorContext == null) {
+      return;
+    }
+    // Highlight the tapped round right away instead of waiting for the
+    // scroll to carry it past the active threshold.
+    setState(() => _activeNavIndex = navIndex);
+    _navJumpInProgress = true;
+    Scrollable.ensureVisible(
+      anchorContext,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    ).whenComplete(() {
+      _navJumpInProgress = false;
+      _updateActiveNavIndex();
+    });
+  }
+
   Widget _buildChatState() {
     final colors = AppTheme.colors(context);
-    final visibleMessages = _messages
-        .where(
-          (message) =>
-              message.role == 'user' ||
-              message.role == 'ai' ||
-              (message.role == 'assistant' &&
-                  (message.content.trim().isNotEmpty ||
-                      message.reasoningContent.trim().isNotEmpty ||
-                      message.toolCalls.isNotEmpty)),
-        )
-        .toList();
+    final visibleMessages = <MapEntry<int, MemoryMessage>>[
+      for (var i = 0; i < _messages.length; i++)
+        if (_isVisibleChatMessage(_messages[i])) MapEntry(i, _messages[i]),
+    ];
+    final navEntries = _conversationNavEntries();
 
-    return Stack(
+    return LayoutBuilder(
       key: const ValueKey('memory-chat'),
-      children: [
-        ListView(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(32, 36, 32, 150),
+      builder: (context, constraints) {
+        // The collapsed rail lives entirely inside the list's right padding,
+        // so it never covers messages — show it from three rounds up and
+        // only hide it when the window gets really narrow.
+        final showNav = navEntries.length >= 3 && constraints.maxWidth >= 720;
+        return Stack(
           children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 920),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final message in visibleMessages)
-                      _MemoryMessageView(
-                        message: message,
-                        localDataState: widget.localDataState,
-                        attachments: _toolAttachmentsFor(message),
-                      ),
-                    if (_waitingForMemoryResponse)
-                      const _MemoryWaitingIndicator(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: SizedBox(
-            height: 132,
-            child: Stack(
+            ListView(
+              key: _chatListKey,
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(32, 36, 32, 150),
               children: [
-                // The gradient strip is purely decorative. Ignore its
-                // pointers so the bottom corners stay scrollable/selectable
-                // instead of becoming dead zones. (A nested
-                // IgnorePointer(ignoring: false) cannot re-enable hit
-                // testing, so the composer must live outside it.)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            colors.background.withValues(alpha: 0),
-                            colors.background,
-                            colors.background,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 760),
-                      child: _MemoryComposer(
-                        controller: _chatController,
-                        focusNode: _chatFocusNode,
-                        hintText: '继续追问你的回忆...',
-                        answering: _answering,
-                        onSubmit: _sendFromChat,
-                        menuOpensUpward: true,
-                        menuLink: _chatMenuLink,
-                        submitWithEnter:
-                            widget.localDataState.config.submitWithEnter,
-                      ),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 920),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final entry in visibleMessages)
+                          _MemoryMessageView(
+                            key: entry.value.role == 'user'
+                                ? _navKeyFor(entry.key)
+                                : null,
+                            message: entry.value,
+                            localDataState: widget.localDataState,
+                            attachments: _toolAttachmentsFor(entry.value),
+                          ),
+                        if (_waitingForMemoryResponse)
+                          const _MemoryWaitingIndicator(),
+                      ],
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-      ],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SizedBox(
+                height: 132,
+                child: Stack(
+                  children: [
+                    // The gradient strip is purely decorative. Ignore its
+                    // pointers so the bottom corners stay scrollable/selectable
+                    // instead of becoming dead zones. (A nested
+                    // IgnorePointer(ignoring: false) cannot re-enable hit
+                    // testing, so the composer must live outside it.)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                colors.background.withValues(alpha: 0),
+                                colors.background,
+                                colors.background,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 760),
+                          child: _MemoryComposer(
+                            controller: _chatController,
+                            focusNode: _chatFocusNode,
+                            hintText: '继续追问你的回忆...',
+                            answering: _answering,
+                            onSubmit: _sendFromChat,
+                            menuOpensUpward: true,
+                            menuLink: _chatMenuLink,
+                            submitWithEnter:
+                                widget.localDataState.config.submitWithEnter,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (showNav)
+              Positioned(
+                top: 24,
+                bottom: 150,
+                right: 8,
+                child: Center(
+                  child: _MemoryConversationNav(
+                    key: const ValueKey('memory-conversation-nav'),
+                    entries: navEntries,
+                    activeIndex: _activeNavIndex.clamp(
+                      0,
+                      navEntries.length - 1,
+                    ),
+                    onSelect: (entry) => _jumpToConversation(
+                      entry.anchorKey,
+                      navEntries.indexOf(entry),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -932,6 +1085,264 @@ class _MemoryPageState extends State<MemoryPage> {
           ),
         )
         .toList();
+  }
+}
+
+class _MemoryConversationNavEntry {
+  const _MemoryConversationNavEntry({
+    required this.label,
+    required this.anchorKey,
+  });
+
+  /// Single-line question preview identifying the round.
+  final String label;
+
+  /// Anchors the round's user message in the chat list for jump scrolling.
+  final GlobalKey anchorKey;
+}
+
+/// Minimal right-side conversation history nav, styled after DeepSeek's
+/// scroll nav: collapsed it is a thin rail of short dashes — one per round —
+/// tucked into the list's right padding, the active round's dash longer and
+/// darker. Hovering fades in a small framed card of right-aligned question
+/// labels, each followed by its dash; tapping an entry scrolls that round
+/// into view.
+class _MemoryConversationNav extends StatefulWidget {
+  const _MemoryConversationNav({
+    super.key,
+    required this.entries,
+    required this.activeIndex,
+    required this.onSelect,
+  });
+
+  final List<_MemoryConversationNavEntry> entries;
+  final int activeIndex;
+  final ValueChanged<_MemoryConversationNavEntry> onSelect;
+
+  @override
+  State<_MemoryConversationNav> createState() => _MemoryConversationNavState();
+}
+
+class _MemoryConversationNavState extends State<_MemoryConversationNav> {
+  /// With more rounds than this, the rail shows a window around the active
+  /// round and the hover card gets its own scrollbar.
+  static const int _maxVisibleEntries = 9;
+
+  /// Fixed row height so the rail window and the card's scroll viewport
+  /// line up exactly.
+  static const double _rowHeight = 28;
+
+  bool _expanded = false;
+  int? _hoveredIndex;
+  final ScrollController _cardScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _cardScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppTheme.colors(context);
+    final scrollable = widget.entries.length > _maxVisibleEntries;
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _expanded = true);
+        _syncCardScrollToActive();
+      },
+      onExit: (_) => setState(() {
+        _expanded = false;
+        _hoveredIndex = null;
+      }),
+      // Hover fades the framed card in over the bare rail, DeepSeek style.
+      // The right inset, row height and label layout are constant, so the
+      // dashes never move when the card appears.
+      child: SizedBox(
+        width: _expanded ? 184 : (scrollable ? 30 : 24),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 120),
+                curve: Curves.easeOutCubic,
+                opacity: _expanded ? 1 : 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.shadow.withValues(alpha: 0.08),
+                        blurRadius: 28,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: _expanded ? 8 : 0,
+                top: _expanded ? 8 : 0,
+                bottom: _expanded ? 8 : 0,
+                // The rail reserves the 6px scrollbar gutter too, so the
+                // dashes line up between the two states. The expanded card
+                // keeps only 2px on the right: the ListView reaches almost
+                // to the card edge, which pushes the platform scrollbar
+                // (added by the desktop scroll behavior) into the padding,
+                // clear of the dashes.
+                right: !_expanded
+                    ? (scrollable ? 14 : 8)
+                    : (scrollable ? 2 : 8),
+              ),
+              child: _expanded ? _buildCard(colors) : _buildRail(colors),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The first rail index shown: a window around the active round when the
+  /// full list does not fit.
+  int get _windowStart {
+    final count = widget.entries.length;
+    if (count <= _maxVisibleEntries) {
+      return 0;
+    }
+    return (widget.activeIndex - _maxVisibleEntries ~/ 2).clamp(
+      0,
+      count - _maxVisibleEntries,
+    );
+  }
+
+  /// Opens the card already scrolled to the same window the rail shows, so
+  /// the rows line up with the dashes they grew out of.
+  void _syncCardScrollToActive() {
+    if (widget.entries.length <= _maxVisibleEntries) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_cardScrollController.hasClients) {
+        return;
+      }
+      _cardScrollController.jumpTo(_windowStart * _rowHeight);
+    });
+  }
+
+  Widget _buildRail(SpringThemeColors colors) {
+    final count = widget.entries.length;
+    final start = _windowStart;
+    final end = count > _maxVisibleEntries ? start + _maxVisibleEntries : count;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [for (var i = start; i < end; i++) _buildItem(colors, i)],
+    );
+  }
+
+  Widget _buildCard(SpringThemeColors colors) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxHeight: _maxVisibleEntries * _rowHeight,
+      ),
+      // Slimmer than the desktop default (6px), even when hovered.
+      child: ScrollbarTheme(
+        data: ScrollbarThemeData(
+          thickness: WidgetStateProperty.all(3),
+          radius: const Radius.circular(1.5),
+        ),
+        child: ListView.builder(
+          controller: _cardScrollController,
+          primary: false,
+          // The 12px gutter keeps the dashes aligned with the rail (2px card
+          // padding + 12px here = 14px) and leaves room for the platform
+          // scrollbar against the card's right edge.
+          padding: EdgeInsets.only(
+            right: widget.entries.length > _maxVisibleEntries ? 12 : 0,
+          ),
+          shrinkWrap: true,
+          itemCount: widget.entries.length,
+          itemBuilder: (context, i) => _buildItem(colors, i),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItem(SpringThemeColors colors, int index) {
+    final entry = widget.entries[index];
+    final active = index == widget.activeIndex;
+    final hovered = index == _hoveredIndex;
+    final baseStyle = Theme.of(context).textTheme.bodySmall;
+    final textColor = active
+        ? colors.text
+        : hovered
+        ? colors.textMuted
+        : colors.textSubtle;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoveredIndex = index),
+      onExit: (_) => setState(() => _hoveredIndex = null),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => widget.onSelect(entry),
+        child: SizedBox(
+          height: _rowHeight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Flexible(
+                // Always laid out, even while hidden, so the row height —
+                // and with it the dash position — never changes.
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOutCubic,
+                  opacity: _expanded ? 1 : 0,
+                  child: Text(
+                    entry.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: (baseStyle ?? const TextStyle(fontSize: 12))
+                        .copyWith(
+                          color: textColor,
+                          fontWeight: active
+                              ? FontWeight.w500
+                              : FontWeight.w400,
+                        ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // The fixed-width slot keeps the label in place no matter how
+              // long the dash is; the dash itself changes instantly.
+              SizedBox(
+                width: 8,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 140),
+                    curve: Curves.easeOutCubic,
+                    width: active ? 8 : 5.6,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? colors.text
+                          : hovered
+                          ? colors.textSubtle
+                          : colors.border,
+                      borderRadius: BorderRadius.circular(1.5),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1660,6 +2071,7 @@ class _ThinkingSegment extends StatelessWidget {
 
 class _MemoryMessageView extends StatelessWidget {
   const _MemoryMessageView({
+    super.key,
     required this.message,
     required this.localDataState,
     required this.attachments,

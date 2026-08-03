@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/custom_widgets/unordered_ordered_list.dart';
@@ -553,6 +555,383 @@ void main() {
             .having((message) => message.content, 'content', '回车直接询问回忆'),
       ),
     );
+  });
+
+  testWidgets('conversation nav shows with multiple rounds and jumps', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    String longAnswer(int index) =>
+        '回答 $index\n${List.filled(12, '这是一段很长的回答内容，用来撑开滚动高度。').join('\n')}';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryPage(
+            localDataState: _localDataState(),
+            conversationService: _FakeMemoryConversationService(
+              initialMessages: [
+                for (var index = 1; index <= 8; index++) ...[
+                  MemoryMessage(
+                    role: 'user',
+                    content: '问题 $index',
+                    createdAt: DateTime(2026, 7, 8, 10, index),
+                  ),
+                  MemoryMessage(
+                    role: 'ai',
+                    content: longAnswer(index),
+                    createdAt: DateTime(2026, 7, 8, 11, index),
+                  ),
+                ],
+              ],
+            ),
+            searchService: const _FakeMemorySearchService(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final nav = find.byKey(const ValueKey('memory-conversation-nav'));
+    expect(nav, findsOneWidget);
+
+    final listScrollable = tester
+        .stateList<ScrollableState>(find.byType(Scrollable))
+        .firstWhere((state) => state.position.maxScrollExtent > 0);
+    expect(listScrollable.position.pixels, 0);
+
+    // Collapsed it is only the dash rail: labels fade in on hover.
+    Iterable<AnimatedOpacity> fades() => tester.widgetList<AnimatedOpacity>(
+      find.descendant(of: nav, matching: find.byType(AnimatedOpacity)),
+    );
+    expect(fades().every((fade) => fade.opacity == 0), isTrue);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(nav));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(fades().every((fade) => fade.opacity == 1), isTrue);
+    for (var index = 1; index <= 8; index++) {
+      expect(
+        find.descendant(of: nav, matching: find.text('问题 $index')),
+        findsOneWidget,
+      );
+    }
+
+    await tester.tap(find.descendant(of: nav, matching: find.text('问题 8')));
+    // The tapped entry's dash starts growing on the very next frame: the
+    // highlight does not wait for the jump scroll to finish.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 30));
+    expect(
+      tester
+          .getSize(
+            find
+                .descendant(of: nav, matching: find.byType(AnimatedContainer))
+                .at(7),
+          )
+          .width,
+      greaterThan(5.6),
+    );
+    await tester.pumpAndSettle();
+
+    expect(listScrollable.position.pixels, greaterThan(0));
+    // After the jump the last round's bubble is on screen as well.
+    expect(find.text('问题 8'), findsNWidgets(2));
+
+    // Moving the mouse away collapses the nav back to the dash rail.
+    await mouse.moveTo(const Offset(80, 400));
+    await tester.pumpAndSettle();
+    expect(fades().every((fade) => fade.opacity == 0), isTrue);
+  });
+
+  testWidgets('conversation nav stays hidden below three rounds', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final nav = find.byKey(const ValueKey('memory-conversation-nav'));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryPage(
+            localDataState: _localDataState(),
+            conversationService: _FakeMemoryConversationService(
+              initialMessages: [
+                MemoryMessage(
+                  role: 'user',
+                  content: '唯一的问题',
+                  createdAt: DateTime(2026, 7, 8),
+                ),
+                MemoryMessage(
+                  role: 'ai',
+                  content: '唯一的回答',
+                  createdAt: DateTime(2026, 7, 8),
+                ),
+              ],
+            ),
+            searchService: const _FakeMemorySearchService(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Only the message bubble — a single round means no nav.
+    expect(find.text('唯一的问题'), findsOneWidget);
+    expect(nav, findsNothing);
+
+    // Two rounds are still not enough to show the nav. A different data
+    // directory makes didUpdateWidget reload the conversation.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryPage(
+            localDataState: _localDataState(
+              dataDirectory: 'D:\\Temp\\SpringNoteTwoRounds',
+            ),
+            conversationService: _FakeMemoryConversationService(
+              initialMessages: [
+                for (var index = 1; index <= 2; index++) ...[
+                  MemoryMessage(
+                    role: 'user',
+                    content: '问题 $index',
+                    createdAt: DateTime(2026, 7, 8, 10, index),
+                  ),
+                  MemoryMessage(
+                    role: 'ai',
+                    content: '回答 $index',
+                    createdAt: DateTime(2026, 7, 8, 11, index),
+                  ),
+                ],
+              ],
+            ),
+            searchService: const _FakeMemorySearchService(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('问题 2'), findsOneWidget);
+    expect(nav, findsNothing);
+  });
+
+  testWidgets('conversation nav stays hidden on narrow windows', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(700, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryPage(
+            localDataState: _localDataState(),
+            conversationService: _FakeMemoryConversationService(
+              initialMessages: [
+                MemoryMessage(
+                  role: 'user',
+                  content: '问题一',
+                  createdAt: DateTime(2026, 7, 8),
+                ),
+                MemoryMessage(
+                  role: 'ai',
+                  content: '回答一',
+                  createdAt: DateTime(2026, 7, 8),
+                ),
+                MemoryMessage(
+                  role: 'user',
+                  content: '问题二',
+                  createdAt: DateTime(2026, 7, 8, 11),
+                ),
+                MemoryMessage(
+                  role: 'ai',
+                  content: '回答二',
+                  createdAt: DateTime(2026, 7, 8, 11),
+                ),
+                MemoryMessage(
+                  role: 'user',
+                  content: '问题三',
+                  createdAt: DateTime(2026, 7, 8, 12),
+                ),
+                MemoryMessage(
+                  role: 'ai',
+                  content: '回答三',
+                  createdAt: DateTime(2026, 7, 8, 12),
+                ),
+              ],
+            ),
+            searchService: const _FakeMemorySearchService(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 700 is below the minimal sane page width: no nav at all.
+    expect(find.byKey(const ValueKey('memory-conversation-nav')), findsNothing);
+    expect(find.text('问题一'), findsOneWidget);
+    expect(find.text('问题二'), findsOneWidget);
+  });
+
+  testWidgets('conversation nav caps the rail and tracks the last round', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    String longAnswer(int index) =>
+        '回答 $index\n${List.filled(12, '这是一段很长的回答内容，用来撑开滚动高度。').join('\n')}';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryPage(
+            localDataState: _localDataState(),
+            conversationService: _FakeMemoryConversationService(
+              initialMessages: [
+                for (var index = 1; index <= 12; index++) ...[
+                  MemoryMessage(
+                    role: 'user',
+                    content: '问题 $index',
+                    createdAt: DateTime(2026, 7, 8, 10, index),
+                  ),
+                  MemoryMessage(
+                    role: 'ai',
+                    // The last answer stays short so the final bubble is
+                    // still visible on screen at the bottom of the list.
+                    content: index == 12 ? '简短回答' : longAnswer(index),
+                    createdAt: DateTime(2026, 7, 8, 11, index),
+                  ),
+                ],
+              ],
+            ),
+            searchService: const _FakeMemorySearchService(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final nav = find.byKey(const ValueKey('memory-conversation-nav'));
+    final dashes = find.descendant(
+      of: nav,
+      matching: find.byType(AnimatedContainer),
+    );
+    // The rail never shows more than 9 dashes even with 12 rounds.
+    expect(dashes, findsNWidgets(9));
+
+    final listScrollable = tester
+        .stateList<ScrollableState>(find.byType(Scrollable))
+        .firstWhere((state) => state.position.maxScrollExtent > 0);
+    unawaited(
+      listScrollable.position.animateTo(
+        listScrollable.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.linear,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // At the bottom the highlight reaches the last round: the 9-dash
+    // window slid down and the final dash is the long active one.
+    expect(dashes, findsNWidgets(9));
+    expect(tester.getSize(dashes.at(8)).width, 8);
+  });
+
+  testWidgets('conversation nav card scrollbar stays clear of the dashes', (
+    tester,
+  ) async {
+    // The hover card relies on the desktop scroll behavior's scrollbar.
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(1400, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    String longAnswer(int index) =>
+        '回答 $index\n${List.filled(12, '这是一段很长的回答内容，用来撑开滚动高度。').join('\n')}';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryPage(
+            localDataState: _localDataState(),
+            conversationService: _FakeMemoryConversationService(
+              initialMessages: [
+                for (var index = 1; index <= 12; index++) ...[
+                  MemoryMessage(
+                    role: 'user',
+                    content: '问题 $index',
+                    createdAt: DateTime(2026, 7, 8, 10, index),
+                  ),
+                  MemoryMessage(
+                    role: 'ai',
+                    content: longAnswer(index),
+                    createdAt: DateTime(2026, 7, 8, 11, index),
+                  ),
+                ],
+              ],
+            ),
+            searchService: const _FakeMemorySearchService(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final nav = find.byKey(const ValueKey('memory-conversation-nav'));
+    final cardList = find.descendant(of: nav, matching: find.byType(ListView));
+    final scrollbar = find.descendant(
+      of: nav,
+      matching: find.byType(Scrollbar),
+    );
+    // Collapsed there is no card, no list and no scrollbar at all.
+    expect(cardList, findsNothing);
+    expect(scrollbar, findsNothing);
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(nav));
+    await tester.pump(const Duration(milliseconds: 150));
+
+    // The desktop scroll behavior adds exactly one platform scrollbar.
+    expect(cardList, findsOneWidget);
+    expect(scrollbar, findsOneWidget);
+
+    // It stays a slim 3px even when hovered.
+    final scrollbarTheme = tester.widget<ScrollbarTheme>(
+      find.descendant(of: nav, matching: find.byType(ScrollbarTheme)),
+    );
+    expect(scrollbarTheme.data.thickness!.resolve({WidgetState.hovered}), 3);
+
+    // The list reaches almost to the card's right edge, so the platform
+    // scrollbar sits in the right padding, clear of the dashes.
+    final firstDash = find
+        .descendant(of: nav, matching: find.byType(AnimatedContainer))
+        .first;
+    expect(
+      tester.getRect(cardList).right - tester.getRect(firstDash).right,
+      greaterThanOrEqualTo(10),
+    );
+
+    // The framework asserts debug overrides are unset before tearDown runs.
+    debugDefaultTargetPlatformOverride = null;
   });
 }
 
