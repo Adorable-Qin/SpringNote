@@ -30,6 +30,16 @@ While the answer streams in, map nodes "grow" in one by one with a fade-and-scal
 
 The Memory Book page has no inline render limit — maps render in full from the parse result. Every map keeps at most 300 nodes when parsed; see "Markdown Rendering" for the inline render limit that applies in notes.
 
+## Conversation Navigation
+
+When the conversation has three or more rounds and the window is wide enough, a vertical rail of small dashes appears at the right edge of the chat area — one dash per round (one question).
+
+- **Current position**: the dash for the current round is longer and darker; the highlight moves as you scroll the conversation.
+- **Click to jump**: clicking a dash scrolls straight to that question and highlights the dash right away.
+- **Hover to expand**: hovering over the rail fades in a card listing each round's question text, so you can recognize a round before clicking; moving the mouse away collapses it back to dashes.
+- **More than 9 rounds**: the rail shows only a 9-dash window around the current round and slides as you scroll; inside the hover card you can scroll through every round, with a slim scrollbar at the card's right edge.
+- The navigation hides automatically when the window is too narrow.
+
 ## Context Isolation
 
 A new conversation does not inherit search results or AI answer context formed during the previous conversation. Subsequent questions will re-determine which keyword search, date reading, or period reading tools to use.
