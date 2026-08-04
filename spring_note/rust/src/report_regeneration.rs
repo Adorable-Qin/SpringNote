@@ -103,6 +103,7 @@ async fn regenerate_daily(
         date: date_label,
         industry: request.industry.clone(),
         merge_prompt,
+        json_output: false,
         api_log_enabled: request.api_log_enabled,
     })
     .await;

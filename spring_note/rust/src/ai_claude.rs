@@ -11,6 +11,7 @@ use std::time::Instant;
 
 /// 结构化日报用途标识;该用途在 /v1/messages 上附加 output_config.format 约束输出 JSON。
 const STRUCTURED_NOTE_PURPOSE: &str = "home_structured_note";
+const GLOBAL_SIGN_PURPOSE: &str = "global_sign";
 
 pub async fn chat(request: &AiChatRequest) -> Result<AiTextResult, String> {
     let url = messages_url(&request.provider);
@@ -481,6 +482,35 @@ fn structured_note_schema() -> Value {
     })
 }
 
+fn global_sign_schema() -> Value {
+    json!({
+        "type": "object",
+        "properties": {
+            "items": {
+                "type": "array",
+                "description": "Global sign todo items. Existing items keep their id; new items use an empty id.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Existing item id, or empty string for a new item."
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "Todo content in one concise sentence."
+                        }
+                    },
+                    "required": ["id", "content"],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "required": ["items"],
+        "additionalProperties": false
+    })
+}
+
 /// 取出响应的 content 块数组;缺失时返回空数组。
 fn content_blocks(value: &Value) -> Vec<Value> {
     value
@@ -828,6 +858,14 @@ pub fn build_messages_body(request: &AiChatRequest) -> Value {
                 "schema": structured_note_schema()
             }
         });
+    } else if request.purpose == GLOBAL_SIGN_PURPOSE {
+        // 全局签:约束输出为 items JSON。
+        body["output_config"] = json!({
+            "format": {
+                "type": "json_schema",
+                "schema": global_sign_schema()
+            }
+        });
     }
     if disables_thinking(&request.purpose) {
         if let Some(config) = thinking_config(&request.model.model_id, false, "") {
@@ -842,7 +880,7 @@ pub fn build_messages_body(request: &AiChatRequest) -> Value {
 
 /// 与 OpenAI / Gemini 侧一致:结构化日报与日报合并关闭思考,降低成本并避免思考块干扰解析。
 fn disables_thinking(purpose: &str) -> bool {
-    matches!(purpose, "home_structured_note" | "daily_note_merge")
+    matches!(purpose, "home_structured_note" | "daily_note_merge" | "global_sign")
 }
 
 /// 思考开启(显式配置或自适应模型默认开启)时不能自定义 temperature;
@@ -1051,6 +1089,29 @@ mod tests {
             false
         );
         // 结构化日报关闭思考,思考关闭时才允许自定义 temperature。
+        assert_eq!(body["thinking"]["type"], "disabled");
+        assert_eq!(body["temperature"], 0.2);
+    }
+
+    #[test]
+    fn builds_global_sign_body() {
+        let request = AiChatRequest {
+            purpose: "global_sign".to_string(),
+            model: AiModel {
+                model_id: "claude-haiku-4-5".to_string(),
+                display_name: "Haiku".to_string(),
+            },
+            ..request()
+        };
+
+        let body = build_messages_body(&request);
+        let format = &body["output_config"]["format"];
+        assert_eq!(format["type"], "json_schema");
+        assert_eq!(format["schema"]["required"][0], "items");
+        assert_eq!(
+            format["schema"]["properties"]["items"]["items"]["additionalProperties"],
+            false
+        );
         assert_eq!(body["thinking"]["type"], "disabled");
         assert_eq!(body["temperature"], 0.2);
     }

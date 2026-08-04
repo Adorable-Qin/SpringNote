@@ -206,6 +206,7 @@ class DailyMergeRequest {
   final String date;
   final String industry;
   final String mergePrompt;
+  final bool jsonOutput;
   final bool apiLogEnabled;
 
   const DailyMergeRequest({
@@ -217,6 +218,7 @@ class DailyMergeRequest {
     required this.date,
     required this.industry,
     required this.mergePrompt,
+    required this.jsonOutput,
     required this.apiLogEnabled,
   });
 
@@ -230,6 +232,7 @@ class DailyMergeRequest {
       date.hashCode ^
       industry.hashCode ^
       mergePrompt.hashCode ^
+      jsonOutput.hashCode ^
       apiLogEnabled.hashCode;
 
   @override
@@ -245,6 +248,7 @@ class DailyMergeRequest {
           date == other.date &&
           industry == other.industry &&
           mergePrompt == other.mergePrompt &&
+          jsonOutput == other.jsonOutput &&
           apiLogEnabled == other.apiLogEnabled;
 }
 

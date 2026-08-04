@@ -8,6 +8,7 @@ import '../../src/rust/api/ai_api.dart' as rust_api;
 import '../../src/rust/api/report_api.dart' as rust_report_api;
 import '../../src/rust/report_regeneration.dart' as rust_report;
 import '../models/app_config.dart';
+import '../models/global_sign_item.dart';
 import '../models/memory_message.dart';
 import '../models/model_config.dart';
 import '../models/model_reference.dart';
@@ -215,6 +216,55 @@ MemoryMessage _copyMemoryMessage(
   );
 }
 
+/// 解析 AI 返回的全局签 JSON（允许包裹 Markdown 代码围栏）。
+/// 任一不合法时返回 null，调用方按 AI 失败处理。
+List<GlobalSignDraftItem>? parseGlobalSignDrafts(String content) {
+  Object? decoded;
+  try {
+    decoded = jsonDecode(_stripMarkdownFence(content));
+  } catch (_) {
+    return null;
+  }
+  if (decoded is! Map) {
+    return null;
+  }
+  final items = decoded['items'];
+  if (items is! List) {
+    return null;
+  }
+  final drafts = <GlobalSignDraftItem>[];
+  for (final entry in items) {
+    if (entry is! Map) {
+      return null;
+    }
+    final id = entry['id'];
+    final text = entry['content'];
+    if (text is! String || text.trim().isEmpty) {
+      return null;
+    }
+    drafts.add(
+      GlobalSignDraftItem(id: id is String ? id.trim() : '', content: text),
+    );
+  }
+  return drafts;
+}
+
+String _stripMarkdownFence(String content) {
+  var text = content.trim();
+  if (!text.startsWith('```')) {
+    return text;
+  }
+  final firstNewline = text.indexOf('\n');
+  if (firstNewline >= 0) {
+    text = text.substring(firstNewline + 1);
+  }
+  text = text.trimRight();
+  if (text.endsWith('```')) {
+    text = text.substring(0, text.length - 3);
+  }
+  return text.trim();
+}
+
 class AiClientService {
   const AiClientService();
 
@@ -299,6 +349,7 @@ class AiClientService {
           note: note,
           industry: config.industry,
         ),
+        jsonOutput: false,
         apiLogEnabled: config.apiLogEnabled,
       ),
     );
@@ -308,6 +359,48 @@ class AiClientService {
     }
 
     return '${response.content.trimRight()}\n';
+  }
+
+  Future<List<GlobalSignDraftItem>?> generateGlobalSign({
+    required String appDataDir,
+    required AppConfig config,
+    required DateTime date,
+    required String dailyMarkdown,
+    required String currentItemsJson,
+    required String rawInput,
+  }) async {
+    final selection = _selectModel(config, 'intelligentGenerationModel');
+    if (selection == null) {
+      return null;
+    }
+
+    final response = await rust_api.mergeDailyNote(
+      request: rust_ai.DailyMergeRequest(
+        appDataDir: appDataDir,
+        provider: _toRustProvider(selection.provider),
+        model: _toRustModel(selection.model),
+        existingMarkdown: dailyMarkdown,
+        rawInput: rawInput,
+        date: _formatDate(date),
+        industry: config.industry,
+        mergePrompt: _renderGlobalSignPrompt(
+          config.globalSignPrompt,
+          date: _formatDate(date),
+          dailyMarkdown: dailyMarkdown,
+          currentItemsJson: currentItemsJson,
+          rawInput: rawInput,
+          industry: config.industry,
+        ),
+        jsonOutput: true,
+        apiLogEnabled: config.apiLogEnabled,
+      ),
+    );
+
+    if (!response.ok || response.content.trim().isEmpty) {
+      return null;
+    }
+
+    return parseGlobalSignDrafts(response.content);
   }
 
   Future<String?> generateWeeklyReport({
@@ -637,6 +730,32 @@ class AiClientService {
       '{industry}': industry.trim().isEmpty ? '未设置' : industry.trim(),
     };
     var rendered = template.trim().isEmpty ? defaultDailyMergePrompt : template;
+    for (final entry in replacements.entries) {
+      rendered = rendered.replaceAll(entry.key, entry.value);
+    }
+    return rendered;
+  }
+
+  String _renderGlobalSignPrompt(
+    String template, {
+    required String date,
+    required String dailyMarkdown,
+    required String currentItemsJson,
+    required String rawInput,
+    required String industry,
+  }) {
+    final replacements = <String, String>{
+      '{date}': date,
+      '{daily_markdown}': dailyMarkdown.trim().isEmpty
+          ? '（空）'
+          : dailyMarkdown.trim(),
+      '{global_sign}': currentItemsJson.trim().isEmpty
+          ? '{"items": []}'
+          : currentItemsJson.trim(),
+      '{raw_input}': rawInput.trim(),
+      '{industry}': industry.trim().isEmpty ? '未设置' : industry.trim(),
+    };
+    var rendered = template.trim().isEmpty ? defaultGlobalSignPrompt : template;
     for (final entry in replacements.entries) {
       rendered = rendered.replaceAll(entry.key, entry.value);
     }

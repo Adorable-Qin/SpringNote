@@ -133,6 +133,7 @@ pub struct DailyMergeRequest {
     pub date: String,
     pub industry: String,
     pub merge_prompt: String,
+    pub json_output: bool,
     pub api_log_enabled: bool,
 }
 
@@ -387,6 +388,14 @@ pub async fn generate_structured_note(request: StructuredNoteRequest) -> Structu
 }
 
 pub async fn merge_daily_note(request: DailyMergeRequest) -> AiTextResult {
+    // 全局签复用本接口（json_output=true），输出必须是 JSON，因此使用独立
+    // purpose，驱动各协议开启标准 JSON Output（OpenAI response_format /
+    // Gemini responseMimeType），同时避免日报合并（Markdown 输出）被误约束。
+    let purpose = if request.json_output {
+        "global_sign"
+    } else {
+        "daily_note_merge"
+    };
     chat(AiChatRequest {
         app_data_dir: request.app_data_dir.clone(),
         provider: request.provider.clone(),
@@ -394,7 +403,7 @@ pub async fn merge_daily_note(request: DailyMergeRequest) -> AiTextResult {
         system_prompt: daily_merge_system_prompt(&request),
         user_prompt: daily_merge_user_prompt(&request),
         images: vec![],
-        purpose: "daily_note_merge".to_string(),
+        purpose: purpose.to_string(),
         api_log_enabled: request.api_log_enabled,
     })
     .await
@@ -1218,6 +1227,7 @@ mod tests {
             date: date.to_string(),
             industry: String::new(),
             merge_prompt: String::new(),
+            json_output: false,
             api_log_enabled: false,
         };
 
@@ -1245,6 +1255,7 @@ mod tests {
             date: "2026-06-18".to_string(),
             industry: String::new(),
             merge_prompt: "custom system prompt".to_string(),
+            json_output: false,
             api_log_enabled: false,
         };
 

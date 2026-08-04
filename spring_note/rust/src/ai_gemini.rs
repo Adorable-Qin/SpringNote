@@ -12,6 +12,7 @@ use std::time::Instant;
 
 /// 结构化日报用途标识;该用途在 generateContent 上附加 responseSchema 约束输出 JSON。
 const STRUCTURED_NOTE_PURPOSE: &str = "home_structured_note";
+const GLOBAL_SIGN_PURPOSE: &str = "global_sign";
 /// 老接口多数模型不返回函数调用 id,解析时用此前缀生成占位 id;占位 id 不会回传给 API。
 const GENERATED_CALL_ID_PREFIX: &str = "gemini_call_";
 
@@ -651,6 +652,33 @@ fn structured_note_schema() -> Value {
     })
 }
 
+fn global_sign_schema() -> Value {
+    json!({
+        "type": "OBJECT",
+        "properties": {
+            "items": {
+                "type": "ARRAY",
+                "description": "Global sign todo items. Existing items keep their id; new items use an empty id.",
+                "items": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "id": {
+                            "type": "STRING",
+                            "description": "Existing item id, or empty string for a new item."
+                        },
+                        "content": {
+                            "type": "STRING",
+                            "description": "Todo content in one concise sentence."
+                        }
+                    },
+                    "required": ["id", "content"]
+                }
+            }
+        },
+        "required": ["items"]
+    })
+}
+
 /// 取出 candidates[0].content.parts;无候选时返回空数组。
 fn candidate_parts(value: &Value) -> Vec<Value> {
     value
@@ -947,6 +975,10 @@ pub fn build_generate_content_body(request: &AiChatRequest) -> Value {
         // 结构化日报:约束输出为栏目 JSON。
         generation_config["responseMimeType"] = json!("application/json");
         generation_config["responseSchema"] = structured_note_schema();
+    } else if request.purpose == GLOBAL_SIGN_PURPOSE {
+        // 全局签:约束输出为 items JSON。
+        generation_config["responseMimeType"] = json!("application/json");
+        generation_config["responseSchema"] = global_sign_schema();
     }
     if disables_thinking(&request.purpose) {
         generation_config["thinkingConfig"] = thinking_config(&request.model.model_id, false, "");
@@ -966,7 +998,7 @@ pub fn build_generate_content_body(request: &AiChatRequest) -> Value {
 
 /// 与 OpenAI 侧一致:结构化日报与日报合并关闭思考,降低成本并避免思考 parts 干扰解析。
 fn disables_thinking(purpose: &str) -> bool {
-    matches!(purpose, "home_structured_note" | "daily_note_merge")
+    matches!(purpose, "home_structured_note" | "daily_note_merge" | "global_sign")
 }
 
 fn gemini_image_part(image: &AiImageAttachment) -> Value {
@@ -1527,6 +1559,31 @@ mod tests {
         let plain = build_generate_content_body(&request());
         assert!(plain["generationConfig"].get("responseMimeType").is_none());
         assert!(plain["generationConfig"].get("responseSchema").is_none());
+    }
+
+    #[test]
+    fn builds_global_sign_body_with_response_schema() {
+        let global_sign_request = AiChatRequest {
+            purpose: "global_sign".to_string(),
+            ..request()
+        };
+
+        let body = build_generate_content_body(&global_sign_request);
+        assert_eq!(
+            body["generationConfig"]["responseMimeType"],
+            "application/json"
+        );
+        let schema = &body["generationConfig"]["responseSchema"];
+        assert_eq!(schema["type"], "OBJECT");
+        assert_eq!(schema["required"][0], "items");
+        assert_eq!(
+            schema["properties"]["items"]["items"]["required"][1],
+            "content"
+        );
+        assert_eq!(
+            body["generationConfig"]["thinkingConfig"]["includeThoughts"],
+            false
+        );
     }
 
     #[test]

@@ -1479,8 +1479,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   DailyMergeRequest dco_decode_daily_merge_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 9)
-      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return DailyMergeRequest(
       appDataDir: dco_decode_String(arr[0]),
       provider: dco_decode_ai_provider(arr[1]),
@@ -1490,7 +1490,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       date: dco_decode_String(arr[5]),
       industry: dco_decode_String(arr[6]),
       mergePrompt: dco_decode_String(arr[7]),
-      apiLogEnabled: dco_decode_bool(arr[8]),
+      jsonOutput: dco_decode_bool(arr[8]),
+      apiLogEnabled: dco_decode_bool(arr[9]),
     );
   }
 
@@ -2361,6 +2362,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_date = sse_decode_String(deserializer);
     var var_industry = sse_decode_String(deserializer);
     var var_mergePrompt = sse_decode_String(deserializer);
+    var var_jsonOutput = sse_decode_bool(deserializer);
     var var_apiLogEnabled = sse_decode_bool(deserializer);
     return DailyMergeRequest(
       appDataDir: var_appDataDir,
@@ -2371,6 +2373,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       date: var_date,
       industry: var_industry,
       mergePrompt: var_mergePrompt,
+      jsonOutput: var_jsonOutput,
       apiLogEnabled: var_apiLogEnabled,
     );
   }
@@ -3390,6 +3393,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.date, serializer);
     sse_encode_String(self.industry, serializer);
     sse_encode_String(self.mergePrompt, serializer);
+    sse_encode_bool(self.jsonOutput, serializer);
     sse_encode_bool(self.apiLogEnabled, serializer);
   }
 

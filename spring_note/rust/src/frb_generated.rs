@@ -27,7 +27,7 @@
 // Section: imports
 
 use flutter_rust_bridge::for_generated::byteorder::{NativeEndian, ReadBytesExt, WriteBytesExt};
-use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
 use flutter_rust_bridge::{Handler, IntoIntoDart};
 
 // Section: boilerplate
@@ -1373,6 +1373,7 @@ impl SseDecode for crate::ai::DailyMergeRequest {
         let mut var_date = <String>::sse_decode(deserializer);
         let mut var_industry = <String>::sse_decode(deserializer);
         let mut var_mergePrompt = <String>::sse_decode(deserializer);
+        let mut var_jsonOutput = <bool>::sse_decode(deserializer);
         let mut var_apiLogEnabled = <bool>::sse_decode(deserializer);
         return crate::ai::DailyMergeRequest {
             app_data_dir: var_appDataDir,
@@ -1383,6 +1384,7 @@ impl SseDecode for crate::ai::DailyMergeRequest {
             date: var_date,
             industry: var_industry,
             merge_prompt: var_mergePrompt,
+            json_output: var_jsonOutput,
             api_log_enabled: var_apiLogEnabled,
         };
     }
@@ -2506,6 +2508,7 @@ impl flutter_rust_bridge::IntoDart for crate::ai::DailyMergeRequest {
             self.date.into_into_dart().into_dart(),
             self.industry.into_into_dart().into_dart(),
             self.merge_prompt.into_into_dart().into_dart(),
+            self.json_output.into_into_dart().into_dart(),
             self.api_log_enabled.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -3308,6 +3311,7 @@ impl SseEncode for crate::ai::DailyMergeRequest {
         <String>::sse_encode(self.date, serializer);
         <String>::sse_encode(self.industry, serializer);
         <String>::sse_encode(self.merge_prompt, serializer);
+        <bool>::sse_encode(self.json_output, serializer);
         <bool>::sse_encode(self.api_log_enabled, serializer);
     }
 }
@@ -3806,7 +3810,7 @@ mod io {
     use flutter_rust_bridge::for_generated::byteorder::{
         NativeEndian, ReadBytesExt, WriteBytesExt,
     };
-    use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+    use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
     use flutter_rust_bridge::{Handler, IntoIntoDart};
 
     // Section: boilerplate
@@ -3830,7 +3834,7 @@ mod web {
     };
     use flutter_rust_bridge::for_generated::wasm_bindgen;
     use flutter_rust_bridge::for_generated::wasm_bindgen::prelude::*;
-    use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+    use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
     use flutter_rust_bridge::{Handler, IntoIntoDart};
 
     // Section: boilerplate

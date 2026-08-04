@@ -11,12 +11,31 @@ use serde_json::{Value, json};
 use std::time::Instant;
 
 pub async fn chat(request: &AiChatRequest) -> Result<AiTextResult, String> {
+    let result = chat_once(request, true).await;
+    match result {
+        // 部分 OpenAI 兼容供应商不支持 response_format，被拒后去掉该约束重试一次。
+        Err(error) if should_retry_without_json_mode(request, &error) => {
+            chat_once(request, false).await
+        }
+        other => other,
+    }
+}
+
+fn should_retry_without_json_mode(request: &AiChatRequest, error: &str) -> bool {
+    wants_json_output(&request.purpose)
+        && !is_responses_endpoint(&request.provider)
+        && ["HTTP 400", "HTTP 404", "HTTP 422"]
+            .iter()
+            .any(|prefix| error.starts_with(prefix))
+}
+
+async fn chat_once(request: &AiChatRequest, json_mode: bool) -> Result<AiTextResult, String> {
     let url = join_url(&request.provider.base_url, &request.provider.api_path);
     let uses_responses = is_responses_endpoint(&request.provider);
     let body = if uses_responses {
         build_responses_chat_body(request)
     } else {
-        build_chat_body(request)
+        build_chat_body_with_mode(request, json_mode)
     };
     let request_body = body_to_string(&body);
     let started_at = Instant::now();
@@ -680,6 +699,10 @@ pub async fn fim_complete(request: &FimCompleteRequest) -> Result<AiTextResult, 
 }
 
 pub fn build_chat_body(request: &AiChatRequest) -> Value {
+    build_chat_body_with_mode(request, true)
+}
+
+fn build_chat_body_with_mode(request: &AiChatRequest, json_mode: bool) -> Value {
     let mut messages = vec![json!({"role": "system", "content": request.system_prompt})];
     if !request.user_prompt.trim().is_empty() || !request.images.is_empty() {
         messages.push(json!({
@@ -693,6 +716,9 @@ pub fn build_chat_body(request: &AiChatRequest) -> Value {
         "messages": messages,
         "temperature": 0.2
     });
+    if json_mode && wants_json_output(&request.purpose) {
+        body["response_format"] = json!({"type": "json_object"});
+    }
     if disables_thinking(&request.purpose) {
         body["thinking"] = json!({"type": "disabled"});
     }
@@ -974,7 +1000,12 @@ fn normalize_responses_reasoning_effort(effort: &str) -> &str {
 }
 
 fn disables_thinking(purpose: &str) -> bool {
-    matches!(purpose, "home_structured_note" | "daily_note_merge")
+    matches!(purpose, "home_structured_note" | "daily_note_merge" | "global_sign")
+}
+
+/// 需要标准 JSON Output 的用途：OpenAI 兼容协议通过 response_format 约束。
+pub fn wants_json_output(purpose: &str) -> bool {
+    matches!(purpose, "home_structured_note" | "global_sign")
 }
 
 fn read_string_field(value: &Value, key: &str) -> String {
@@ -1644,6 +1675,43 @@ mod tests {
         assert_eq!(body["model"], "gpt-test");
         assert_eq!(body["messages"][0]["role"], "system");
         assert_eq!(body["messages"][1]["content"], "user");
+    }
+
+    #[test]
+    fn enables_json_output_for_structured_purposes() {
+        for purpose in ["home_structured_note", "global_sign"] {
+            let request = AiChatRequest {
+                purpose: purpose.to_string(),
+                ..request()
+            };
+
+            let body = build_chat_body(&request);
+            assert_eq!(body["response_format"]["type"], "json_object");
+        }
+    }
+
+    #[test]
+    fn omits_json_output_for_plain_text_purposes() {
+        for purpose in ["daily_note_merge", "weekly_report", "test"] {
+            let request = AiChatRequest {
+                purpose: purpose.to_string(),
+                ..request()
+            };
+
+            let body = build_chat_body(&request);
+            assert!(body.get("response_format").is_none());
+        }
+    }
+
+    #[test]
+    fn json_output_can_be_disabled_for_fallback_retry() {
+        let request = AiChatRequest {
+            purpose: "global_sign".to_string(),
+            ..request()
+        };
+
+        let body = build_chat_body_with_mode(&request, false);
+        assert!(body.get("response_format").is_none());
     }
 
     #[test]

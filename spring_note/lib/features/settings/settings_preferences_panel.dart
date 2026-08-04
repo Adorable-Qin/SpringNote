@@ -557,14 +557,54 @@ class _PreferencesPanel extends StatelessWidget {
               onTap: () async {
                 final prompt = await showDialog<String>(
                   context: context,
-                  builder: (_) => _DailyMergePromptDialog(
+                  builder: (_) => _PromptEditDialog(
                     appDataDir: appDataDir,
                     config: config,
                     aiClientService: aiClientService,
+                    dialogKey: const ValueKey('daily-merge-prompt-dialog'),
+                    title: '编辑日报整理提示词',
+                    hintText: '输入日报整理 Prompt...',
+                    initialPrompt: config.dailyMergePrompt,
+                    defaultPrompt: defaultDailyMergePrompt,
+                    variables: const [
+                      (Icons.calendar_month_outlined, '{date}', '当前日期'),
+                      (Icons.article_outlined, '{existing_markdown}', '已有日报内容'),
+                      (Icons.edit_note_rounded, '{raw_input}', '新增随手记录'),
+                      (Icons.business_center_outlined, '{industry}', '用户所在行业'),
+                    ],
                   ),
                 );
                 if (prompt != null) {
                   onChanged(config.copyWith(dailyMergePrompt: prompt));
+                }
+              },
+            ),
+            _ActionSettingRow(
+              label: '全局签提示词',
+              value: '',
+              onTap: () async {
+                final prompt = await showDialog<String>(
+                  context: context,
+                  builder: (_) => _PromptEditDialog(
+                    appDataDir: appDataDir,
+                    config: config,
+                    aiClientService: aiClientService,
+                    dialogKey: const ValueKey('global-sign-prompt-dialog'),
+                    title: '编辑全局签提示词',
+                    hintText: '输入全局签整理 Prompt...',
+                    initialPrompt: config.globalSignPrompt,
+                    defaultPrompt: defaultGlobalSignPrompt,
+                    variables: const [
+                      (Icons.calendar_month_outlined, '{date}', '当前日期'),
+                      (Icons.article_outlined, '{daily_markdown}', '当日日报内容'),
+                      (Icons.push_pin_outlined, '{global_sign}', '当前全局签 JSON'),
+                      (Icons.edit_note_rounded, '{raw_input}', '新增随手记录'),
+                      (Icons.business_center_outlined, '{industry}', '用户所在行业'),
+                    ],
+                  ),
+                );
+                if (prompt != null) {
+                  onChanged(config.copyWith(globalSignPrompt: prompt));
                 }
               },
             ),
@@ -1144,25 +1184,36 @@ class _StructuredNoteSectionEditor extends StatelessWidget {
   }
 }
 
-class _DailyMergePromptDialog extends StatefulWidget {
-  const _DailyMergePromptDialog({
+class _PromptEditDialog extends StatefulWidget {
+  const _PromptEditDialog({
     required this.appDataDir,
     required this.config,
     required this.aiClientService,
+    required this.dialogKey,
+    required this.title,
+    required this.hintText,
+    required this.initialPrompt,
+    required this.defaultPrompt,
+    required this.variables,
   });
 
   final String appDataDir;
   final AppConfig config;
   final AiClientService aiClientService;
+  final Key dialogKey;
+  final String title;
+  final String hintText;
+  final String initialPrompt;
+  final String defaultPrompt;
+  final List<(IconData, String, String)> variables;
 
   @override
-  State<_DailyMergePromptDialog> createState() =>
-      _DailyMergePromptDialogState();
+  State<_PromptEditDialog> createState() => _PromptEditDialogState();
 }
 
-class _DailyMergePromptDialogState extends State<_DailyMergePromptDialog> {
+class _PromptEditDialogState extends State<_PromptEditDialog> {
   late final _PromptFimTextEditingController _controller =
-      _PromptFimTextEditingController(text: widget.config.dailyMergePrompt);
+      _PromptFimTextEditingController(text: widget.initialPrompt);
   late final FocusNode _focusNode = FocusNode(onKeyEvent: _handleKeyEvent);
   final ScrollController _scrollController = ScrollController();
   Timer? _fimDebounce;
@@ -1198,7 +1249,7 @@ class _DailyMergePromptDialogState extends State<_DailyMergePromptDialog> {
     final textTheme = Theme.of(context).textTheme;
     final colors = AppTheme.colors(context);
     return Dialog(
-      key: const ValueKey('daily-merge-prompt-dialog'),
+      key: widget.dialogKey,
       backgroundColor: AppTheme.dialogSurface(context),
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -1213,7 +1264,7 @@ class _DailyMergePromptDialogState extends State<_DailyMergePromptDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      '编辑日报整理提示词',
+                      widget.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.titleMedium?.copyWith(
@@ -1295,7 +1346,7 @@ class _DailyMergePromptDialogState extends State<_DailyMergePromptDialog> {
                                     desktopTextSelectionHandleControls,
                                 enableInteractiveSelection: true,
                                 decoration: InputDecoration(
-                                  hintText: '输入日报整理 Prompt...',
+                                  hintText: widget.hintText,
                                   hintStyle: TextStyle(
                                     color: colors.textSubtle,
                                   ),
@@ -1327,7 +1378,10 @@ class _DailyMergePromptDialogState extends State<_DailyMergePromptDialog> {
             Divider(height: 1, color: colors.divider),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 14, 24, 12),
-              child: _PromptVariablesHint(textTheme: textTheme),
+              child: _PromptVariablesHint(
+                textTheme: textTheme,
+                variables: widget.variables,
+              ),
             ),
             Divider(height: 1, color: colors.divider),
             Padding(
@@ -1577,11 +1631,9 @@ class _DailyMergePromptDialogState extends State<_DailyMergePromptDialog> {
   }
 
   void _restoreDefault() {
-    _controller.value = const TextEditingValue(
-      text: defaultDailyMergePrompt,
-      selection: TextSelection.collapsed(
-        offset: defaultDailyMergePrompt.length,
-      ),
+    _controller.value = TextEditingValue(
+      text: widget.defaultPrompt,
+      selection: TextSelection.collapsed(offset: widget.defaultPrompt.length),
     );
   }
 }
@@ -1760,18 +1812,13 @@ class _PromptFimTextEditingController extends TextEditingController {
 }
 
 class _PromptVariablesHint extends StatelessWidget {
-  const _PromptVariablesHint({required this.textTheme});
+  const _PromptVariablesHint({required this.textTheme, required this.variables});
 
   final TextTheme textTheme;
+  final List<(IconData, String, String)> variables;
 
   @override
   Widget build(BuildContext context) {
-    const variables = [
-      (Icons.calendar_month_outlined, '{date}', '当前日期'),
-      (Icons.article_outlined, '{existing_markdown}', '已有日报内容'),
-      (Icons.edit_note_rounded, '{raw_input}', '新增随手记录'),
-      (Icons.business_center_outlined, '{industry}', '用户所在行业'),
-    ];
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = constraints.maxWidth >= 760

@@ -32,6 +32,24 @@ const defaultDailyMergePrompt = '''你是 SpringNote 的日报整理助手。
 11. 保留已有日报的整体结构和可继续编辑性，不随意改变已有内容的组织方式。
 12. 不输出变量名称，不解释整理过程，不添加任何说明，仅输出最终日报内容。''';
 
+const defaultGlobalSignPrompt = '''你是 SpringNote 的全局签整理助手。全局签是一份跨天的待办清单（ToDoList），记录需要持续跟进、尚未完成的事项。
+
+已知信息：
+- 日期：{date}
+- 当日日报：{daily_markdown}
+- 当前全局签 JSON：{global_sign}
+- 新增随手记录：{raw_input}
+- 用户所在行业：{industry}
+
+整理要求：
+1. 结合当日日报与新增随手记录，判断是否需要向全局签新增或更新待办事项；没有需要变更的内容时，原样返回当前全局签列表。
+2. 保留当前全局签中仍未完成的事项及其 id，不得丢失；仅在内容确实需要修订时保留 id 并更新 content。
+3. 新增事项的 id 使用空字符串，由系统统一分配。
+4. 当输入中带有【已完成】或【已删除】标记的事项时，将它们从全局签中移除，不再返回。
+5. 严格保留事实，不得编造任务、时间、人员或进展；事项描述简洁明确，一句话说清要做什么。
+6. 不得随意扩展、引申或替换输入中提到的内容；事项涉及的对象、动作和范围必须来自输入中明确表达的信息，与输入保持一致。
+7. 只输出 JSON，格式固定为 {"items": [{"id": "...", "content": "..."}]}，不要输出任何解释或说明。''';
+
 class AppConfig {
   const AppConfig({
     required this.wallpaperSettings,
@@ -60,6 +78,7 @@ class AppConfig {
     required this.memoryKeywordContextAfter,
     required this.structuredNoteSections,
     required this.dailyMergePrompt,
+    required this.globalSignPrompt,
     required this.apiLogEnabled,
     required this.cloudSync,
     required this.providers,
@@ -95,6 +114,7 @@ class AppConfig {
   final double memoryKeywordContextAfter;
   final List<StructuredNoteSectionConfig> structuredNoteSections;
   final String dailyMergePrompt;
+  final String globalSignPrompt;
   final bool apiLogEnabled;
   final CloudSyncConfig cloudSync;
   final List<ProviderConfig> providers;
@@ -144,6 +164,7 @@ class AppConfig {
       memoryKeywordContextAfter: 2600,
       structuredNoteSections: StructuredNoteSectionConfig.defaults,
       dailyMergePrompt: defaultDailyMergePrompt,
+      globalSignPrompt: defaultGlobalSignPrompt,
       apiLogEnabled: false,
       cloudSync: CloudSyncConfig.defaultsValue,
       providers: [],
@@ -222,6 +243,10 @@ class AppConfig {
         json['dailyMergePrompt'],
         defaultDailyMergePrompt,
       ),
+      globalSignPrompt: _readString(
+        json['globalSignPrompt'],
+        defaultGlobalSignPrompt,
+      ),
       apiLogEnabled: json['apiLogEnabled'] as bool? ?? false,
       cloudSync: CloudSyncConfig.fromJson(json['cloudSync']),
       providers: _readProviders(json['providers']),
@@ -264,6 +289,7 @@ class AppConfig {
           .map((section) => section.toJson())
           .toList(),
       'dailyMergePrompt': dailyMergePrompt,
+      'globalSignPrompt': globalSignPrompt,
       'apiLogEnabled': apiLogEnabled,
       'cloudSync': cloudSync.toJson(),
       'providers': providers.map((provider) => provider.toJson()).toList(),
@@ -300,6 +326,7 @@ class AppConfig {
     double? memoryKeywordContextAfter,
     List<StructuredNoteSectionConfig>? structuredNoteSections,
     String? dailyMergePrompt,
+    String? globalSignPrompt,
     bool? apiLogEnabled,
     CloudSyncConfig? cloudSync,
     List<ProviderConfig>? providers,
@@ -351,6 +378,7 @@ class AppConfig {
           ? this.structuredNoteSections
           : StructuredNoteSectionConfig.normalize(structuredNoteSections),
       dailyMergePrompt: dailyMergePrompt ?? this.dailyMergePrompt,
+      globalSignPrompt: globalSignPrompt ?? this.globalSignPrompt,
       apiLogEnabled: apiLogEnabled ?? this.apiLogEnabled,
       cloudSync: cloudSync ?? this.cloudSync,
       providers: providers ?? this.providers,

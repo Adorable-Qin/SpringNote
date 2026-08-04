@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:file_selector/file_selector.dart';
@@ -9,11 +10,13 @@ import '../../core/attachments/attachment_manager.dart';
 import '../../core/attachments/pending_image.dart';
 
 import '../../core/models/local_data_state.dart';
+import '../../core/models/global_sign_item.dart';
 import '../../core/models/structured_note_section_config.dart';
 import '../../core/models/structured_work_note.dart';
 import '../../core/services/ai_client_service.dart';
 import '../../core/services/daily_note_service.dart';
 import '../../core/services/desktop_widget_controller.dart';
+import '../../core/services/global_sign_service.dart';
 import '../../core/services/home_overview_service.dart';
 import '../../core/services/image_file_types.dart';
 import '../../core/services/level_progress_controller.dart';
@@ -26,6 +29,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/page_scaffold.dart';
 import '../../core/widgets/update_dialog.dart';
 import '../../src/rust/stats.dart' as rust_stats;
+import 'global_sign_dialog.dart';
 
 typedef HomeAttachmentPicker = Future<List<HomeAttachment>> Function();
 typedef HomeImagePicker = Future<List<PendingImage>> Function();
@@ -66,6 +70,7 @@ class HomePage extends StatefulWidget {
     this.mockAiService = const MockAiService(),
     this.dailyNoteService = const DailyNoteService(),
     this.homeOverviewService = const HomeOverviewService(),
+    this.globalSignService = const GlobalSignService(),
     this.aiClientService = const AiClientService(),
     this.pendingImageClipboardService = const PendingImageClipboardService(),
     this.pendingImageService = const PendingImageService(),
@@ -85,6 +90,7 @@ class HomePage extends StatefulWidget {
   final MockAiService mockAiService;
   final DailyNoteService dailyNoteService;
   final HomeOverviewService homeOverviewService;
+  final GlobalSignService globalSignService;
   final AiClientService aiClientService;
   final PendingImageClipboardService pendingImageClipboardService;
   final PendingImageService pendingImageService;
@@ -270,16 +276,41 @@ class _HomePageState extends State<HomePage> {
           configuredModel != null && configuredModel.trim().isNotEmpty;
       var aiFailed = false;
 
+      final existingMarkdown = await _readDailyMarkdownForSubmit(now);
+
       StructuredWorkNote? aiStructured;
-      try {
-        aiStructured = await widget.aiClientService.generateStructuredNote(
-          appDataDir: widget.localDataState.dataDirectory,
-          config: widget.localDataState.config,
-          input: submissionInput,
-          images: aiImages,
+      String? aiMergedMarkdown;
+      if (_dailyMergePromptUsesSections(
+        widget.localDataState.config.dailyMergePrompt,
+      )) {
+        // 日报提示词使用栏目变量时保持串行,变量取自结构化结果。
+        aiStructured = await _tryGenerateStructuredNote(
+          submissionInput,
+          aiImages,
         );
-      } catch (_) {
-        aiFailed = true;
+        aiMergedMarkdown = await _tryMergeDailyMarkdown(
+          existingMarkdown,
+          aiStructured ??
+              widget.mockAiService.structureWorkNote(
+                submissionInput,
+                sectionConfigs:
+                    widget.localDataState.config.structuredNoteSections,
+              ),
+          now,
+        );
+      } else {
+        // 默认提示词不使用栏目变量,结构化(三栏)与日报合并互不依赖,并发发起。
+        final (structuredResult, mergeResult) =
+            await (
+              _tryGenerateStructuredNote(submissionInput, aiImages),
+              _tryMergeDailyMarkdown(
+                existingMarkdown,
+                StructuredWorkNote(rawInput: submissionInput, sections: const []),
+                now,
+              ),
+            ).wait;
+        aiStructured = structuredResult;
+        aiMergedMarkdown = mergeResult;
       }
       if (aiStructured == null) {
         aiFailed = true;
@@ -290,24 +321,6 @@ class _HomePageState extends State<HomePage> {
             submissionInput,
             sectionConfigs: widget.localDataState.config.structuredNoteSections,
           );
-
-      String? aiMergedMarkdown;
-      try {
-        final existingMarkdown = await widget.dailyNoteService
-            .readDailyMarkdown(
-              dailyNotesDirectory: widget.localDataState.dailyNotesDirectory,
-              date: now,
-            );
-        aiMergedMarkdown = await widget.aiClientService.mergeDailyMarkdown(
-          appDataDir: widget.localDataState.dataDirectory,
-          config: widget.localDataState.config,
-          existingMarkdown: existingMarkdown,
-          note: structured,
-          date: now,
-        );
-      } catch (_) {
-        aiFailed = true;
-      }
 
       final savedPath = await widget.dailyNoteService.mergeStructuredNote(
         dailyNotesDirectory: widget.localDataState.dailyNotesDirectory,
@@ -346,6 +359,14 @@ class _HomePageState extends State<HomePage> {
             : null;
       });
       submissionCompleted = true;
+
+      // 全局签更新放在三栏/日报展示之后，失败不阻塞首页结果。
+      final globalSignUpdated = await _updateGlobalSign(now, submissionInput);
+      if (mounted && !globalSignUpdated && _aiNotice == null) {
+        setState(() {
+          _aiNotice = '三栏与日报已生成，但全局签 AI 更新失败，全局签内容未变更。';
+        });
+      }
       await _levelProgressController.recordValidSubmission();
       await _loadHomeStats();
       _focusNode.requestFocus();
@@ -749,6 +770,347 @@ class _HomePageState extends State<HomePage> {
     return incoming.mergeWithOlder(current);
   }
 
+  Future<StructuredWorkNote?> _tryGenerateStructuredNote(
+    String submissionInput,
+    List<AiImageInput> aiImages,
+  ) async {
+    try {
+      return await widget.aiClientService.generateStructuredNote(
+        appDataDir: widget.localDataState.dataDirectory,
+        config: widget.localDataState.config,
+        input: submissionInput,
+        images: aiImages,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> _tryMergeDailyMarkdown(
+    String existingMarkdown,
+    StructuredWorkNote note,
+    DateTime now,
+  ) async {
+    try {
+      return await widget.aiClientService.mergeDailyMarkdown(
+        appDataDir: widget.localDataState.dataDirectory,
+        config: widget.localDataState.config,
+        existingMarkdown: existingMarkdown,
+        note: note,
+        date: now,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String> _readDailyMarkdownForSubmit(DateTime now) async {
+    try {
+      return await widget.dailyNoteService.readDailyMarkdown(
+        dailyNotesDirectory: widget.localDataState.dailyNotesDirectory,
+        date: now,
+      );
+    } catch (_) {
+      return '';
+    }
+  }
+
+  bool _dailyMergePromptUsesSections(String template) {
+    return template.contains('{completed}') ||
+        template.contains('{issues}') ||
+        template.contains('{plans}');
+  }
+
+  Future<bool> _updateGlobalSign(DateTime now, String submissionInput) async {
+    try {
+      final appDataDir = widget.localDataState.dataDirectory;
+      final dailyMarkdown = await widget.dailyNoteService.readDailyMarkdown(
+        dailyNotesDirectory: widget.localDataState.dailyNotesDirectory,
+        date: now,
+      );
+      final currentItems = await widget.globalSignService.readItems(
+        appDataDir: appDataDir,
+      );
+      final drafts = await widget.aiClientService.generateGlobalSign(
+        appDataDir: appDataDir,
+        config: widget.localDataState.config,
+        date: now,
+        dailyMarkdown: dailyMarkdown,
+        currentItemsJson: widget.globalSignService.itemsToPromptJson(
+          currentItems,
+        ),
+        rawInput: submissionInput,
+      );
+      if (drafts == null) {
+        return false;
+      }
+      final nextItems = widget.globalSignService.reconcileItems(
+        existing: currentItems,
+        drafts: drafts,
+        now: now,
+      );
+      await widget.globalSignService.writeItems(
+        appDataDir: appDataDir,
+        items: nextItems,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _openGlobalSign() async {
+    List<GlobalSignItem> items;
+    try {
+      items = await widget.globalSignService.readItems(
+        appDataDir: widget.localDataState.dataDirectory,
+      );
+    } catch (_) {
+      items = const [];
+    }
+    if (!mounted) {
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.48),
+      builder: (context) =>
+          GlobalSignDialog(items: items, onConfirm: _handleGlobalSignConfirm),
+    );
+  }
+
+  Future<List<GlobalSignItem>?> _handleGlobalSignConfirm(
+    List<GlobalSignItem> editedItems,
+    List<GlobalSignItem> doneItems,
+    List<GlobalSignItem> deletedItems,
+  ) async {
+    final now = DateTime.now();
+    final appDataDir = widget.localDataState.dataDirectory;
+    final config = widget.localDataState.config;
+    // 带【已完成】【已删除】标记的版本：供全局签提示词识别需要移除的项。
+    final refreshInput = _buildGlobalSignRefreshInput(
+      editedItems,
+      doneItems,
+      deletedItems,
+    );
+    // 口语化版本：供三栏与日报使用，避免系统术语进入日报正文。
+    final dailyInput = _buildGlobalSignDailyInput(doneItems, deletedItems);
+
+    // 有完成/删除时走一遍智能生成的逻辑刷新日报与三栏；仅修改内容不涉及日报。
+    if (dailyInput.isNotEmpty) {
+      final aiStructured = await _tryGenerateStructuredNote(
+        dailyInput,
+        const [],
+      );
+      var dailyHandledByAi = false;
+      if (aiStructured != null) {
+        try {
+          final existingMarkdown = await widget.dailyNoteService
+              .readDailyMarkdown(
+                dailyNotesDirectory: widget.localDataState.dailyNotesDirectory,
+                date: now,
+              );
+          final aiMergedMarkdown = await _tryMergeDailyMarkdown(
+            existingMarkdown,
+            aiStructured,
+            now,
+          );
+          final savedPath = await widget.dailyNoteService.mergeStructuredNote(
+            dailyNotesDirectory: widget.localDataState.dailyNotesDirectory,
+            date: now,
+            note: aiStructured,
+            sectionConfigs: config.structuredNoteSections,
+            mergedMarkdown: aiMergedMarkdown,
+          );
+          widget.onDailyNoteSaved?.call(savedPath);
+          dailyHandledByAi = true;
+          try {
+            final nextOverview = await widget.homeOverviewService
+                .mergeAndSaveOverview(
+                  appDataDir: appDataDir,
+                  date: now,
+                  current: _overview,
+                  incoming: aiStructured,
+                );
+            if (mounted) {
+              setState(() => _overview = nextOverview);
+            }
+          } catch (_) {
+            // Overview JSON is a UI cache; ignore write failures here.
+          }
+        } catch (_) {
+          dailyHandledByAi = false;
+        }
+      }
+      if (!dailyHandledByAi) {
+        return _applyGlobalSignFallback(
+          now: now,
+          appDataDir: appDataDir,
+          editedItems: editedItems,
+          doneItems: doneItems,
+          deletedItems: deletedItems,
+          dailyInput: dailyInput,
+          writeDailyNote: true,
+          notice: '无法调用 AI，已在本地更新全局签，并将完成/删除内容写入当日日报。',
+        );
+      }
+    }
+
+    // 全局签全量重生成。
+    try {
+      final dailyMarkdown = await widget.dailyNoteService.readDailyMarkdown(
+        dailyNotesDirectory: widget.localDataState.dailyNotesDirectory,
+        date: now,
+      );
+      final drafts = await widget.aiClientService.generateGlobalSign(
+        appDataDir: appDataDir,
+        config: config,
+        date: now,
+        dailyMarkdown: dailyMarkdown,
+        currentItemsJson: widget.globalSignService.itemsToPromptJson(
+          editedItems,
+        ),
+        rawInput: refreshInput,
+      );
+      if (drafts != null) {
+        final refreshedItems = widget.globalSignService.reconcileItems(
+          existing: editedItems,
+          drafts: drafts,
+          now: now,
+        );
+        await widget.globalSignService.writeItems(
+          appDataDir: appDataDir,
+          items: refreshedItems,
+        );
+        return refreshedItems;
+      }
+    } catch (_) {
+      // Fall through to the local fallback below.
+    }
+
+    // 全局签 AI 失败：本地移除完成/删除项（保留修改）；日报已被 AI 更新过时不重复写入。
+    return _applyGlobalSignFallback(
+      now: now,
+      appDataDir: appDataDir,
+      editedItems: editedItems,
+      doneItems: doneItems,
+      deletedItems: deletedItems,
+      dailyInput: dailyInput,
+      writeDailyNote: false,
+      notice: dailyInput.isNotEmpty
+          ? '日报已更新，但全局签 AI 刷新失败，已在本地移除完成/删除项。'
+          : '全局签 AI 刷新失败，已在本地保存修改。',
+    );
+  }
+
+  Future<List<GlobalSignItem>?> _applyGlobalSignFallback({
+    required DateTime now,
+    required String appDataDir,
+    required List<GlobalSignItem> editedItems,
+    required List<GlobalSignItem> doneItems,
+    required List<GlobalSignItem> deletedItems,
+    required String dailyInput,
+    required bool writeDailyNote,
+    required String notice,
+  }) async {
+    final remaining = [
+      for (final item in editedItems)
+        if (!doneItems.any((done) => done.id == item.id) &&
+            !deletedItems.any((deleted) => deleted.id == item.id))
+          item,
+    ];
+    try {
+      await widget.globalSignService.writeItems(
+        appDataDir: appDataDir,
+        items: remaining,
+      );
+    } catch (_) {
+      // 全局签写失败不阻塞日报兜底。
+    }
+    if (writeDailyNote && dailyInput.isNotEmpty) {
+      final fallbackNote = StructuredWorkNote(
+        rawInput: dailyInput,
+        sections: [
+          StructuredWorkNoteSection(
+            id: StructuredNoteSectionIds.a,
+            items: [
+              for (final item in doneItems) '已完成：${item.content}',
+            ],
+          ),
+          const StructuredWorkNoteSection(
+            id: StructuredNoteSectionIds.b,
+            items: [],
+          ),
+          const StructuredWorkNoteSection(
+            id: StructuredNoteSectionIds.c,
+            items: [],
+          ),
+        ],
+      );
+      try {
+        final savedPath = await widget.dailyNoteService.mergeStructuredNote(
+          dailyNotesDirectory: widget.localDataState.dailyNotesDirectory,
+          date: now,
+          note: fallbackNote,
+          sectionConfigs: widget.localDataState.config.structuredNoteSections,
+        );
+        widget.onDailyNoteSaved?.call(savedPath);
+      } catch (_) {
+        // 日报写入失败时仍展示提示。
+      }
+    }
+    if (mounted) {
+      setState(() => _aiNotice = notice);
+    }
+    return null;
+  }
+
+  String _buildGlobalSignDailyInput(
+    List<GlobalSignItem> doneItems,
+    List<GlobalSignItem> deletedItems,
+  ) {
+    final lines = <String>[
+      for (final item in doneItems) '已完成：${item.content}',
+      for (final item in deletedItems) '已取消：${item.content}',
+    ];
+    return lines.join('\n');
+  }
+
+  String _buildGlobalSignRefreshInput(
+    List<GlobalSignItem> editedItems,
+    List<GlobalSignItem> doneItems,
+    List<GlobalSignItem> deletedItems,
+  ) {
+    final remaining = [
+      for (final item in editedItems)
+        if (!doneItems.any((done) => done.id == item.id) &&
+            !deletedItems.any((deleted) => deleted.id == item.id))
+          item,
+    ];
+    void writeGroup(StringBuffer buffer, String title, List<String> contents) {
+      buffer.writeln(title);
+      if (contents.isEmpty) {
+        buffer.writeln('- 无');
+      } else {
+        for (final content in contents) {
+          buffer.writeln('- $content');
+        }
+      }
+    }
+
+    final buffer = StringBuffer()..writeln('全局签变更：');
+    writeGroup(buffer, '【已完成】', [
+      for (final item in doneItems) item.content,
+    ]);
+    writeGroup(buffer, '【已删除】', [
+      for (final item in deletedItems) item.content,
+    ]);
+    writeGroup(buffer, '【当前全局签】', [
+      for (final item in remaining) item.content,
+    ]);
+    return buffer.toString().trimRight();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
@@ -764,11 +1126,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text('首页', style: Theme.of(context).textTheme.titleLarge),
                   const Spacer(),
-                  SpringNoteIconButton(
-                    tooltip: '更多',
-                    onPressed: () {},
-                    icon: Icons.more_horiz,
-                  ),
+                  _HomeMoreMenuButton(onOpenGlobalSign: _openGlobalSign),
                 ],
               ),
               const SizedBox(height: 32),
@@ -3220,6 +3578,243 @@ class _UpdateNoticeBannerState extends State<_UpdateNoticeBanner> {
           latest: latest,
         );
       },
+    );
+  }
+}
+
+class _HomeMoreMenuButton extends StatefulWidget {
+  const _HomeMoreMenuButton({required this.onOpenGlobalSign});
+
+  final VoidCallback onOpenGlobalSign;
+
+  @override
+  State<_HomeMoreMenuButton> createState() => _HomeMoreMenuButtonState();
+}
+
+class _HomeMoreMenuButtonState extends State<_HomeMoreMenuButton> {
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+
+  bool get _open => _overlayEntry != null;
+
+  @override
+  void dispose() {
+    _removeOverlay(updateState: false);
+    super.dispose();
+  }
+
+  void _toggleOverlay() {
+    if (_open) {
+      _removeOverlay();
+    } else {
+      _showOverlay();
+    }
+  }
+
+  void _showOverlay() {
+    final overlay = Overlay.of(context);
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _removeOverlay,
+              child: const SizedBox.expand(),
+            ),
+          ),
+          CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            targetAnchor: Alignment.bottomRight,
+            followerAnchor: Alignment.topRight,
+            offset: const Offset(0, 6),
+            child: _HomeMoreMenuTransition(
+              child: _HomeMoreMenu(
+                onOpenGlobalSign: () {
+                  _removeOverlay();
+                  widget.onOpenGlobalSign();
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    overlay.insert(_overlayEntry!);
+    setState(() {});
+  }
+
+  void _removeOverlay({bool updateState = true}) {
+    // OverlayEntry must be disposed after removal, or leak tracking (and
+    // the framework contract) counts it as leaked.
+    final entry = _overlayEntry;
+    _overlayEntry = null;
+    entry?.remove();
+    entry?.dispose();
+    if (updateState && mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: SpringNoteIconButton(
+        tooltip: '更多',
+        onPressed: _toggleOverlay,
+        icon: Icons.more_horiz,
+      ),
+    );
+  }
+}
+
+class _HomeMoreMenuTransition extends StatelessWidget {
+  const _HomeMoreMenuTransition({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(opacity: value, child: child);
+      },
+      child: child,
+    );
+  }
+}
+
+class _HomeMoreMenu extends StatefulWidget {
+  const _HomeMoreMenu({required this.onOpenGlobalSign});
+
+  final VoidCallback onOpenGlobalSign;
+
+  @override
+  State<_HomeMoreMenu> createState() => _HomeMoreMenuState();
+}
+
+class _HomeMoreMenuState extends State<_HomeMoreMenu> {
+  String? _hoveredItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppTheme.colors(context);
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 190,
+        padding: const EdgeInsets.all(7),
+        decoration: BoxDecoration(
+          color: AppTheme.menuSurface(context),
+          border: Border.all(color: colors.border),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.16),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(9, 5, 9, 6),
+              child: Text(
+                '更多功能',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: colors.textSubtle,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+            _HomeMoreMenuItem(
+              key: const ValueKey('home-more-menu-global-sign'),
+              icon: Icons.push_pin_outlined,
+              label: '全局签',
+              hovered: _hoveredItem == 'global-sign',
+              onHoverChanged: (hovered) {
+                setState(() => _hoveredItem = hovered ? 'global-sign' : null);
+              },
+              onTap: widget.onOpenGlobalSign,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeMoreMenuItem extends StatelessWidget {
+  const _HomeMoreMenuItem({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.hovered,
+    required this.onHoverChanged,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool hovered;
+  final ValueChanged<bool> onHoverChanged;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppTheme.colors(context);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => onHoverChanged(true),
+      onExit: (_) => onHoverChanged(false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: hovered ? colors.surfaceHover : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 17,
+                color: hovered ? colors.text : colors.textSubtle,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: hovered ? colors.text : colors.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

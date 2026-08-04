@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:spring_note/core/attachments/pending_image.dart';
 import 'package:spring_note/core/models/app_config.dart';
 import 'package:spring_note/core/models/cloud_sync_config.dart';
+import 'package:spring_note/core/models/global_sign_item.dart';
 import 'package:spring_note/core/models/local_data_state.dart';
 import 'package:spring_note/core/models/model_config.dart';
 import 'package:spring_note/core/models/model_reference.dart';
@@ -1371,6 +1372,18 @@ class _RecordingAiClientService extends AiClientService {
   List<AiImageInput>? generatedImages;
 
   @override
+  Future<List<GlobalSignDraftItem>?> generateGlobalSign({
+    required String appDataDir,
+    required AppConfig config,
+    required DateTime date,
+    required String dailyMarkdown,
+    required String currentItemsJson,
+    required String rawInput,
+  }) async {
+    return null;
+  }
+
+  @override
   Future<StructuredWorkNote?> generateStructuredNote({
     required String appDataDir,
     required AppConfig config,
@@ -1414,6 +1427,18 @@ class _DelayedStructuredAiClientService extends AiClientService {
   final Completer<StructuredWorkNote?> _completer = Completer();
   bool started = false;
   String? generatedInput;
+
+  @override
+  Future<List<GlobalSignDraftItem>?> generateGlobalSign({
+    required String appDataDir,
+    required AppConfig config,
+    required DateTime date,
+    required String dailyMarkdown,
+    required String currentItemsJson,
+    required String rawInput,
+  }) async {
+    return null;
+  }
 
   @override
   Future<StructuredWorkNote?> generateStructuredNote({
@@ -1464,6 +1489,18 @@ class _DelayedStructuredAiClientService extends AiClientService {
 
 class _StructuredFailureAiClientService extends AiClientService {
   const _StructuredFailureAiClientService();
+
+  @override
+  Future<List<GlobalSignDraftItem>?> generateGlobalSign({
+    required String appDataDir,
+    required AppConfig config,
+    required DateTime date,
+    required String dailyMarkdown,
+    required String currentItemsJson,
+    required String rawInput,
+  }) async {
+    return null;
+  }
 
   @override
   Future<StructuredWorkNote?> generateStructuredNote({
