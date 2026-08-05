@@ -38,7 +38,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
   @override
   void initState() {
     super.initState();
-    _items = List.of(widget.items);
+    _items = _sortedByLatest(widget.items);
     _rebuildControllers();
   }
 
@@ -47,6 +47,11 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
     _scrollController.dispose();
     _disposeControllers();
     super.dispose();
+  }
+
+  List<GlobalSignItem> _sortedByLatest(List<GlobalSignItem> items) {
+    return List.of(items)
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
   void _disposeControllers() {
@@ -126,7 +131,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
     }
     setState(() {
       _confirming = false;
-      _items = List.of(refreshed);
+      _items = _sortedByLatest(refreshed);
       _doneIds.clear();
       _deletedIds.clear();
       _rebuildControllers();
@@ -205,10 +210,12 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
                       child: Scrollbar(
                         controller: _scrollController,
                         interactive: true,
-                        child: ListView.builder(
+                        child: ListView.separated(
                           controller: _scrollController,
-                          padding: const EdgeInsets.fromLTRB(24, 14, 24, 18),
+                          padding: const EdgeInsets.fromLTRB(24, 4, 24, 18),
                           itemCount: _items.length,
+                          separatorBuilder: (context, index) =>
+                              Divider(height: 1, color: colors.divider),
                           itemBuilder: (context, index) {
                             final item = _items[index];
                             return _GlobalSignItemRow(
@@ -285,14 +292,8 @@ class _GlobalSignItemRow extends StatelessWidget {
     final colors = AppTheme.colors(context);
     return Opacity(
       opacity: deleted ? 0.55 : 1,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.fromLTRB(14, 12, 6, 10),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border.all(color: colors.border),
-          borderRadius: BorderRadius.circular(14),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -315,13 +316,18 @@ class _GlobalSignItemRow extends StatelessWidget {
                     cursorColor: colors.textMuted,
                     decoration: const InputDecoration(
                       isCollapsed: true,
+                      filled: false,
+                      hoverColor: Colors.transparent,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
-                    '${item.id} · 创建 ${_formatSignTime(item.createdAt)} · 更新 ${_formatSignTime(item.updatedAt)}',
+                    _formatSignTime(item.updatedAt),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
