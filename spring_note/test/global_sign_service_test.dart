@@ -47,8 +47,43 @@ void main() {
     expect(items.single.updatedAt, updated);
   });
 
-  test('global sign service tolerates missing, empty and corrupt files', () async {
+  test('removeItem deletes only the matching item', () async {
     final temp = await Directory.systemTemp.createTemp(
+      'spring_note_global_sign_remove_',
+    );
+    addTearDown(() async {
+      if (await temp.exists()) {
+        await temp.delete(recursive: true);
+      }
+    });
+
+    final now = DateTime(2026, 8, 4, 10, 30);
+    await service.writeItems(
+      appDataDir: temp.path,
+      items: [
+        GlobalSignItem(
+          id: 'gs-1',
+          content: '保留项',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        GlobalSignItem(
+          id: 'gs-2',
+          content: '待删除项',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ],
+    );
+
+    await service.removeItem(appDataDir: temp.path, id: 'gs-2');
+
+    final items = await service.readItems(appDataDir: temp.path);
+    expect(items, hasLength(1));
+    expect(items.single.id, 'gs-1');
+  });
+
+  test('global sign service tolerates missing, empty and corrupt files', () async {    final temp = await Directory.systemTemp.createTemp(
       'spring_note_global_sign_corrupt_',
     );
     addTearDown(() async {

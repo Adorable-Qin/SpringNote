@@ -45,6 +45,18 @@ class GlobalSignService {
     );
   }
 
+  /// 彻底删除（不经过 AI、不写入日报）：按 id 移除后直接落盘。
+  Future<void> removeItem({
+    required String appDataDir,
+    required String id,
+  }) async {
+    final items = await readItems(appDataDir: appDataDir);
+    await writeItems(
+      appDataDir: appDataDir,
+      items: [for (final item in items) if (item.id != id) item],
+    );
+  }
+
   String globalSignPath(String appDataDir) {
     final separator = Platform.pathSeparator;
     final root = appDataDir.endsWith(separator)

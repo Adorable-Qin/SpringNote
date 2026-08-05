@@ -10,18 +10,23 @@ import '../../core/theme/app_theme.dart';
 typedef GlobalSignConfirmCallback = Future<List<GlobalSignItem>?> Function(
   List<GlobalSignItem> editedItems,
   List<GlobalSignItem> doneItems,
-  List<GlobalSignItem> deletedItems,
+  List<GlobalSignItem> cancelledItems,
 );
+
+/// 彻底删除（不经过 AI、不写入日报），由主页负责落盘。
+typedef GlobalSignDeleteCallback = Future<void> Function(GlobalSignItem item);
 
 class GlobalSignDialog extends StatefulWidget {
   const GlobalSignDialog({
     super.key,
     required this.items,
     required this.onConfirm,
+    required this.onDeleteItem,
   });
 
   final List<GlobalSignItem> items;
   final GlobalSignConfirmCallback onConfirm;
+  final GlobalSignDeleteCallback onDeleteItem;
 
   @override
   State<GlobalSignDialog> createState() => _GlobalSignDialogState();
@@ -31,7 +36,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
   final ScrollController _scrollController = ScrollController();
   final Map<String, TextEditingController> _controllers = {};
   final Set<String> _doneIds = {};
-  final Set<String> _deletedIds = {};
+  final Set<String> _cancelledIds = {};
   late List<GlobalSignItem> _items;
   bool _confirming = false;
 
@@ -50,8 +55,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
   }
 
   List<GlobalSignItem> _sortedByLatest(List<GlobalSignItem> items) {
-    return List.of(items)
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return List.of(items)..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
   void _disposeControllers() {
@@ -69,7 +73,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
   }
 
   bool get _hasChanges {
-    if (_doneIds.isNotEmpty || _deletedIds.isNotEmpty) {
+    if (_doneIds.isNotEmpty || _cancelledIds.isNotEmpty) {
       return true;
     }
     for (final item in _items) {
@@ -84,17 +88,41 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
     setState(() {
       if (!_doneIds.remove(id)) {
         _doneIds.add(id);
-        _deletedIds.remove(id);
+        _cancelledIds.remove(id);
       }
     });
   }
 
-  void _toggleDeleted(String id) {
+  void _toggleCancelled(String id) {
     setState(() {
-      if (!_deletedIds.remove(id)) {
-        _deletedIds.add(id);
+      if (!_cancelledIds.remove(id)) {
+        _cancelledIds.add(id);
         _doneIds.remove(id);
       }
+    });
+  }
+
+  Future<void> _hardDelete(GlobalSignItem item) async {
+    if (_confirming) {
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.48),
+      builder: (context) => const _GlobalSignHardDeleteDialog(),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    await widget.onDeleteItem(item);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _doneIds.remove(item.id);
+      _cancelledIds.remove(item.id);
+      _controllers.remove(item.id)?.dispose();
+      _items.removeWhere((entry) => entry.id == item.id);
     });
   }
 
@@ -113,14 +141,14 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
       for (final item in editedItems)
         if (_doneIds.contains(item.id)) item,
     ];
-    final deletedItems = [
+    final cancelledItems = [
       for (final item in editedItems)
-        if (_deletedIds.contains(item.id)) item,
+        if (_cancelledIds.contains(item.id)) item,
     ];
     final refreshed = await widget.onConfirm(
       editedItems,
       doneItems,
-      deletedItems,
+      cancelledItems,
     );
     if (!mounted) {
       return;
@@ -133,7 +161,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
       _confirming = false;
       _items = _sortedByLatest(refreshed);
       _doneIds.clear();
-      _deletedIds.clear();
+      _cancelledIds.clear();
       _rebuildControllers();
     });
   }
@@ -223,10 +251,12 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
                               item: item,
                               controller: _controllers[item.id]!,
                               done: _doneIds.contains(item.id),
-                              deleted: _deletedIds.contains(item.id),
+                              cancelled: _cancelledIds.contains(item.id),
                               enabled: !_confirming,
                               onToggleDone: () => _toggleDone(item.id),
-                              onToggleDeleted: () => _toggleDeleted(item.id),
+                              onToggleCancelled: () =>
+                                  _toggleCancelled(item.id),
+                              onHardDelete: () => _hardDelete(item),
                               onChanged: (_) => setState(() {}),
                             );
                           },
@@ -241,7 +271,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      _hasChanges ? '有未确认的变更' : '完成 / 删除 / 修改后请点击确认',
+                      _hasChanges ? '有未确认的变更' : '完成 / 取消 / 修改后请点击确认',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -271,27 +301,29 @@ class _GlobalSignItemRow extends StatelessWidget {
     required this.item,
     required this.controller,
     required this.done,
-    required this.deleted,
+    required this.cancelled,
     required this.enabled,
     required this.onToggleDone,
-    required this.onToggleDeleted,
+    required this.onToggleCancelled,
+    required this.onHardDelete,
     required this.onChanged,
   });
 
   final GlobalSignItem item;
   final TextEditingController controller;
   final bool done;
-  final bool deleted;
+  final bool cancelled;
   final bool enabled;
   final VoidCallback onToggleDone;
-  final VoidCallback onToggleDeleted;
+  final VoidCallback onToggleCancelled;
+  final VoidCallback onHardDelete;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
     return Opacity(
-      opacity: deleted ? 0.55 : 1,
+      opacity: cancelled ? 0.55 : 1,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
@@ -303,11 +335,11 @@ class _GlobalSignItemRow extends StatelessWidget {
                 children: [
                   TextField(
                     controller: controller,
-                    enabled: enabled && !deleted,
+                    enabled: enabled && !cancelled,
                     onChanged: onChanged,
                     maxLines: null,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: done || deleted
+                      color: done || cancelled
                           ? colors.textSubtle
                           : colors.text,
                       decoration: done ? TextDecoration.lineThrough : null,
@@ -341,7 +373,7 @@ class _GlobalSignItemRow extends StatelessWidget {
             const SizedBox(width: 6),
             _GlobalSignItemAction(
               key: ValueKey('global-sign-done-${item.id}'),
-              tooltip: done ? '取消完成' : '完成',
+              tooltip: done ? '撤销完成' : '完成',
               icon: done
                   ? Icons.check_circle_rounded
                   : Icons.check_circle_outline_rounded,
@@ -349,13 +381,18 @@ class _GlobalSignItemRow extends StatelessWidget {
               onTap: enabled ? onToggleDone : null,
             ),
             _GlobalSignItemAction(
+              key: ValueKey('global-sign-cancel-${item.id}'),
+              tooltip: cancelled ? '撤销取消' : '取消',
+              icon: cancelled ? Icons.undo_rounded : Icons.close_rounded,
+              active: cancelled,
+              onTap: enabled ? onToggleCancelled : null,
+            ),
+            _GlobalSignItemAction(
               key: ValueKey('global-sign-delete-${item.id}'),
-              tooltip: deleted ? '恢复' : '删除',
-              icon: deleted
-                  ? Icons.undo_rounded
-                  : Icons.delete_outline_rounded,
-              active: deleted,
-              onTap: enabled ? onToggleDeleted : null,
+              tooltip: '删除',
+              icon: Icons.delete_outline_rounded,
+              active: false,
+              onTap: enabled ? onHardDelete : null,
             ),
           ],
         ),
@@ -440,6 +477,109 @@ class _GlobalSignConfirmButton extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlobalSignHardDeleteDialog extends StatelessWidget {
+  const _GlobalSignHardDeleteDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppTheme.colors(context);
+    return Dialog(
+      key: const ValueKey('global-sign-hard-delete-dialog'),
+      backgroundColor: AppTheme.dialogSurface(context),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: SizedBox(
+        width: 360,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '删除这条全局签？',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colors.text,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '删除后不会写入日报，也不会经过 AI 整理，且无法恢复。',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.textMuted,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _GlobalSignDialogButton(
+                    key: const ValueKey('global-sign-hard-delete-cancel'),
+                    label: '取消',
+                    filled: false,
+                    onTap: () => Navigator.of(context).pop(false),
+                  ),
+                  const SizedBox(width: 10),
+                  _GlobalSignDialogButton(
+                    key: const ValueKey('global-sign-hard-delete-confirm'),
+                    label: '删除',
+                    filled: true,
+                    onTap: () => Navigator.of(context).pop(true),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlobalSignDialogButton extends StatelessWidget {
+  const _GlobalSignDialogButton({
+    super.key,
+    required this.label,
+    required this.filled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool filled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppTheme.colors(context);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: filled ? colors.text : Colors.transparent,
+            border: Border.all(
+              color: filled ? colors.text : colors.border,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: filled ? colors.surface : colors.textMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );

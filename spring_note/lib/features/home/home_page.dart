@@ -875,28 +875,43 @@ class _HomePageState extends State<HomePage> {
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.48),
       builder: (context) =>
-          GlobalSignDialog(items: items, onConfirm: _handleGlobalSignConfirm),
+          GlobalSignDialog(
+            items: items,
+            onConfirm: _handleGlobalSignConfirm,
+            onDeleteItem: _deleteGlobalSignItem,
+          ),
     );
+  }
+
+  Future<void> _deleteGlobalSignItem(GlobalSignItem item) async {
+    try {
+      await widget.globalSignService.removeItem(
+        appDataDir: widget.localDataState.dataDirectory,
+        id: item.id,
+      );
+    } catch (_) {
+      // 删除失败时弹窗内状态不变，用户可重试。
+    }
   }
 
   Future<List<GlobalSignItem>?> _handleGlobalSignConfirm(
     List<GlobalSignItem> editedItems,
     List<GlobalSignItem> doneItems,
-    List<GlobalSignItem> deletedItems,
+    List<GlobalSignItem> cancelledItems,
   ) async {
     final now = DateTime.now();
     final appDataDir = widget.localDataState.dataDirectory;
     final config = widget.localDataState.config;
-    // 带【已完成】【已删除】标记的版本：供全局签提示词识别需要移除的项。
+    // 带【已完成】【已取消】标记的版本：供全局签提示词识别需要移除的项。
     final refreshInput = _buildGlobalSignRefreshInput(
       editedItems,
       doneItems,
-      deletedItems,
+      cancelledItems,
     );
     // 口语化版本：供三栏与日报使用，避免系统术语进入日报正文。
-    final dailyInput = _buildGlobalSignDailyInput(doneItems, deletedItems);
+    final dailyInput = _buildGlobalSignDailyInput(doneItems, cancelledItems);
 
-    // 有完成/删除时走一遍智能生成的逻辑刷新日报与三栏；仅修改内容不涉及日报。
+    // 有完成/取消时走一遍智能生成的逻辑刷新日报与三栏；仅修改内容不涉及日报。
     if (dailyInput.isNotEmpty) {
       final aiStructured = await _tryGenerateStructuredNote(
         dailyInput,
@@ -948,10 +963,10 @@ class _HomePageState extends State<HomePage> {
           appDataDir: appDataDir,
           editedItems: editedItems,
           doneItems: doneItems,
-          deletedItems: deletedItems,
+          cancelledItems: cancelledItems,
           dailyInput: dailyInput,
           writeDailyNote: true,
-          notice: '无法调用 AI，已在本地更新全局签，并将完成/删除内容写入当日日报。',
+          notice: '无法调用 AI，已在本地更新全局签，并将完成/取消内容写入当日日报。',
         );
       }
     }
@@ -988,17 +1003,17 @@ class _HomePageState extends State<HomePage> {
       // Fall through to the local fallback below.
     }
 
-    // 全局签 AI 失败：本地移除完成/删除项（保留修改）；日报已被 AI 更新过时不重复写入。
+    // 全局签 AI 失败：本地移除完成/取消项（保留修改）；日报已被 AI 更新过时不重复写入。
     return _applyGlobalSignFallback(
       now: now,
       appDataDir: appDataDir,
       editedItems: editedItems,
       doneItems: doneItems,
-      deletedItems: deletedItems,
+      cancelledItems: cancelledItems,
       dailyInput: dailyInput,
       writeDailyNote: false,
       notice: dailyInput.isNotEmpty
-          ? '日报已更新，但全局签 AI 刷新失败，已在本地移除完成/删除项。'
+          ? '日报已更新，但全局签 AI 刷新失败，已在本地移除完成/取消项。'
           : '全局签 AI 刷新失败，已在本地保存修改。',
     );
   }
@@ -1008,7 +1023,7 @@ class _HomePageState extends State<HomePage> {
     required String appDataDir,
     required List<GlobalSignItem> editedItems,
     required List<GlobalSignItem> doneItems,
-    required List<GlobalSignItem> deletedItems,
+    required List<GlobalSignItem> cancelledItems,
     required String dailyInput,
     required bool writeDailyNote,
     required String notice,
@@ -1016,7 +1031,7 @@ class _HomePageState extends State<HomePage> {
     final remaining = [
       for (final item in editedItems)
         if (!doneItems.any((done) => done.id == item.id) &&
-            !deletedItems.any((deleted) => deleted.id == item.id))
+            !cancelledItems.any((deleted) => deleted.id == item.id))
           item,
     ];
     try {
@@ -1067,11 +1082,11 @@ class _HomePageState extends State<HomePage> {
 
   String _buildGlobalSignDailyInput(
     List<GlobalSignItem> doneItems,
-    List<GlobalSignItem> deletedItems,
+    List<GlobalSignItem> cancelledItems,
   ) {
     final lines = <String>[
       for (final item in doneItems) '已完成：${item.content}',
-      for (final item in deletedItems) '已取消：${item.content}',
+      for (final item in cancelledItems) '已取消：${item.content}',
     ];
     return lines.join('\n');
   }
@@ -1079,12 +1094,12 @@ class _HomePageState extends State<HomePage> {
   String _buildGlobalSignRefreshInput(
     List<GlobalSignItem> editedItems,
     List<GlobalSignItem> doneItems,
-    List<GlobalSignItem> deletedItems,
+    List<GlobalSignItem> cancelledItems,
   ) {
     final remaining = [
       for (final item in editedItems)
         if (!doneItems.any((done) => done.id == item.id) &&
-            !deletedItems.any((deleted) => deleted.id == item.id))
+            !cancelledItems.any((deleted) => deleted.id == item.id))
           item,
     ];
     void writeGroup(StringBuffer buffer, String title, List<String> contents) {
@@ -1102,8 +1117,8 @@ class _HomePageState extends State<HomePage> {
     writeGroup(buffer, '【已完成】', [
       for (final item in doneItems) item.content,
     ]);
-    writeGroup(buffer, '【已删除】', [
-      for (final item in deletedItems) item.content,
+    writeGroup(buffer, '【已取消】', [
+      for (final item in cancelledItems) item.content,
     ]);
     writeGroup(buffer, '【当前全局签】', [
       for (final item in remaining) item.content,
