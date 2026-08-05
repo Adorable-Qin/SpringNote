@@ -3745,17 +3745,6 @@ class _HomeMoreMenuState extends State<_HomeMoreMenu> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(9, 5, 9, 6),
-              child: Text(
-                '更多功能',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colors.textSubtle,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
             _HomeMoreMenuItem(
               key: const ValueKey('home-more-menu-global-sign'),
               icon: Icons.push_pin_outlined,
@@ -3789,9 +3778,13 @@ class _HomeMoreMenuItem extends StatelessWidget {
   final ValueChanged<bool> onHoverChanged;
   final VoidCallback onTap;
 
+  static const double itemHeight = 44;
+
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final contentColor = hovered ? colors.text : colors.textMuted;
+    final iconColor = hovered ? colors.text : colors.textSubtle;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => onHoverChanged(true),
@@ -3799,30 +3792,42 @@ class _HomeMoreMenuItem extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: hovered ? colors.surfaceHover : Colors.transparent,
-            borderRadius: BorderRadius.circular(11),
-          ),
-          child: Row(
+        child: SizedBox(
+          height: itemHeight,
+          child: Stack(
             children: [
-              Icon(
-                icon,
-                size: 17,
-                color: hovered ? colors.text : colors.textSubtle,
+              // 与便签页菜单一致：背景用透明度淡入，避免从透明色做颜色
+              // 插值时经过半透明深色而产生闪烁。
+              Positioned.fill(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 240),
+                  curve: Curves.easeOutCubic,
+                  opacity: hovered ? 1 : 0,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.surfaceHover,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: hovered ? colors.text : colors.textMuted,
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 17, color: iconColor),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: contentColor),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
