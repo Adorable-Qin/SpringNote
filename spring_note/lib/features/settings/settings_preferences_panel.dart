@@ -552,7 +552,7 @@ class _PreferencesPanel extends StatelessWidget {
               },
             ),
             _ActionSettingRow(
-              label: '日报整理提示词',
+              label: '日报整理',
               value: '',
               onTap: () async {
                 final prompt = await showDialog<String>(
@@ -580,7 +580,7 @@ class _PreferencesPanel extends StatelessWidget {
               },
             ),
             _ActionSettingRow(
-              label: '全局签提示词',
+              label: '全局签整理',
               value: '',
               onTap: () async {
                 final prompt = await showDialog<String>(
