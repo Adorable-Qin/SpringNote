@@ -3677,7 +3677,6 @@ class _HomeMoreMenuButtonState extends State<_HomeMoreMenuButton> {
     return CompositedTransformTarget(
       link: _layerLink,
       child: SpringNoteIconButton(
-        tooltip: '更多',
         onPressed: _toggleOverlay,
         icon: Icons.more_horiz,
       ),
