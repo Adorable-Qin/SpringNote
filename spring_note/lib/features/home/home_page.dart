@@ -3722,7 +3722,7 @@ class _HomeMoreMenuState extends State<_HomeMoreMenu> {
     return Material(
       color: Colors.transparent,
       child: Container(
-        width: 190,
+        width: 148,
         padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
           color: AppTheme.menuSurface(context),
@@ -3747,7 +3747,7 @@ class _HomeMoreMenuState extends State<_HomeMoreMenu> {
           children: [
             _HomeMoreMenuItem(
               key: const ValueKey('home-more-menu-global-sign'),
-              icon: Icons.push_pin_outlined,
+              icon: Icons.bookmark_outline_rounded,
               label: '全局签',
               hovered: _hoveredItem == 'global-sign',
               onHoverChanged: (hovered) {
