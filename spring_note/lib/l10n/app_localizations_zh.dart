@@ -1620,4 +1620,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsMigrationErrorMacAccess => '无法保存 macOS 文件夹访问授权，请重新选择保存目录。';
+
+  @override
+  String settingsImageUnsupportedFormat(Object extension) {
+    return '不支持的图片格式: $extension';
+  }
+
+  @override
+  String get settingsImageSourceMissing => '源图片不存在';
+
+  @override
+  String get settingsProviderApiKeyEmpty => '供应商 API Key 为空。';
 }

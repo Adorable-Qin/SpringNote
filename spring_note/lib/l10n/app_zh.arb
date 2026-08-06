@@ -500,5 +500,8 @@
   "notesKindMonthly": "月报",
   "settingsMigrationErrorNested": "保存目录不能选择当前数据目录的子目录。",
   "settingsMigrationErrorIsFile": "保存目录不能是一个文件。",
-  "settingsMigrationErrorMacAccess": "无法保存 macOS 文件夹访问授权，请重新选择保存目录。"
+  "settingsMigrationErrorMacAccess": "无法保存 macOS 文件夹访问授权，请重新选择保存目录。",
+  "settingsImageUnsupportedFormat": "不支持的图片格式: {extension}",
+  "settingsImageSourceMissing": "源图片不存在",
+  "settingsProviderApiKeyEmpty": "供应商 API Key 为空。"
 }

@@ -1602,6 +1602,7 @@ class _RecordingAiClientService extends AiClientService {
     required bool apiLogEnabled,
     required ProviderConfig provider,
     required ModelConfig model,
+    required String language,
   }) async {
     nonStreamTested = true;
     lastModelId = model.modelId;

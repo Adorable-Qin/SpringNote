@@ -230,7 +230,7 @@
   "settingsEditModel": "Edit model",
   "settingsDeleteModel": "Delete model",
   "settingsAddProvider": "Add provider",
-  "settingsEnabled": "Enable",
+  "settingsEnabled": "Enabled",
   "settingsModelId": "Model ID",
   "settingsModelName": "Model name",
   "settingsEditModelSubtitle": "Adjust the model display name, input types, and capabilities",
@@ -500,5 +500,8 @@
   "notesKindMonthly": "Monthly",
   "settingsMigrationErrorNested": "The save directory cannot be inside the current data directory.",
   "settingsMigrationErrorIsFile": "The save directory cannot be a file.",
-  "settingsMigrationErrorMacAccess": "Failed to save the macOS folder access permission. Please choose the save directory again."
+  "settingsMigrationErrorMacAccess": "Failed to save the macOS folder access permission. Please choose the save directory again.",
+  "settingsImageUnsupportedFormat": "Unsupported image format: {extension}",
+  "settingsImageSourceMissing": "The source image no longer exists.",
+  "settingsProviderApiKeyEmpty": "The provider API key is empty."
 }

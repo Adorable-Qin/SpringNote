@@ -70,12 +70,21 @@ void main() {
       () => LocalDataService(appDataPath: temp!.path).initialize(),
     );
     expect(state, isNotNull);
+    // AppConfig.defaults() 的语言跟随宿主系统 locale（CI 是英文环境，
+    // 结构化栏目默认标题会变成英文），这里固定为中文，保证断言与宿主无关。
+    final rawState = state!;
+    final zhState = rawState.copyWith(
+      config: rawState.config.copyWith(
+        language: 'zh',
+        structuredNoteSections: StructuredNoteSectionConfig.defaultsFor('zh'),
+      ),
+    );
 
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
         home: AppShell(
-          localDataState: state!,
+          localDataState: zhState,
           updateCheckService: _IdleUpdateCheckService(),
         ),
       ),

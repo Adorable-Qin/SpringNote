@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../models/app_language.dart';
 import '../models/local_data_state.dart';
 import '../models/note_file.dart';
 import 'ai_client_service.dart';
@@ -71,12 +72,15 @@ class StartupReportGenerationService {
       return null;
     }
 
+    // 与 Rust 重生成路径（report_regeneration.rs）的周期格式保持一致。
+    final english = resolveAppLanguage(localDataState.config.language) == 'en';
     final markdown = await aiClientService.generateWeeklyReport(
       appDataDir: localDataState.dataDirectory,
       config: localDataState.config,
       sourceMarkdown: source,
-      periodLabel:
-          '$label（${_formatDate(weekStart)} 至 ${_formatDate(weekEnd)}）',
+      periodLabel: english
+          ? '$label (${_formatDate(weekStart)} - ${_formatDate(weekEnd)})'
+          : '$label（${_formatDate(weekStart)} 至 ${_formatDate(weekEnd)}）',
     );
     if (markdown == null) {
       return null;
@@ -102,11 +106,13 @@ class StartupReportGenerationService {
       return null;
     }
 
+    // 与 Rust 重生成路径（report_regeneration.rs）的周期格式保持一致。
+    final english = resolveAppLanguage(localDataState.config.language) == 'en';
     final markdown = await aiClientService.generateMonthlyReport(
       appDataDir: localDataState.dataDirectory,
       config: localDataState.config,
       sourceMarkdown: source,
-      periodLabel: '$label 月报',
+      periodLabel: english ? '$label Monthly Report' : '$label 月报',
     );
     if (markdown == null) {
       return null;

@@ -807,7 +807,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAddProvider => 'Add provider';
 
   @override
-  String get settingsEnabled => 'Enable';
+  String get settingsEnabled => 'Enabled';
 
   @override
   String get settingsModelId => 'Model ID';
@@ -1685,4 +1685,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsMigrationErrorMacAccess =>
       'Failed to save the macOS folder access permission. Please choose the save directory again.';
+
+  @override
+  String settingsImageUnsupportedFormat(Object extension) {
+    return 'Unsupported image format: $extension';
+  }
+
+  @override
+  String get settingsImageSourceMissing => 'The source image no longer exists.';
+
+  @override
+  String get settingsProviderApiKeyEmpty => 'The provider API key is empty.';
 }

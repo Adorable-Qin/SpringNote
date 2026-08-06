@@ -38,5 +38,8 @@
   "notesEditorHint": "# 开始编辑 Markdown...",
   "notesWorkspaceModeEdit": "编辑",
   "notesWorkspaceModeSplit": "分栏",
-  "notesWorkspaceModePreview": "预览"
+  "notesWorkspaceModePreview": "预览",
+  "notesKindDaily": "日报",
+  "notesKindWeekly": "周报",
+  "notesKindMonthly": "月报"
 }

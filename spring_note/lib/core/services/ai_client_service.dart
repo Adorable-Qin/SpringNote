@@ -562,13 +562,25 @@ class AiClientService {
     required bool apiLogEnabled,
     required ProviderConfig provider,
     required ModelConfig model,
-  }) {
-    return rust_api.testProviderConnection(
+    required String language,
+  }) async {
+    final result = await rust_api.testProviderConnection(
       appDataDir: appDataDir,
       apiLogEnabled: apiLogEnabled,
       provider: _toRustProvider(provider),
       model: _toRustModel(model),
     );
+    // Rust 侧的错误消息未本地化，已知错误码在这里映射为界面语言文案。
+    if (!result.ok && result.errorCode == 'missing_api_key') {
+      return rust_ai.ProviderTestResult(
+        ok: false,
+        message: language == 'en'
+            ? 'The provider API key is empty.'
+            : '供应商 API Key 为空。',
+        errorCode: result.errorCode,
+      );
+    }
+    return result;
   }
 
   Future<rust_ai.ProviderTestResult> testProviderConnectionStream({

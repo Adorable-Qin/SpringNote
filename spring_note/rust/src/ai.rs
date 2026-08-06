@@ -415,7 +415,11 @@ pub async fn merge_daily_note(request: DailyMergeRequest) -> AiTextResult {
 }
 
 pub async fn generate_weekly_report(request: ReportRequest) -> AiTextResult {
-    let user_prompt = report_user_prompt(&request.period_label, &request.source_markdown);
+    let user_prompt = report_user_prompt(
+        &request.period_label,
+        &request.source_markdown,
+        &request.language,
+    );
     let system_prompt = with_markdown_attachment_preservation_instruction(
         with_industry_context(
             weekly_report_system_prompt(&request.language),
@@ -438,7 +442,11 @@ pub async fn generate_weekly_report(request: ReportRequest) -> AiTextResult {
 }
 
 pub async fn generate_monthly_report(request: ReportRequest) -> AiTextResult {
-    let user_prompt = report_user_prompt(&request.period_label, &request.source_markdown);
+    let user_prompt = report_user_prompt(
+        &request.period_label,
+        &request.source_markdown,
+        &request.language,
+    );
     let system_prompt = with_markdown_attachment_preservation_instruction(
         with_industry_context(
             monthly_report_system_prompt(&request.language),
@@ -482,7 +490,11 @@ pub async fn memory_tool_chat(request: MemoryToolChatRequest) -> MemoryToolChatR
         return MemoryToolChatResult::error(
             &chat_request,
             "missing_api_key",
-            "供应商 API Key 为空，已保留 mock 流程。",
+            if is_english(&request.language) {
+                "The provider API key is empty; the mock flow was kept."
+            } else {
+                "供应商 API Key 为空，已保留 mock 流程。"
+            },
             0,
             0,
             0,
@@ -496,7 +508,11 @@ pub async fn memory_tool_chat(request: MemoryToolChatRequest) -> MemoryToolChatR
         return MemoryToolChatResult::error(
             &chat_request,
             "unsupported_tool_protocol",
-            "回忆书工具调用目前仅支持 OpenAI-compatible(Chat Completions / Responses)、Gemini 或 Claude 供应商。",
+            if is_english(&request.language) {
+                "Memory book tool calling currently only supports OpenAI-compatible (Chat Completions / Responses), Gemini, or Claude providers."
+            } else {
+                "回忆书工具调用目前仅支持 OpenAI-compatible(Chat Completions / Responses)、Gemini 或 Claude 供应商。"
+            },
             0,
             0,
             0,
@@ -564,7 +580,11 @@ pub async fn memory_tool_chat_stream(
     {
         let _ = sink.add(MemoryToolChatStreamEvent::error(
             "unsupported_tool_protocol",
-            "回忆书流式工具调用目前仅支持 OpenAI-compatible(Chat Completions / Responses)、Gemini 或 Claude 供应商。",
+            if is_english(&request.language) {
+                "Memory book streaming tool calling currently only supports OpenAI-compatible (Chat Completions / Responses), Gemini, or Claude providers."
+            } else {
+                "回忆书流式工具调用目前仅支持 OpenAI-compatible(Chat Completions / Responses)、Gemini 或 Claude 供应商。"
+            },
         ));
         return;
     }
@@ -768,12 +788,20 @@ fn daily_merge_user_prompt(_request: &DailyMergeRequest) -> String {
     String::new()
 }
 
-fn report_user_prompt(period_label: &str, source_markdown: &str) -> String {
-    format!(
-        "周期：{}\n\n原始 Markdown 内容：\n{}",
-        period_label.trim(),
-        source_markdown.trim()
-    )
+fn report_user_prompt(period_label: &str, source_markdown: &str, language: &str) -> String {
+    if is_english(language) {
+        format!(
+            "Period: {}\n\nSource Markdown content:\n{}",
+            period_label.trim(),
+            source_markdown.trim()
+        )
+    } else {
+        format!(
+            "周期：{}\n\n原始 Markdown 内容：\n{}",
+            period_label.trim(),
+            source_markdown.trim()
+        )
+    }
 }
 
 fn parse_structured_note(

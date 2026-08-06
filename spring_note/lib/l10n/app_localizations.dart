@@ -3112,6 +3112,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'无法保存 macOS 文件夹访问授权，请重新选择保存目录。'**
   String get settingsMigrationErrorMacAccess;
+
+  /// No description provided for @settingsImageUnsupportedFormat.
+  ///
+  /// In zh, this message translates to:
+  /// **'不支持的图片格式: {extension}'**
+  String settingsImageUnsupportedFormat(Object extension);
+
+  /// No description provided for @settingsImageSourceMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'源图片不存在'**
+  String get settingsImageSourceMissing;
+
+  /// No description provided for @settingsProviderApiKeyEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'供应商 API Key 为空。'**
+  String get settingsProviderApiKeyEmpty;
 }
 
 class _AppLocalizationsDelegate

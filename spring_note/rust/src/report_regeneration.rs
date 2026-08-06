@@ -54,19 +54,34 @@ enum ReportPeriod {
     Monthly(NaiveDate),
 }
 
+fn is_english(language: &str) -> bool {
+    language.trim().eq_ignore_ascii_case("en")
+}
+
 pub async fn regenerate_report(request: RegenerateReportRequest) -> RegenerateReportResult {
     let target_path = PathBuf::from(&request.target_path);
     let Some(file_stem) = target_path.file_stem().and_then(|stem| stem.to_str()) else {
         return RegenerateReportResult::failure(
             "invalid_period",
-            format!("无法从文件名解析报告周期：{}", request.target_path),
+            if is_english(&request.language) {
+                format!(
+                    "Could not parse the report period from the file name: {}",
+                    request.target_path
+                )
+            } else {
+                format!("无法从文件名解析报告周期：{}", request.target_path)
+            },
         );
     };
 
     let Some(period) = parse_period(&request.kind, file_stem) else {
         return RegenerateReportResult::failure(
             "invalid_period",
-            format!("无法从文件名解析报告周期：{file_stem}"),
+            if is_english(&request.language) {
+                format!("Could not parse the report period from the file name: {file_stem}")
+            } else {
+                format!("无法从文件名解析报告周期：{file_stem}")
+            },
         );
     };
 
@@ -85,7 +100,14 @@ async fn regenerate_daily(
     date: NaiveDate,
 ) -> RegenerateReportResult {
     let Some(existing) = read_meaningful_markdown(target_path) else {
-        return RegenerateReportResult::failure("empty_source", "当前日报没有内容可整理。");
+        return RegenerateReportResult::failure(
+            "empty_source",
+            if is_english(&request.language) {
+                "The current daily note has no content to organize."
+            } else {
+                "当前日报没有内容可整理。"
+            },
+        );
     };
 
     let date_label = format_date(date);
@@ -110,7 +132,7 @@ async fn regenerate_daily(
         api_log_enabled: request.api_log_enabled,
     })
     .await;
-    write_generated(target_path, response, Some(&existing))
+    write_generated(target_path, response, Some(&existing), &request.language)
 }
 
 async fn regenerate_weekly(
@@ -120,7 +142,14 @@ async fn regenerate_weekly(
 ) -> RegenerateReportResult {
     let source = daily_source_for_week(Path::new(&request.daily_notes_directory), week_start);
     if source.is_empty() {
-        return RegenerateReportResult::failure("empty_source", "该周没有可用的日报内容。");
+        return RegenerateReportResult::failure(
+            "empty_source",
+            if is_english(&request.language) {
+                "There are no daily notes available for this week."
+            } else {
+                "该周没有可用的日报内容。"
+            },
+        );
     }
 
     let week_end = week_start + Duration::days(6);
@@ -151,7 +180,7 @@ async fn regenerate_weekly(
         api_log_enabled: request.api_log_enabled,
     })
     .await;
-    write_generated(target_path, response, None)
+    write_generated(target_path, response, None, &request.language)
 }
 
 async fn regenerate_monthly(
@@ -161,7 +190,14 @@ async fn regenerate_monthly(
 ) -> RegenerateReportResult {
     let source = weekly_source_for_month(Path::new(&request.weekly_notes_directory), month);
     if source.is_empty() {
-        return RegenerateReportResult::failure("empty_source", "该月没有可用的周报内容。");
+        return RegenerateReportResult::failure(
+            "empty_source",
+            if is_english(&request.language) {
+                "There are no weekly reports available for this month."
+            } else {
+                "该月没有可用的周报内容。"
+            },
+        );
     }
 
     let english = request.language.trim().eq_ignore_ascii_case("en");
@@ -181,24 +217,37 @@ async fn regenerate_monthly(
         api_log_enabled: request.api_log_enabled,
     })
     .await;
-    write_generated(target_path, response, None)
+    write_generated(target_path, response, None, &request.language)
 }
 
 fn write_generated(
     target_path: &Path,
     response: AiTextResult,
     expected_unchanged: Option<&str>,
+    language: &str,
 ) -> RegenerateReportResult {
+    let english = is_english(language);
     if !response.ok {
         let message = if response.error_message.trim().is_empty() {
-            "模型调用失败，请稍后重试。".to_string()
+            if english {
+                "The model call failed. Please try again later.".to_string()
+            } else {
+                "模型调用失败，请稍后重试。".to_string()
+            }
         } else {
             response.error_message
         };
         return RegenerateReportResult::failure("ai_failed", message);
     }
     if response.content.trim().is_empty() {
-        return RegenerateReportResult::failure("ai_failed", "模型返回内容为空。");
+        return RegenerateReportResult::failure(
+            "ai_failed",
+            if english {
+                "The model returned empty content."
+            } else {
+                "模型返回内容为空。"
+            },
+        );
     }
 
     if let Some(expected) = expected_unchanged {
@@ -206,7 +255,11 @@ fn write_generated(
         if current.trim_end() != expected.trim_end() {
             return RegenerateReportResult::failure(
                 "conflict",
-                "生成期间日报有新内容写入，未覆盖，请重新生成。",
+                if english {
+                    "New content was written to the daily note while generating; it was not overwritten. Please regenerate."
+                } else {
+                    "生成期间日报有新内容写入，未覆盖，请重新生成。"
+                },
             );
         }
     }
@@ -214,9 +267,14 @@ fn write_generated(
     let content = format!("{}\n", response.content.trim_end());
     match fs::write(target_path, content) {
         Ok(()) => RegenerateReportResult::success(target_path),
-        Err(error) => {
-            RegenerateReportResult::failure("io_failed", format!("无法写入文件：{error}"))
-        }
+        Err(error) => RegenerateReportResult::failure(
+            "io_failed",
+            if english {
+                format!("Failed to write the file: {error}")
+            } else {
+                format!("无法写入文件：{error}")
+            },
+        ),
     }
 }
 
@@ -538,6 +596,7 @@ mod tests {
             &target,
             ok_response("AI 整理后的内容"),
             Some("# 日报\n\n生成开始前的内容"),
+            "zh",
         );
 
         assert!(!result.ok);
@@ -560,6 +619,7 @@ mod tests {
             &target,
             ok_response("AI 整理后的内容"),
             Some("# 日报\n\n生成开始前的内容"),
+            "zh",
         );
 
         assert!(result.ok, "{}", result.error_message);
@@ -574,7 +634,7 @@ mod tests {
         let target = root.join("2026-07-22.md");
         fs::write(&target, "# 日报\n\n原有内容\n").unwrap();
 
-        let result = write_generated(&target, ok_response("   "), None);
+        let result = write_generated(&target, ok_response("   "), None, "zh");
 
         assert!(!result.ok);
         assert_eq!(result.error_code, "ai_failed");

@@ -31,6 +31,19 @@ class _PreferencesPanel extends StatelessWidget {
     return name.length > 32 ? '${name.substring(0, 32)}...' : name;
   }
 
+  /// 选图失败的用户可见文案：服务层异常只携带机器可读信息，
+  /// 这里按异常类型映射为本地化文案（与数据目录迁移异常的处理一致）。
+  String _imagePickErrorText(BuildContext context, Object error) {
+    final strings = l10n(context);
+    if (error is UnsupportedImageFormatException) {
+      return strings.settingsImageUnsupportedFormat(error.extension);
+    }
+    if (error is SourceImageMissingException) {
+      return strings.settingsImageSourceMissing;
+    }
+    return strings.settingsImagePickFailed(error);
+  }
+
   Future<void> _pickWallpaperImage({
     required BuildContext context,
     required AppConfig config,
@@ -73,7 +86,7 @@ class _PreferencesPanel extends StatelessWidget {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n(context).settingsImagePickFailed(error))),
+        SnackBar(content: Text(_imagePickErrorText(context, error))),
       );
     }
   }
@@ -128,7 +141,7 @@ class _PreferencesPanel extends StatelessWidget {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n(context).settingsImagePickFailed(error))),
+        SnackBar(content: Text(_imagePickErrorText(context, error))),
       );
     }
   }

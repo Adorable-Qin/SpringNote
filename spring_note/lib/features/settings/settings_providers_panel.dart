@@ -748,6 +748,7 @@ class _ProviderConnectionTestDialogState
               apiLogEnabled: widget.apiLogEnabled,
               provider: widget.provider,
               model: model,
+              language: currentAppLanguage(context),
             );
       if (!mounted) {
         return;
@@ -1377,6 +1378,18 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
     super.dispose();
   }
 
+  /// 拉取模型失败的用户可见文案：Rust 侧错误消息未本地化，
+  /// 已知错误码映射为本地化文案（仅在 await 之后的 setState 阶段调用）。
+  String _fetchModelsErrorText(rust_ai.ModelListResult result) {
+    final strings = l10n(context);
+    if (result.errorCode == 'missing_api_key') {
+      return strings.settingsProviderApiKeyEmpty;
+    }
+    return result.errorMessage.isEmpty
+        ? strings.settingsFetchModelsFailed
+        : result.errorMessage;
+  }
+
   List<_ProviderModelGroup> get _groups {
     final normalizedQuery = _query.trim().toLowerCase();
     final grouped = <String, List<ModelConfig>>{};
@@ -1424,9 +1437,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
         setState(() {
           _loading = false;
           _models = const [];
-          _errorMessage = result.errorMessage.isEmpty
-              ? l10n(context).settingsFetchModelsFailed
-              : result.errorMessage;
+          _errorMessage = _fetchModelsErrorText(result);
         });
         return;
       }

@@ -29,6 +29,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/markdown_editor_highlight.dart';
 import '../../core/widgets/update_dialog.dart';
 import '../../l10n/l10n.dart';
+import '../../src/rust/ai.dart' as rust_ai;
 import 'settings_stats_panel.dart';
 
 part 'settings_preferences_panel.dart';
