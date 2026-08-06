@@ -71,7 +71,7 @@
   "homeAddFileTooltip": "Add file",
   "homeMentionTooltip": "Mention",
   "homeCharacterCount": "{count} chars",
-  "homeSmartGenerate": "Smart generate",
+  "homeSmartGenerate": "Generate",
   "homeGenerating": "Organizing",
   "homeImageChipLabel": "Image · {name}",
   "homeAttachmentImageLabel": "Image",

@@ -251,7 +251,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeSmartGenerate => 'Smart generate';
+  String get homeSmartGenerate => 'Generate';
 
   @override
   String get homeGenerating => 'Organizing';
