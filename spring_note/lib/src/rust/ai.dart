@@ -207,6 +207,7 @@ class DailyMergeRequest {
   final String industry;
   final String mergePrompt;
   final bool jsonOutput;
+  final String language;
   final bool apiLogEnabled;
 
   const DailyMergeRequest({
@@ -219,6 +220,7 @@ class DailyMergeRequest {
     required this.industry,
     required this.mergePrompt,
     required this.jsonOutput,
+    required this.language,
     required this.apiLogEnabled,
   });
 
@@ -233,6 +235,7 @@ class DailyMergeRequest {
       industry.hashCode ^
       mergePrompt.hashCode ^
       jsonOutput.hashCode ^
+      language.hashCode ^
       apiLogEnabled.hashCode;
 
   @override
@@ -249,6 +252,7 @@ class DailyMergeRequest {
           industry == other.industry &&
           mergePrompt == other.mergePrompt &&
           jsonOutput == other.jsonOutput &&
+          language == other.language &&
           apiLogEnabled == other.apiLogEnabled;
 }
 
@@ -302,6 +306,7 @@ class MemoryToolChatRequest {
   final List<AiChatMessage> messages;
   final bool thinkingEnabled;
   final String reasoningEffort;
+  final String language;
   final bool apiLogEnabled;
 
   const MemoryToolChatRequest({
@@ -311,6 +316,7 @@ class MemoryToolChatRequest {
     required this.messages,
     required this.thinkingEnabled,
     required this.reasoningEffort,
+    required this.language,
     required this.apiLogEnabled,
   });
 
@@ -322,6 +328,7 @@ class MemoryToolChatRequest {
       messages.hashCode ^
       thinkingEnabled.hashCode ^
       reasoningEffort.hashCode ^
+      language.hashCode ^
       apiLogEnabled.hashCode;
 
   @override
@@ -335,6 +342,7 @@ class MemoryToolChatRequest {
           messages == other.messages &&
           thinkingEnabled == other.thinkingEnabled &&
           reasoningEffort == other.reasoningEffort &&
+          language == other.language &&
           apiLogEnabled == other.apiLogEnabled;
 }
 
@@ -518,6 +526,7 @@ class ReportRequest {
   final String sourceMarkdown;
   final String periodLabel;
   final String industry;
+  final String language;
   final bool apiLogEnabled;
 
   const ReportRequest({
@@ -527,6 +536,7 @@ class ReportRequest {
     required this.sourceMarkdown,
     required this.periodLabel,
     required this.industry,
+    required this.language,
     required this.apiLogEnabled,
   });
 
@@ -538,6 +548,7 @@ class ReportRequest {
       sourceMarkdown.hashCode ^
       periodLabel.hashCode ^
       industry.hashCode ^
+      language.hashCode ^
       apiLogEnabled.hashCode;
 
   @override
@@ -551,6 +562,7 @@ class ReportRequest {
           sourceMarkdown == other.sourceMarkdown &&
           periodLabel == other.periodLabel &&
           industry == other.industry &&
+          language == other.language &&
           apiLogEnabled == other.apiLogEnabled;
 }
 
@@ -562,6 +574,7 @@ class StructuredNoteRequest {
   final List<AiImageAttachment> images;
   final List<StructuredNoteSectionDefinition> sections;
   final String industry;
+  final String language;
   final bool apiLogEnabled;
 
   const StructuredNoteRequest({
@@ -572,6 +585,7 @@ class StructuredNoteRequest {
     required this.images,
     required this.sections,
     required this.industry,
+    required this.language,
     required this.apiLogEnabled,
   });
 
@@ -584,6 +598,7 @@ class StructuredNoteRequest {
       images.hashCode ^
       sections.hashCode ^
       industry.hashCode ^
+      language.hashCode ^
       apiLogEnabled.hashCode;
 
   @override
@@ -598,6 +613,7 @@ class StructuredNoteRequest {
           images == other.images &&
           sections == other.sections &&
           industry == other.industry &&
+          language == other.language &&
           apiLogEnabled == other.apiLogEnabled;
 }
 

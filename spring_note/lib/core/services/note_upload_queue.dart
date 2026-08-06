@@ -47,19 +47,24 @@ class NoteUploadQueue {
     _pendingPaths[_pathKey(trimmed)] = trimmed;
   }
 
-  Future<NoteUploadFlushResult> flush() {
+  /// 立即尝试上传所有待同步的笔记。
+  ///
+  /// [autoSyncFailedMessage]：本地抛出异常时的用户可见失败文案（由调用方
+  /// 按当前语言提供，因为本服务不持有 BuildContext）；为空时
+  /// [NoteUploadFlushResult.message] 也为空，由 UI 层决定如何展示。
+  Future<NoteUploadFlushResult> flush({String? autoSyncFailedMessage}) {
     final activeFlush = _activeFlush;
     if (activeFlush != null) {
       return activeFlush.then((result) {
         if (_pendingPaths.isEmpty) {
           return result;
         }
-        return flush();
+        return flush(autoSyncFailedMessage: autoSyncFailedMessage);
       });
     }
 
     late final Future<NoteUploadFlushResult> flushFuture;
-    flushFuture = _flushPending().whenComplete(() {
+    flushFuture = _flushPending(autoSyncFailedMessage).whenComplete(() {
       if (identical(_activeFlush, flushFuture)) {
         _activeFlush = null;
       }
@@ -68,7 +73,7 @@ class NoteUploadQueue {
     return flushFuture;
   }
 
-  Future<NoteUploadFlushResult> _flushPending() async {
+  Future<NoteUploadFlushResult> _flushPending(String? autoSyncFailedMessage) async {
     final localDataState = _localDataState;
     if (localDataState == null || !_autoCloudSyncAvailable(localDataState)) {
       return NoteUploadFlushResult.idle;
@@ -105,7 +110,7 @@ class NoteUploadQueue {
           ok: false,
           attempted: true,
           uploaded: uploaded,
-          message: '自动同步失败，请稍后重试。',
+          message: autoSyncFailedMessage ?? '',
         );
       }
 

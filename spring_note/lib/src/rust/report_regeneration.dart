@@ -17,6 +17,7 @@ class RegenerateReportRequest {
   final String weeklyNotesDirectory;
   final String industry;
   final String dailyMergePrompt;
+  final String language;
   final bool apiLogEnabled;
 
   const RegenerateReportRequest({
@@ -29,6 +30,7 @@ class RegenerateReportRequest {
     required this.weeklyNotesDirectory,
     required this.industry,
     required this.dailyMergePrompt,
+    required this.language,
     required this.apiLogEnabled,
   });
 
@@ -43,6 +45,7 @@ class RegenerateReportRequest {
       weeklyNotesDirectory.hashCode ^
       industry.hashCode ^
       dailyMergePrompt.hashCode ^
+      language.hashCode ^
       apiLogEnabled.hashCode;
 
   @override
@@ -59,6 +62,7 @@ class RegenerateReportRequest {
           weeklyNotesDirectory == other.weeklyNotesDirectory &&
           industry == other.industry &&
           dailyMergePrompt == other.dailyMergePrompt &&
+          language == other.language &&
           apiLogEnabled == other.apiLogEnabled;
 }
 

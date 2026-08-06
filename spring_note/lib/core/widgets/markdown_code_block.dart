@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 // ignore: implementation_imports
 import 'package:syntax_highlight/src/highlighter.dart';
 
+import '../../l10n/l10n.dart';
 import '../theme/app_theme.dart';
 
 const _supportedHighlightLanguages = <String>[
@@ -146,7 +147,11 @@ class _MarkdownCodeBlockState extends State<MarkdownCodeBlock> {
                     _copied ? Icons.check_rounded : Icons.copy_rounded,
                     size: 13,
                   ),
-                  label: Text(_copied ? '已复制' : '复制'),
+                  label: Text(
+                    _copied
+                        ? l10n(context).coreCodeCopied
+                        : l10n(context).coreCodeCopy,
+                  ),
                 ),
               ],
             ),

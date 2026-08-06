@@ -5,6 +5,36 @@ import '../models/app_config.dart';
 import '../models/local_data_state.dart';
 import 'security_scoped_directory_access.dart';
 
+/// 数据目录迁移失败原因。服务层不持有 BuildContext，抛出的异常只携带
+/// 机器可读的 [DataDirectoryMigrationError]，由 UI 层映射为当前语言的
+/// 用户可见提示（[DataDirectoryMigrationException.toString] 仅作英文回退）。
+enum DataDirectoryMigrationError {
+  nestedInsideCurrent,
+  isAFile,
+  macOSSecurityScopedAccessFailed,
+}
+
+class DataDirectoryMigrationException implements Exception {
+  const DataDirectoryMigrationException(this.error, {this.detail = ''});
+
+  final DataDirectoryMigrationError error;
+  final String detail;
+
+  @override
+  String toString() {
+    final message = switch (error) {
+      DataDirectoryMigrationError.nestedInsideCurrent =>
+        'Save directory cannot be inside the current data directory.',
+      DataDirectoryMigrationError.isAFile =>
+        'Save directory cannot be a file.',
+      DataDirectoryMigrationError.macOSSecurityScopedAccessFailed =>
+        'Failed to save the macOS folder access grant. '
+            'Please choose the save directory again.',
+    };
+    return detail.isEmpty ? message : '$message: $detail';
+  }
+}
+
 class LocalDataService {
   const LocalDataService({
     this.appDataPath,
@@ -82,11 +112,15 @@ class LocalDataService {
     }
 
     if (_isWithin(targetRoot.path, currentRoot.path)) {
-      throw ArgumentError('保存目录不能选择当前数据目录的子目录。');
+      throw const DataDirectoryMigrationException(
+        DataDirectoryMigrationError.nestedInsideCurrent,
+      );
     }
 
     if (await FileSystemEntity.isFile(targetRoot.path)) {
-      throw ArgumentError('保存目录不能是一个文件。');
+      throw const DataDirectoryMigrationException(
+        DataDirectoryMigrationError.isAFile,
+      );
     }
 
     final targetConfigFile = File(_join(targetRoot.path, _configFileName));
@@ -299,7 +333,10 @@ class LocalDataService {
     }
 
     if (!await securityScopedDirectoryAccess.saveBookmark(root.path)) {
-      throw FileSystemException('无法保存 macOS 文件夹访问授权，请重新选择保存目录。', root.path);
+      throw DataDirectoryMigrationException(
+        DataDirectoryMigrationError.macOSSecurityScopedAccessFailed,
+        detail: root.path,
+      );
     }
     await securityScopedDirectoryAccess.startAccessing(root.path);
   }

@@ -1894,6 +1894,8 @@ mod tests {
             }],
             thinking_enabled: true,
             reasoning_effort: "high".to_string(),
+            language: "zh".to_string(),
+
             api_log_enabled: false,
         };
 
@@ -1961,6 +1963,8 @@ mod tests {
             ],
             thinking_enabled: true,
             reasoning_effort: "high".to_string(),
+            language: "zh".to_string(),
+
             api_log_enabled: false,
         };
 
@@ -2014,6 +2018,8 @@ mod tests {
             }],
             thinking_enabled: true,
             reasoning_effort: "max".to_string(),
+            language: "zh".to_string(),
+
             api_log_enabled: false,
         };
 
@@ -2043,6 +2049,8 @@ mod tests {
             messages: vec![],
             thinking_enabled: true,
             reasoning_effort: "xhigh".to_string(),
+            language: "zh".to_string(),
+
             api_log_enabled: false,
         };
 

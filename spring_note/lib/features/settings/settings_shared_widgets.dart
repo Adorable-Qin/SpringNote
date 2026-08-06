@@ -541,8 +541,9 @@ class _ThemeModeSettingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     return _SettingRowShell(
-      label: '外观模式',
+      label: strings.settingsAppearanceMode,
       child: _ThemeModeSegmentedControl(value: value, onChanged: onChanged),
     );
   }
@@ -557,12 +558,6 @@ class _ThemeModeSegmentedControl extends StatelessWidget {
   final AppThemePreference value;
   final ValueChanged<AppThemePreference> onChanged;
 
-  static const _labels = {
-    AppThemePreference.light: '浅色',
-    AppThemePreference.system: '跟随系统',
-    AppThemePreference.dark: '深色',
-  };
-
   static const _options = [
     AppThemePreference.light,
     AppThemePreference.system,
@@ -573,6 +568,12 @@ class _ThemeModeSegmentedControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
     final selectedIndex = _options.indexOf(value);
+    final strings = l10n(context);
+    final labels = {
+      AppThemePreference.light: strings.settingsThemeLight,
+      AppThemePreference.system: strings.settingsThemeSystem,
+      AppThemePreference.dark: strings.settingsThemeDark,
+    };
 
     return SizedBox(
       width: 246,
@@ -614,7 +615,7 @@ class _ThemeModeSegmentedControl extends StatelessWidget {
                   children: [
                     for (final (index, option) in _options.indexed)
                       _ThemeModeSegment(
-                        label: _labels[option]!,
+                        label: labels[option]!,
                         selected: index == selectedIndex,
                         onTap: () => onChanged(option),
                       ),
@@ -664,6 +665,105 @@ class _ThemeModeSegment extends StatelessWidget {
             child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LanguageSettingRow extends StatelessWidget {
+  const _LanguageSettingRow({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  static const _options = ['system', 'zh', 'en'];
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = l10n(context);
+    final labels = {
+      'system': strings.languageSystem,
+      'zh': strings.languageZh,
+      'en': strings.languageEn,
+    };
+    return _SettingRowShell(
+      label: strings.settingsLanguage,
+      child: _LanguageSegmentedControl(
+        value: value,
+        labels: labels,
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _LanguageSegmentedControl extends StatelessWidget {
+  const _LanguageSegmentedControl({
+    required this.value,
+    required this.labels,
+    required this.onChanged,
+  });
+
+  final String value;
+  final Map<String, String> labels;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppTheme.colors(context);
+    final selectedIndex = _LanguageSettingRow._options.indexOf(value);
+
+    return SizedBox(
+      width: 246,
+      height: 42,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final segmentWidth = (constraints.maxWidth - 6) / 3;
+          return Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: colors.surfaceMuted,
+              border: Border.all(color: colors.border),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  left: selectedIndex * segmentWidth,
+                  top: 0,
+                  bottom: 0,
+                  width: segmentWidth,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(11),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.shadow.withValues(alpha: 0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    for (final (index, option)
+                        in _LanguageSettingRow._options.indexed)
+                      _ThemeModeSegment(
+                        label: labels[option]!,
+                        selected: index == selectedIndex,
+                        onTap: () => onChanged(option),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -872,7 +972,10 @@ class _ProtocolFieldState extends State<_ProtocolField> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('协议', style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            l10n(context).settingsProtocol,
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           const SizedBox(height: 4),
           _DropdownSelectField(
             value: _current,
@@ -1220,7 +1323,9 @@ class _StatusPill extends StatelessWidget {
         border: Border.all(color: colors.border),
       ),
       child: Text(
-        enabled ? '启用' : '禁用',
+        enabled
+            ? l10n(context).settingsEnabled
+            : l10n(context).settingsDisabled,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: enabled ? const Color(0xFF16A34A) : const Color(0xFFF97316),
           fontSize: 11,
@@ -1238,7 +1343,7 @@ class _EmptyProviderDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        '添加供应商后在这里编辑配置',
+        l10n(context).settingsEmptyProviderDetails,
         style: Theme.of(context).textTheme.bodyMedium,
       ),
     );
@@ -1679,7 +1784,10 @@ class _ColorPickerSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('选择颜色', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n(context).settingsSelectColor,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 14),
             Wrap(
               spacing: 10,

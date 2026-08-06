@@ -252,6 +252,7 @@ void main() {
     'memory model label resolves provider-qualified duplicate model ids',
     () {
       final config = _duplicateModelConfig().copyWith(
+        language: 'zh',
         defaultModels: {
           ...AppConfig.defaults().defaultModels,
           'memoryBookModel': ModelReference.encode(
@@ -310,6 +311,7 @@ void main() {
     'fim validation checks the selected provider instead of first model id',
     () {
       final config = _duplicateModelConfig().copyWith(
+        language: 'zh',
         defaultModels: {
           ...AppConfig.defaults().defaultModels,
           'editCompletionModel': ModelReference.encode(
@@ -373,6 +375,7 @@ void main() {
       final result = await service.testProviderConnectionStream(
         appDataDir: '.',
         apiLogEnabled: false,
+        language: 'zh',
         provider: ProviderConfig(
           id: 'google',
           enabled: true,
@@ -414,6 +417,7 @@ void main() {
     final result = await service.testProviderConnectionStream(
       appDataDir: '.',
       apiLogEnabled: false,
+        language: 'zh',
       provider: ProviderConfig(
         id: 'google',
         enabled: true,
@@ -446,6 +450,7 @@ void main() {
     final result = await service.testProviderConnectionStream(
       appDataDir: '.',
       apiLogEnabled: false,
+        language: 'zh',
       provider: ProviderConfig(
         id: 'google',
         enabled: true,
@@ -483,6 +488,7 @@ void main() {
       final result = await service.testProviderConnectionStream(
         appDataDir: '.',
         apiLogEnabled: false,
+        language: 'zh',
         provider: ProviderConfig(
           id: 'openai',
           enabled: true,
@@ -508,6 +514,7 @@ void main() {
     final result = await service.testProviderConnectionStream(
       appDataDir: '.',
       apiLogEnabled: false,
+        language: 'zh',
       provider: ProviderConfig.template('Claude').copyWith(apiKey: 'key'),
       model: const ModelConfig(
         modelId: 'claude-sonnet-4',

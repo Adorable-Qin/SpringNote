@@ -29,6 +29,7 @@ import '../services/update_check_service.dart';
 import '../services/wallpaper_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/wallpaper_layer.dart';
+import '../../l10n/l10n.dart';
 
 enum AppSection { home, notes, memory, settings }
 
@@ -422,7 +423,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   void _showStartupCloudSyncIssue() {
     setState(() {
-      _startupCloudSyncMessage = '自动同步遇到问题，请手动同步';
+      _startupCloudSyncMessage = l10n(context).coreAutoSyncIssueMessage;
     });
   }
 
@@ -793,28 +794,28 @@ class GlobalSidebar extends StatelessWidget {
         children: [
           _SidebarButton(
             icon: _SidebarIconType.layoutDashboard,
-            semanticLabel: '首页',
+            semanticLabel: l10n(context).coreSidebarHomeLabel,
             selected: selectedSection == AppSection.home,
             onPressed: () => onSectionSelected(AppSection.home),
           ),
           const SizedBox(height: 8),
           _SidebarButton(
             icon: _SidebarIconType.stickyNote,
-            semanticLabel: '便签',
+            semanticLabel: l10n(context).coreSidebarNotesLabel,
             selected: selectedSection == AppSection.notes,
             onPressed: () => onSectionSelected(AppSection.notes),
           ),
           const SizedBox(height: 8),
           _SidebarButton(
             icon: _SidebarIconType.bookOpen,
-            semanticLabel: '回忆书',
+            semanticLabel: l10n(context).coreSidebarMemoryLabel,
             selected: selectedSection == AppSection.memory,
             onPressed: () => onSectionSelected(AppSection.memory),
           ),
           const Spacer(),
           _SidebarButton(
             icon: _SidebarIconType.settings,
-            semanticLabel: '设置',
+            semanticLabel: l10n(context).coreSidebarSettingsLabel,
             selected: selectedSection == AppSection.settings,
             onPressed: () => onSectionSelected(AppSection.settings),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'app_language.dart';
 import 'cloud_sync_config.dart';
 import 'desktop_widget_position.dart';
 import 'desktop_widget_wallpaper_settings.dart';
@@ -32,6 +33,34 @@ const defaultDailyMergePrompt = '''你是 SpringNote 的日报整理助手。
 11. 保留已有日报的整体结构和可继续编辑性，不随意改变已有内容的组织方式。
 12. 不输出变量名称，不解释整理过程，不添加任何说明，仅输出最终日报内容。''';
 
+const defaultDailyMergePromptEn = '''You are SpringNote's daily-note editor.
+Your job is to merge the existing daily note and the new quick capture into a natural, truthful daily note that stays easy to keep editing.
+
+Known information:
+- Date: {date}
+- Existing daily note: {existing_markdown}
+- New quick capture: {raw_input}
+- User's industry: {industry}
+
+Rules:
+1. Use all provided information; ignore empty variables.
+2. If an existing daily note is present, prefer keeping its still-valid content and blend the new capture in naturally; if it is empty, write the daily note from the new capture.
+3. Strictly preserve facts; never invent tasks, times, people, causes, progress, results, plans, evaluations, or moods.
+4. Without changing facts, you may polish the language: complete sentences, reorder, merge duplicates, and refine wording for a natural read.
+5. When the new capture is only keywords, phrases, or fragments, rewrite them into complete written sentences instead of copying verbatim. Modest elaboration is allowed only to express existing facts more naturally; never introduce new facts.
+6. Turn scattered notes into a coherent work log that reads like the user wrote it, not like an AI summary.
+7. Keep it brief when there is little content; when there is more, use natural paragraphs or topics, but do not group for grouping's sake.
+8. Write like a real developer or professional recording their day: natural, restrained, fluent; avoid mechanical, templated, or overly formal summary language.
+9. You may adapt terminology and phrasing to the user's industry, but do not add facts.
+10. If the existing note and the new capture overlap, keep the more complete, more natural version; avoid duplication.
+11. Preserve the existing note's overall structure and editability; do not reorganize arbitrarily.
+12. Do not output variable names, explanations, or any commentary; output only the final daily note content.''';
+
+/// 按生效语言返回日报整理默认提示词（[language] 为 'zh' 或 'en'）。
+String defaultDailyMergePromptFor(String language) {
+  return language == 'en' ? defaultDailyMergePromptEn : defaultDailyMergePrompt;
+}
+
 const defaultGlobalSignPrompt = '''你是 SpringNote 的全局签整理助手。全局签是一份跨天的待办清单（ToDoList），记录需要持续跟进、尚未完成的事项。
 
 已知信息：
@@ -52,6 +81,31 @@ const defaultGlobalSignPrompt = '''你是 SpringNote 的全局签整理助手。
 8. 不得随意扩展、引申或替换输入中提到的内容；事项涉及的对象、动作和范围必须来自输入中明确表达的信息，与输入保持一致。
 9. 只输出 JSON，格式固定为 {"items": [{"id": "...", "content": "..."}]}，不要输出任何解释或说明。''';
 
+const defaultGlobalSignPromptEn = '''You are SpringNote's global-sign editor. The global sign is a cross-day todo list of things that still need follow-up.
+
+Known information:
+- Date: {date}
+- Today's daily note: {daily_markdown}
+- Current global sign JSON: {global_sign}
+- New quick capture: {raw_input}
+- User's industry: {industry}
+
+Rules:
+1. Based on today's daily note and the new capture, decide whether to add, update, or remove todo items; when nothing needs to change, return the current list unchanged.
+2. New items may only come from content explicitly stated in the new quick capture; the daily note only provides context for judging completion, updates, or removal — never add items based on the daily note alone.
+3. Keep unfinished current items and their ids; update content only when it truly needs revising, keeping the id.
+4. When the new capture or today's daily note expresses that a current item is finished, cancelled, or done with, trust the record and remove the item — even if the item's original wording is broader; when the record only describes progress without any finishing meaning, do not remove it.
+5. Items tagged with the【Completed】or【Cancelled】markers in the input must be removed from the list.
+6. New items use an empty string as id; the system assigns ids.
+7. Strictly preserve facts; never invent tasks, times, people, or progress; keep each item concise — one clear sentence saying what to do.
+8. Do not expand, extrapolate, or replace what the input states; an item's object, action, and scope must match the input exactly.
+9. Output only JSON in the form {"items": [{"id": "...", "content": "..."}]}, with no explanation or commentary.''';
+
+/// 按生效语言返回全局签默认提示词（[language] 为 'zh' 或 'en'）。
+String defaultGlobalSignPromptFor(String language) {
+  return language == 'en' ? defaultGlobalSignPromptEn : defaultGlobalSignPrompt;
+}
+
 class AppConfig {
   const AppConfig({
     required this.wallpaperSettings,
@@ -60,6 +114,7 @@ class AppConfig {
     required this.industry,
     required this.appFont,
     required this.fontScale,
+    required this.language,
     required this.markdownSyntaxHighlightEnabled,
     required this.notesEditorWorkspaceMode,
     required this.themeMode,
@@ -96,6 +151,9 @@ class AppConfig {
   final String industry;
   final String appFont;
   final double fontScale;
+
+  /// UI 语言：'system'（跟随系统）、'zh'（简体中文）、'en'（English）。
+  final String language;
   final bool markdownSyntaxHighlightEnabled;
   final String notesEditorWorkspaceMode;
   final AppThemePreference themeMode;
@@ -139,6 +197,7 @@ class AppConfig {
       : 'Ctrl+Shift+S';
 
   factory AppConfig.defaults() {
+    final language = resolveAppLanguage('system');
     return AppConfig(
       wallpaperSettings: WallpaperSettings.defaults,
       dailyWorkHours: 8,
@@ -146,6 +205,7 @@ class AppConfig {
       industry: '互联网',
       appFont: 'system',
       fontScale: 100,
+      language: 'system',
       markdownSyntaxHighlightEnabled: true,
       notesEditorWorkspaceMode: 'split',
       themeMode: AppThemePreference.system,
@@ -164,9 +224,9 @@ class AppConfig {
       memoryKeywordSearchResultLimit: 12,
       memoryKeywordContextBefore: 1400,
       memoryKeywordContextAfter: 2600,
-      structuredNoteSections: StructuredNoteSectionConfig.defaults,
-      dailyMergePrompt: defaultDailyMergePrompt,
-      globalSignPrompt: defaultGlobalSignPrompt,
+      structuredNoteSections: StructuredNoteSectionConfig.defaultsFor(language),
+      dailyMergePrompt: defaultDailyMergePromptFor(language),
+      globalSignPrompt: defaultGlobalSignPromptFor(language),
       apiLogEnabled: false,
       cloudSync: CloudSyncConfig.defaultsValue,
       providers: [],
@@ -181,6 +241,7 @@ class AppConfig {
   }
 
   factory AppConfig.fromJson(Map<String, Object?> json) {
+    final language = resolveAppLanguage(_readLanguage(json['language']));
     return AppConfig(
       wallpaperSettings: json['wallpaperSettings'] != null
           ? WallpaperSettings.fromJson(
@@ -192,6 +253,7 @@ class AppConfig {
       industry: json['industry'] as String? ?? '互联网',
       appFont: json['appFont'] as String? ?? 'system',
       fontScale: _readDouble(json['fontScale'], 100),
+      language: _readLanguage(json['language']),
       markdownSyntaxHighlightEnabled:
           json['markdownSyntaxHighlightEnabled'] as bool? ?? true,
       notesEditorWorkspaceMode: _readNotesEditorWorkspaceMode(
@@ -240,14 +302,15 @@ class AppConfig {
       ),
       structuredNoteSections: StructuredNoteSectionConfig.fromJson(
         json['structuredNoteSections'],
+        language: language,
       ),
       dailyMergePrompt: _readString(
         json['dailyMergePrompt'],
-        defaultDailyMergePrompt,
+        defaultDailyMergePromptFor(language),
       ),
       globalSignPrompt: _readString(
         json['globalSignPrompt'],
-        defaultGlobalSignPrompt,
+        defaultGlobalSignPromptFor(language),
       ),
       apiLogEnabled: json['apiLogEnabled'] as bool? ?? false,
       cloudSync: CloudSyncConfig.fromJson(json['cloudSync']),
@@ -269,6 +332,7 @@ class AppConfig {
       'industry': industry,
       'appFont': appFont,
       'fontScale': fontScale,
+      'language': language,
       'markdownSyntaxHighlightEnabled': markdownSyntaxHighlightEnabled,
       'notesEditorWorkspaceMode': notesEditorWorkspaceMode,
       'themeMode': themeMode.name,
@@ -308,6 +372,7 @@ class AppConfig {
     String? industry,
     String? appFont,
     double? fontScale,
+    String? language,
     bool? markdownSyntaxHighlightEnabled,
     String? notesEditorWorkspaceMode,
     AppThemePreference? themeMode,
@@ -346,6 +411,7 @@ class AppConfig {
       industry: industry ?? this.industry,
       appFont: appFont ?? this.appFont,
       fontScale: fontScale ?? this.fontScale,
+      language: language ?? this.language,
       markdownSyntaxHighlightEnabled:
           markdownSyntaxHighlightEnabled ?? this.markdownSyntaxHighlightEnabled,
       notesEditorWorkspaceMode:
@@ -423,6 +489,17 @@ class AppConfig {
       }
     }
     return AppThemePreference.system;
+  }
+
+  static String _readLanguage(Object? value) {
+    if (value is! String) {
+      return 'system';
+    }
+    final normalized = value.trim().toLowerCase();
+    return switch (normalized) {
+      'zh' || 'en' || 'system' => normalized,
+      _ => 'system',
+    };
   }
 
   static String _readNotesEditorWorkspaceMode(Object? value) {

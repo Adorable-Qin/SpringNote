@@ -1230,6 +1230,8 @@ mod tests {
             }],
             thinking_enabled: true,
             reasoning_effort: "high".to_string(),
+            language: "zh".to_string(),
+
             api_log_enabled: false,
         }
     }

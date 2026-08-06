@@ -16,11 +16,13 @@ class DailyNoteService {
     List<StructuredNoteSectionConfig> sectionConfigs =
         StructuredNoteSectionConfig.defaults,
     String? mergedMarkdown,
+    String language = 'zh',
   }) async {
     final path = dailyNotePath(dailyNotesDirectory, date);
     final existing = await noteService.readMarkdown(path);
     final merged =
-        mergedMarkdown ?? _mergeMarkdown(existing, date, note, sectionConfigs);
+        mergedMarkdown ??
+        _mergeMarkdown(existing, date, note, sectionConfigs, language);
     await noteService.writeMarkdown(path, merged);
     return path;
   }
@@ -45,36 +47,46 @@ class DailyNoteService {
     DateTime date,
     StructuredWorkNote note,
     List<StructuredNoteSectionConfig> sectionConfigs,
+    String language,
   ) {
+    final english = language == 'en';
     final buffer = StringBuffer();
     final trimmedExisting = existing.trim();
 
     if (trimmedExisting.isEmpty) {
-      buffer.writeln('# ${_formatDate(date)} 日报');
+      buffer.writeln(
+        english
+            ? '# ${_formatDate(date)} Daily Report'
+            : '# ${_formatDate(date)} 日报',
+      );
     } else {
       buffer.writeln(trimmedExisting);
     }
 
     buffer
       ..writeln()
-      ..writeln('## ${_formatTime(date)} 随手记录')
+      ..writeln(
+        english
+            ? '## ${_formatTime(date)} Quick capture'
+            : '## ${_formatTime(date)} 随手记录',
+      )
       ..writeln()
-      ..writeln('### 原始记录')
+      ..writeln(english ? '### Raw input' : '### 原始记录')
       ..writeln()
       ..writeln(note.rawInput);
     for (final section in sectionConfigs) {
       buffer
         ..writeln()
         ..writeln('### ${section.title}');
-      _writeItems(buffer, note.itemsFor(section.id));
+      _writeItems(buffer, note.itemsFor(section.id), english);
     }
 
     return '${buffer.toString().trimRight()}\n';
   }
 
-  void _writeItems(StringBuffer buffer, List<String> items) {
+  void _writeItems(StringBuffer buffer, List<String> items, bool english) {
     if (items.isEmpty) {
-      buffer.writeln('- 暂无');
+      buffer.writeln(english ? '- None' : '- 暂无');
       return;
     }
 

@@ -16,6 +16,7 @@ pub struct RegenerateReportRequest {
     pub weekly_notes_directory: String,
     pub industry: String,
     pub daily_merge_prompt: String,
+    pub language: String,
     pub api_log_enabled: bool,
 }
 
@@ -93,6 +94,7 @@ async fn regenerate_daily(
         &date_label,
         &existing,
         &request.industry,
+        &request.language,
     );
     let response = ai::merge_daily_note(DailyMergeRequest {
         app_data_dir: request.app_data_dir.clone(),
@@ -104,6 +106,7 @@ async fn regenerate_daily(
         industry: request.industry.clone(),
         merge_prompt,
         json_output: false,
+        language: request.language.clone(),
         api_log_enabled: request.api_log_enabled,
     })
     .await;
@@ -121,12 +124,22 @@ async fn regenerate_weekly(
     }
 
     let week_end = week_start + Duration::days(6);
-    let period_label = format!(
-        "{}（{} 至 {}）",
-        format_iso_week(week_start),
-        format_date(week_start),
-        format_date(week_end)
-    );
+    let english = request.language.trim().eq_ignore_ascii_case("en");
+    let period_label = if english {
+        format!(
+            "{} ({} - {})",
+            format_iso_week(week_start),
+            format_date(week_start),
+            format_date(week_end)
+        )
+    } else {
+        format!(
+            "{}（{} 至 {}）",
+            format_iso_week(week_start),
+            format_date(week_start),
+            format_date(week_end)
+        )
+    };
     let response = ai::generate_weekly_report(ReportRequest {
         app_data_dir: request.app_data_dir.clone(),
         provider: request.provider.clone(),
@@ -134,6 +147,7 @@ async fn regenerate_weekly(
         source_markdown: source,
         period_label,
         industry: request.industry.clone(),
+        language: request.language.clone(),
         api_log_enabled: request.api_log_enabled,
     })
     .await;
@@ -150,7 +164,12 @@ async fn regenerate_monthly(
         return RegenerateReportResult::failure("empty_source", "该月没有可用的周报内容。");
     }
 
-    let period_label = format!("{} 月报", format_month(month));
+    let english = request.language.trim().eq_ignore_ascii_case("en");
+    let period_label = if english {
+        format!("{} Monthly Report", format_month(month))
+    } else {
+        format!("{} 月报", format_month(month))
+    };
     let response = ai::generate_monthly_report(ReportRequest {
         app_data_dir: request.app_data_dir.clone(),
         provider: request.provider.clone(),
@@ -158,6 +177,7 @@ async fn regenerate_monthly(
         source_markdown: source,
         period_label,
         industry: request.industry.clone(),
+        language: request.language.clone(),
         api_log_enabled: request.api_log_enabled,
     })
     .await;
@@ -297,14 +317,21 @@ fn render_daily_merge_template(
     date: &str,
     existing_markdown: &str,
     industry: &str,
+    language: &str,
 ) -> String {
+    let english = language.trim().eq_ignore_ascii_case("en");
+    let (empty_text, no_industry) = if english {
+        ("(empty)", "Not set")
+    } else {
+        ("（空）", "未设置")
+    };
     let existing = if existing_markdown.trim().is_empty() {
-        "（空）"
+        empty_text
     } else {
         existing_markdown.trim()
     };
     let industry = if industry.trim().is_empty() {
-        "未设置"
+        no_industry
     } else {
         industry.trim()
     };
@@ -312,9 +339,9 @@ fn render_daily_merge_template(
         .replace("{date}", date)
         .replace("{existing_markdown}", existing)
         .replace("{raw_input}", "")
-        .replace("{completed}", "（空）")
-        .replace("{issues}", "（空）")
-        .replace("{plans}", "（空）")
+        .replace("{completed}", empty_text)
+        .replace("{issues}", empty_text)
+        .replace("{plans}", empty_text)
         .replace("{industry}", industry)
 }
 
@@ -492,6 +519,7 @@ mod tests {
             "2026-07-22",
             "  已有内容。  ",
             "",
+            "zh",
         );
         assert_eq!(
             rendered,

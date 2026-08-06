@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
+
 /// A composer input mode: a tag the user inserts into the input text from
 /// the "+" menu. The tag is stored as a single private-use code point so it
 /// behaves like one character — the cursor steps over it and Backspace or
@@ -177,6 +179,24 @@ List<MemoryInputMode> memoryInputModesForIds(List<String> ids) => [
     if (ids.contains(mode.id)) mode,
 ];
 
+/// Localized tag label for [mode], shown inside the input field and the
+/// "+" menu. Falls back to [MemoryInputMode.label] (the model-facing name)
+/// for modes without a UI string yet.
+String memoryInputModeLabel(BuildContext context, MemoryInputMode mode) {
+  return switch (mode.id) {
+    'springtree' => l10n(context).memoryInputModeMindMapLabel,
+    _ => mode.label,
+  };
+}
+
+/// Localized muted hint for [mode], shown next to the label in the "+" menu.
+String memoryInputModeDescription(BuildContext context, MemoryInputMode mode) {
+  return switch (mode.id) {
+    'springtree' => l10n(context).memoryInputModeMindMapDescription,
+    _ => mode.description,
+  };
+}
+
 /// Note appended (request view only) to a past user message that was sent
 /// with [modes] active, so the model knows the following reply's special
 /// format was tag-driven rather than the default way to answer.
@@ -258,7 +278,7 @@ class MemoryComposerController extends TextEditingController {
             children: [
               Icon(nearestMode.icon, size: iconSize, color: _tagColor),
               const SizedBox(width: 3),
-              Text(nearestMode.label, style: tagStyle),
+              Text(memoryInputModeLabel(context, nearestMode), style: tagStyle),
               const SizedBox(width: 4),
             ],
           ),

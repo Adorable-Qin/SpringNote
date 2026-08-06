@@ -19,6 +19,7 @@ import '../../core/services/pasted_image_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/markdown_editor_highlight.dart';
 import '../../core/widgets/page_scaffold.dart';
+import '../../l10n/l10n.dart';
 import 'markdown_preview.dart';
 
 typedef NoteImagePicker = Future<List<NoteImageAttachment>> Function();
@@ -88,7 +89,7 @@ class _NotesPageState extends State<NotesPage> {
   bool _loading = true;
   bool _saving = false;
   bool _predicting = false;
-  String _statusText = 'AI 实时补全已就绪';
+  String _statusText = '';
   String _lastEditorText = '';
   TextSelection _lastEditorSelection = const TextSelection.collapsed(offset: 0);
   int _editorRevision = 0;
@@ -137,6 +138,11 @@ class _NotesPageState extends State<NotesPage> {
       (_) => unawaited(_flushPendingNoteUploads(requireEditorFocus: true)),
     );
     _noteUploadQueue.attach(widget.localDataState);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() => _statusText = l10n(context).notesFimReady);
+      }
+    });
     _loadNotes(kind: _kind);
   }
 
@@ -343,7 +349,7 @@ class _NotesPageState extends State<NotesPage> {
       if (selected != null && selectedContent != null) {
         if (selectedContent != _editorController.text) {
           _setEditorText(selectedContent, preserveSelection: true);
-          _statusText = 'AI 实时补全已就绪';
+          _statusText = l10n(context).notesFimReady;
         }
       }
     });
@@ -416,7 +422,7 @@ class _NotesPageState extends State<NotesPage> {
       _selectedNote = selected;
       _setEditorText(content);
       _loading = false;
-      _statusText = 'AI 实时补全已就绪';
+      _statusText = l10n(context).notesFimReady;
     });
     _scheduleSearch(immediate: true);
     unawaited(_refreshNoteIndex(kind: kind, loadGeneration: generation));
@@ -445,7 +451,7 @@ class _NotesPageState extends State<NotesPage> {
     setState(() {
       _setEditorText(content, initialSelection: initialSelection);
       _loading = false;
-      _statusText = 'AI 实时补全已就绪';
+      _statusText = l10n(context).notesFimReady;
     });
     if (focusEditor) {
       _focusEditorSelectionSoon();
@@ -568,7 +574,7 @@ class _NotesPageState extends State<NotesPage> {
         _selectedNote = updatedNote;
       }
       _saving = false;
-      _statusText = '已保存';
+      _statusText = l10n(context).notesSaved;
     });
     if (_searchController.text.trim().isNotEmpty) {
       _scheduleSearch();
@@ -591,7 +597,10 @@ class _NotesPageState extends State<NotesPage> {
     }
 
     try {
-      final result = await _noteUploadQueue.flush();
+      final retryText = l10n(context).notesAutoSyncFailedRetry;
+      final result = await _noteUploadQueue.flush(
+        autoSyncFailedMessage: retryText,
+      );
       if (!mounted || !result.attempted) {
         return;
       }
@@ -601,13 +610,16 @@ class _NotesPageState extends State<NotesPage> {
         });
       } else {
         setState(() {
-          _editorMessage = '自动同步失败：${result.message}';
+          final message = result.message;
+          _editorMessage = message.isEmpty || message == retryText
+              ? retryText
+              : l10n(context).notesAutoSyncFailedMessage(message);
         });
       }
     } catch (error, stackTrace) {
       debugPrint('Failed to auto upload note: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = '自动同步失败，请稍后重试。');
+        setState(() => _editorMessage = l10n(context).notesAutoSyncFailedRetry);
       }
     }
   }
@@ -801,7 +813,7 @@ class _NotesPageState extends State<NotesPage> {
       widget.localDataState.config,
     );
     if (unavailableReason != null) {
-      setState(() => _fimMessage = 'FIM 未触发：$unavailableReason');
+      setState(() => _fimMessage = l10n(context).notesFimNotTriggered(unavailableReason));
       return;
     }
 
@@ -859,8 +871,8 @@ class _NotesPageState extends State<NotesPage> {
       if (prediction?.isEmpty ?? true) {
         _fimPrediction = null;
         _fimMessage = fimError != null && fimError.isNotEmpty
-            ? 'FIM 请求失败：$fimError'
-            : 'FIM 已请求，但没有返回可用预测';
+            ? l10n(context).notesFimRequestFailed(fimError)
+            : l10n(context).notesFimNoPrediction;
       } else {
         _fimPrediction = prediction;
         _fimMessage = null;
@@ -960,15 +972,15 @@ class _NotesPageState extends State<NotesPage> {
           if (!mounted) {
             return;
           }
-          setState(() => _editorMessage = '已重新生成');
+          setState(() => _editorMessage = l10n(context).notesRegenerated);
         }
       } else {
-        setState(() => _editorMessage = '重新生成失败：${result.errorMessage}');
+        setState(() => _editorMessage = l10n(context).notesRegenerateFailedMessage(result.errorMessage));
       }
     } catch (error, stackTrace) {
       debugPrint('Failed to regenerate report: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = '重新生成失败，请稍后重试。');
+        setState(() => _editorMessage = l10n(context).notesRegenerateFailedRetry);
       }
     } finally {
       if (mounted) {
@@ -990,7 +1002,7 @@ class _NotesPageState extends State<NotesPage> {
         return;
       }
       if (images.isEmpty) {
-        setState(() => _editorMessage = '已取消选择图片');
+        setState(() => _editorMessage = l10n(context).notesImageSelectionCanceled);
         return;
       }
       final copiedImages = <NoteImageAttachment>[];
@@ -1015,19 +1027,19 @@ class _NotesPageState extends State<NotesPage> {
       }
       _insertPlainText(_insertionTextForBlock(snippets.join('\n')));
       setState(() {
-        _editorMessage = '已插入图片';
+        _editorMessage = l10n(context).notesImageInserted;
         _fimMessage = null;
       });
       _editorFocusNode.requestFocus();
     } on ArgumentError catch (error, stackTrace) {
       debugPrint('Unsupported image selected: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = '图片格式不支持，请重新选择文件。');
+        setState(() => _editorMessage = l10n(context).notesImageFormatUnsupported);
       }
     } catch (error, stackTrace) {
       debugPrint('Failed to insert image: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = '无法插入图片，请重新选择文件。');
+        setState(() => _editorMessage = l10n(context).notesImageInsertFailed);
       }
     } finally {
       _insertingImage = false;
@@ -1114,19 +1126,19 @@ class _NotesPageState extends State<NotesPage> {
           .toList();
       _insertPlainText(_insertionTextForBlock(snippets.join('\n')));
       setState(() {
-        _editorMessage = '已粘贴图片';
+        _editorMessage = l10n(context).notesImagePasted;
         _fimMessage = null;
       });
       _editorFocusNode.requestFocus();
     } on ArgumentError catch (error, stackTrace) {
       debugPrint('Unsupported clipboard image file: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = '图片格式不支持，请重新复制图片文件。');
+        setState(() => _editorMessage = l10n(context).notesClipboardImageFormatUnsupported);
       }
     } catch (error, stackTrace) {
       debugPrint('Failed to paste clipboard image files: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = '无法粘贴图片，请重新获取图片后重试。');
+        setState(() => _editorMessage = l10n(context).notesClipboardImagePasteFailed);
       }
     }
   }
@@ -1150,7 +1162,7 @@ class _NotesPageState extends State<NotesPage> {
         ),
       );
       setState(() {
-        _editorMessage = '已粘贴图片';
+        _editorMessage = l10n(context).notesImagePasted;
         _fimMessage = null;
       });
       _editorFocusNode.requestFocus();
@@ -1158,7 +1170,7 @@ class _NotesPageState extends State<NotesPage> {
       if (!mounted) {
         return;
       }
-      setState(() => _editorMessage = '无法粘贴图片，请重新获取图片后重试。');
+      setState(() => _editorMessage = l10n(context).notesClipboardImagePasteFailed);
     }
   }
 
@@ -1168,7 +1180,7 @@ class _NotesPageState extends State<NotesPage> {
       data = await Clipboard.getData(Clipboard.kTextPlain);
     } catch (_) {
       if (mounted) {
-        setState(() => _editorMessage = '无法读取剪贴板文字。');
+        setState(() => _editorMessage = l10n(context).notesClipboardTextReadFailed);
       }
       return;
     }
@@ -1177,7 +1189,7 @@ class _NotesPageState extends State<NotesPage> {
     }
     final text = data?.text;
     if (text == null || text.isEmpty) {
-      setState(() => _editorMessage = '剪贴板中没有可粘贴的内容。');
+      setState(() => _editorMessage = l10n(context).notesClipboardEmpty);
       return;
     }
     _insertPlainText(text);
@@ -1195,7 +1207,7 @@ class _NotesPageState extends State<NotesPage> {
           webWildCards: ['image/*'],
         ),
       ],
-      confirmButtonText: '选择图片',
+      confirmButtonText: l10n(context).notesSelectImage,
     );
     return files
         .map(
@@ -1393,10 +1405,10 @@ class _NotesPageState extends State<NotesPage> {
 
   String? get _editorStatusText {
     if (_predicting) {
-      return 'AI 编辑预测中';
+      return l10n(context).notesFimPredicting;
     }
     if (_fimPrediction != null) {
-      return 'Tab 全部 · Ctrl+L 单行 · Ctrl+K 单字';
+      return l10n(context).notesFimAcceptHint;
     }
     if (_fimMessage != null) {
       return _fimMessage!;
@@ -1554,7 +1566,7 @@ class _NotesSidebar extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('笔记本', style: Theme.of(context).textTheme.titleMedium),
+              Text(l10n(context).notesNotebookTitle, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1563,7 +1575,7 @@ class _NotesSidebar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  kind.label,
+                  noteKindLabel(context, kind),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
@@ -1574,7 +1586,7 @@ class _NotesSidebar extends StatelessWidget {
           const SizedBox(height: 16),
           _NotesSearchField(
             controller: searchController,
-            hintText: '搜索全部${kind.label}...',
+            hintText: l10n(context).notesSearchAllHint(noteKindLabel(context, kind)),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -1589,7 +1601,7 @@ class _NotesSidebar extends StatelessWidget {
                 : notes.isEmpty
                 ? Center(
                     child: Text(
-                      '没有匹配的便签',
+                      l10n(context).notesNoMatchingNotes,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   )
@@ -1625,7 +1637,7 @@ class _FilteredNoteList extends StatelessWidget {
     if (query.runes.length < 2) {
       return Center(
         child: Text(
-          '至少输入 2 个字符',
+          l10n(context).notesSearchMinChars,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
@@ -1633,7 +1645,7 @@ class _FilteredNoteList extends StatelessWidget {
     if (results.isEmpty) {
       return Center(
         child: Text(
-          searching ? '正在搜索...' : '没有匹配内容',
+          searching ? l10n(context).notesSearching : l10n(context).notesNoSearchResults,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
@@ -1681,6 +1693,14 @@ class _NoteList extends StatelessWidget {
     return path.replaceAll('\\', '/').toLowerCase() ==
         other.replaceAll('\\', '/').toLowerCase();
   }
+}
+
+String noteKindLabel(BuildContext context, NoteKind kind) {
+  return switch (kind) {
+    NoteKind.daily => l10n(context).notesKindDaily,
+    NoteKind.weekly => l10n(context).notesKindWeekly,
+    NoteKind.monthly => l10n(context).notesKindMonthly,
+  };
 }
 
 class _NotesKindMenuButton extends StatefulWidget {
@@ -1767,7 +1787,7 @@ class _NotesKindMenuButtonState extends State<_NotesKindMenuButton> {
     return CompositedTransformTarget(
       link: _layerLink,
       child: Semantics(
-        label: '切换日报/周报/月报',
+        label: l10n(context).notesSwitchKindSemantics,
         button: true,
         child: SpringNoteIconButton(
           icon: Icons.more_horiz,
@@ -1842,7 +1862,7 @@ class _NotesKindMenuState extends State<_NotesKindMenu> {
             Padding(
               padding: const EdgeInsets.fromLTRB(9, 5, 9, 6),
               child: Text(
-                '切换笔记类型',
+                l10n(context).notesSwitchNoteType,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: colors.textSubtle,
                   fontWeight: FontWeight.w700,
@@ -1985,10 +2005,10 @@ class _NotesKindMenuItem extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(kind.label, style: titleStyle),
+                                    Text(noteKindLabel(context, kind), style: titleStyle),
                                     const SizedBox(height: 3),
                                     Text(
-                                      _descriptionForKind(kind),
+                                      _descriptionForKind(context, kind),
                                       style: subtitleStyle,
                                     ),
                                   ],
@@ -2023,11 +2043,11 @@ class _NotesKindMenuItem extends StatelessWidget {
     };
   }
 
-  String _descriptionForKind(NoteKind kind) {
+  String _descriptionForKind(BuildContext context, NoteKind kind) {
     return switch (kind) {
-      NoteKind.daily => '每日记录',
-      NoteKind.weekly => '阶段整理',
-      NoteKind.monthly => '月度沉淀',
+      NoteKind.daily => l10n(context).notesKindDailyDescription,
+      NoteKind.weekly => l10n(context).notesKindWeeklyDescription,
+      NoteKind.monthly => l10n(context).notesKindMonthlyDescription,
     };
   }
 }
@@ -2504,13 +2524,13 @@ class _EditorWorkspaceHeader extends StatelessWidget {
         ),
         const Spacer(),
         _EditorHeaderIconButton(
-          tooltip: '插入图片',
+          tooltip: l10n(context).notesInsertImageTooltip,
           icon: Icons.add_photo_alternate_outlined,
           onPressed: insertImageEnabled ? onInsertImage : null,
         ),
         const SizedBox(width: 4),
         _EditorHeaderIconButton(
-          tooltip: '重新生成',
+          tooltip: l10n(context).notesRegenerateTooltip,
           icon: Icons.auto_awesome_outlined,
           loading: regenerating,
           onPressed: regenerateEnabled && !regenerating ? onRegenerate : null,
@@ -2653,7 +2673,7 @@ class _EditorContent extends StatelessWidget {
                       minLines: null,
                       keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(
-                        hintText: '# 开始编辑 Markdown...',
+                        hintText: l10n(context).notesEditorHint,
                         hintStyle: TextStyle(
                           color: colors.textSubtle.withValues(alpha: 0.58),
                         ),
@@ -2724,12 +2744,12 @@ class _EditorStatusPill extends StatelessWidget {
       _ => statusText,
     };
     final highlighted =
-        statusText == '已重新生成' ||
-        statusText == '已插入图片' ||
-        statusText == '已粘贴图片' ||
-        statusText == '已保存' ||
-        statusText == 'AI 实时补全已就绪' ||
-        statusText == 'AI 编辑预测中' ||
+        statusText == l10n(context).notesRegenerated ||
+        statusText == l10n(context).notesImageInserted ||
+        statusText == l10n(context).notesImagePasted ||
+        statusText == l10n(context).notesSaved ||
+        statusText == l10n(context).notesFimReady ||
+        statusText == l10n(context).notesFimPredicting ||
         statusText.startsWith('Tab ');
     final foreground = highlighted
         ? (dark ? const Color(0xFF34D399) : const Color(0xFF10B981))
@@ -2792,10 +2812,10 @@ class _WorkspaceModeSegmentedControl extends StatelessWidget {
     _EditorWorkspaceMode.preview,
   ];
 
-  static const _labels = {
-    _EditorWorkspaceMode.edit: '编辑',
-    _EditorWorkspaceMode.split: '分栏',
-    _EditorWorkspaceMode.preview: '预览',
+  Map<_EditorWorkspaceMode, String> _labels(BuildContext context) => {
+    _EditorWorkspaceMode.edit: l10n(context).notesWorkspaceModeEdit,
+    _EditorWorkspaceMode.split: l10n(context).notesWorkspaceModeSplit,
+    _EditorWorkspaceMode.preview: l10n(context).notesWorkspaceModePreview,
   };
 
   @override
@@ -2825,7 +2845,7 @@ class _WorkspaceModeSegmentedControl extends StatelessWidget {
     final segmentWidths = [
       for (final option in _options)
         _measureTextWidth(
-              label: _labels[option]!,
+              label: _labels(context)[option]!,
               style: textStyle,
               textDirection: textDirection,
               textScaler: textScaler,
@@ -2886,7 +2906,7 @@ class _WorkspaceModeSegmentedControl extends StatelessWidget {
                       width: segmentWidths[index],
                       child: _WorkspaceModeSegment(
                         mode: option,
-                        label: _labels[option]!,
+                        label: _labels(context)[option]!,
                         selected: option == value,
                         textStyle: textStyle,
                         horizontalPadding: horizontalPadding,

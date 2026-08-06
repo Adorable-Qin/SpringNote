@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:graphview/GraphView.dart';
 
+import '../../l10n/l10n.dart';
 import '../theme/app_theme.dart';
 import 'markdown_code_block.dart';
 import 'spring_tree_parser.dart';
@@ -830,7 +831,7 @@ class _SpringTreeBlockState extends State<SpringTreeBlock> {
           if (!widget.isComplete) ...[
             const SizedBox(width: 8),
             Text(
-              '生成中…',
+              l10n(context).coreTreeGenerating,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colors.textSubtle,
                 fontSize: 10,
@@ -841,9 +842,10 @@ class _SpringTreeBlockState extends State<SpringTreeBlock> {
           if (_hiddenNodeCount > 0) ...[
             const SizedBox(width: 8),
             Tooltip(
-              message:
-                  '内联视图最多显示 ${widget.inlineNodeLimit} 个节点，'
-                  '其余 $_hiddenNodeCount 个请通过全屏查看',
+              message: l10n(context).coreTreeInlineLimitHint(
+                _hiddenNodeCount,
+                widget.inlineNodeLimit ?? 0,
+              ),
               child: Text(
                 '+$_hiddenNodeCount',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -870,7 +872,11 @@ class _SpringTreeBlockState extends State<SpringTreeBlock> {
               _copied ? Icons.check_rounded : Icons.copy_rounded,
               size: 13,
             ),
-            label: Text(_copied ? '已复制' : '复制'),
+            label: Text(
+              _copied
+                  ? l10n(context).coreCodeCopied
+                  : l10n(context).coreCodeCopy,
+            ),
           ),
         ],
       ),
@@ -912,19 +918,23 @@ class _SpringTreeBlockState extends State<SpringTreeBlock> {
             // relying on the ESC shortcut alone.
             button(
               Icons.fullscreen_exit_rounded,
-              '退出全屏',
+              l10n(context).coreTreeExitFullscreen,
               () => Navigator.of(context).maybePop(),
             ),
             Divider(height: 1, thickness: 1, color: colors.divider),
           ] else ...[
-            button(Icons.fullscreen_rounded, '全屏查看', _openFullscreen),
+            button(
+              Icons.fullscreen_rounded,
+              l10n(context).coreTreeFullscreen,
+              _openFullscreen,
+            ),
             Divider(height: 1, thickness: 1, color: colors.divider),
           ],
-          button(Icons.add_rounded, '放大', () => _zoomBy(1.25)),
+          button(Icons.add_rounded, l10n(context).coreTreeZoomIn, () => _zoomBy(1.25)),
           Divider(height: 1, thickness: 1, color: colors.divider),
-          button(Icons.remove_rounded, '缩小', () => _zoomBy(0.8)),
+          button(Icons.remove_rounded, l10n(context).coreTreeZoomOut, () => _zoomBy(0.8)),
           Divider(height: 1, thickness: 1, color: colors.divider),
-          button(Icons.fit_screen_rounded, '适应全图', _fitAndFollow),
+          button(Icons.fit_screen_rounded, l10n(context).coreTreeFitAll, _fitAndFollow),
         ],
       ),
     );

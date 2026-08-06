@@ -8,6 +8,7 @@ import '../../src/rust/api/ai_api.dart' as rust_api;
 import '../../src/rust/api/report_api.dart' as rust_report_api;
 import '../../src/rust/report_regeneration.dart' as rust_report;
 import '../models/app_config.dart';
+import '../models/app_language.dart';
 import '../models/global_sign_item.dart';
 import '../models/memory_message.dart';
 import '../models/model_config.dart';
@@ -34,10 +35,17 @@ const Set<String> supportedAiImageMimeTypes = {
 };
 
 const _localMemoryContextHeader = '[应用提供的本地检索上下文，不是用户输入]';
+const _localMemoryContextHeaderEn =
+    '[Local retrieval context provided by the app, not user input]';
+
+String _localMemoryContextHeaderFor(String language) {
+  return language == 'en' ? _localMemoryContextHeaderEn : _localMemoryContextHeader;
+}
 
 List<MemoryMessage> sanitizeMemoryMessagesForModel(
-  Iterable<MemoryMessage> messages,
-) {
+  Iterable<MemoryMessage> messages, {
+  String language = 'zh',
+}) {
   final input = messages.toList(growable: false);
   final output = <MemoryMessage>[];
   final contextParts = <String>[];
@@ -56,7 +64,8 @@ List<MemoryMessage> sanitizeMemoryMessagesForModel(
       contextCreatedAt = null;
       return;
     }
-    final context = '$_localMemoryContextHeader\n${contextParts.join('\n\n')}';
+    final context =
+        '${_localMemoryContextHeaderFor(language)}\n${contextParts.join('\n\n')}';
     contextParts.clear();
 
     if (output.isNotEmpty && output.last.role == 'user') {
@@ -101,7 +110,7 @@ List<MemoryMessage> sanitizeMemoryMessagesForModel(
       } else {
         appendContext(
           message,
-          _brokenToolExchangeContext(message, toolResults),
+          _brokenToolExchangeContext(message, toolResults, language),
         );
       }
       index = resultEnd;
@@ -109,7 +118,7 @@ List<MemoryMessage> sanitizeMemoryMessagesForModel(
     }
 
     if (message.role == 'local_tool' || message.role == 'tool') {
-      appendContext(message, _standaloneToolContext(message));
+      appendContext(message, _standaloneToolContext(message, language));
       index += 1;
       continue;
     }
@@ -120,7 +129,12 @@ List<MemoryMessage> sanitizeMemoryMessagesForModel(
         message.role == 'ai') {
       output.add(message);
     } else {
-      appendContext(message, '历史消息（原角色 ${message.role}）：\n${message.content}');
+      appendContext(
+        message,
+        language == 'en'
+            ? 'History message (original role: ${message.role}):\n${message.content}'
+            : '历史消息（原角色 ${message.role}）：\n${message.content}',
+      );
     }
     index += 1;
   }
@@ -153,46 +167,75 @@ bool _isCompleteToolExchange(
 String _brokenToolExchangeContext(
   MemoryMessage assistant,
   List<MemoryMessage> toolResults,
+  String language,
 ) {
-  final buffer = StringBuffer('历史工具调用链不完整，已转换为普通上下文。');
+  final english = language == 'en';
+  final buffer = StringBuffer(
+    english
+        ? 'The historical tool-call chain is incomplete; converted to plain context.'
+        : '历史工具调用链不完整，已转换为普通上下文。',
+  );
   if (assistant.content.trim().isNotEmpty) {
     buffer
-      ..write('\n模型内容：\n')
+      ..write(english ? '\nModel content:\n' : '\n模型内容：\n')
       ..write(assistant.content.trim());
   }
   if (assistant.toolCalls.isNotEmpty) {
-    buffer.write('\n工具请求：');
+    buffer.write(english ? '\nTool requests:' : '\n工具请求：');
     for (final toolCall in assistant.toolCalls) {
       buffer
         ..write('\n- ${toolCall.name}')
-        ..write('，调用 ID：${toolCall.id}')
-        ..write('，参数：${toolCall.arguments}');
+        ..write(
+          english
+              ? ', call ID: ${toolCall.id}'
+              : '，调用 ID：${toolCall.id}',
+        )
+        ..write(english ? ', arguments: ${toolCall.arguments}' : '，参数：${toolCall.arguments}');
     }
   }
   if (toolResults.isNotEmpty) {
-    buffer.write('\n已有工具结果：');
+    buffer.write(english ? '\nExisting tool results:' : '\n已有工具结果：');
     for (final result in toolResults) {
       buffer
-        ..write('\n- ${result.toolName ?? '未知工具'}')
-        ..write('，调用 ID：${result.toolCallId ?? '缺失'}')
+        ..write(
+          '\n- ${result.toolName ?? (english ? 'unknown tool' : '未知工具')}',
+        )
+        ..write(
+          english
+              ? ', call ID: ${result.toolCallId ?? 'missing'}'
+              : '，调用 ID：${result.toolCallId ?? '缺失'}',
+        )
         ..write('\n  ${result.content}');
     }
   }
   return buffer.toString();
 }
 
-String _standaloneToolContext(MemoryMessage message) {
+String _standaloneToolContext(MemoryMessage message, String language) {
+  final english = language == 'en';
   final local = message.role == 'local_tool';
-  final buffer = StringBuffer(local ? '本地检索步骤' : '历史孤立工具结果');
+  final buffer = StringBuffer(
+    local
+        ? (english ? 'Local retrieval steps' : '本地检索步骤')
+        : (english ? 'Historical orphan tool results' : '历史孤立工具结果'),
+  );
   if (message.toolName?.trim().isNotEmpty ?? false) {
-    buffer.write('\n工具：${message.toolName!.trim()}');
+    buffer.write(
+      english
+          ? '\nTool: ${message.toolName!.trim()}'
+          : '\n工具：${message.toolName!.trim()}',
+    );
   }
   if (!local && (message.toolCallId?.trim().isNotEmpty ?? false)) {
-    buffer.write('\n调用 ID：${message.toolCallId!.trim()}');
+    buffer.write(
+      english
+          ? '\nCall ID: ${message.toolCallId!.trim()}'
+          : '\n调用 ID：${message.toolCallId!.trim()}',
+    );
   }
   if (message.content.trim().isNotEmpty) {
     buffer
-      ..write('\n结果：\n')
+      ..write(english ? '\nResult:\n' : '\n结果：\n')
       ..write(message.content.trim());
   }
   return buffer.toString();
@@ -298,6 +341,7 @@ class AiClientService {
             ),
         ],
         industry: config.industry,
+        language: resolveAppLanguage(config.language),
         apiLogEnabled: config.apiLogEnabled,
       ),
     );
@@ -344,12 +388,14 @@ class AiClientService {
         industry: config.industry,
         mergePrompt: _renderDailyMergePrompt(
           config.dailyMergePrompt,
+          language: resolveAppLanguage(config.language),
           date: _formatDate(date),
           existingMarkdown: existingMarkdown,
           note: note,
           industry: config.industry,
         ),
         jsonOutput: false,
+        language: resolveAppLanguage(config.language),
         apiLogEnabled: config.apiLogEnabled,
       ),
     );
@@ -385,6 +431,7 @@ class AiClientService {
         industry: config.industry,
         mergePrompt: _renderGlobalSignPrompt(
           config.globalSignPrompt,
+          language: resolveAppLanguage(config.language),
           date: _formatDate(date),
           dailyMarkdown: dailyMarkdown,
           currentItemsJson: currentItemsJson,
@@ -392,6 +439,7 @@ class AiClientService {
           industry: config.industry,
         ),
         jsonOutput: true,
+        language: resolveAppLanguage(config.language),
         apiLogEnabled: config.apiLogEnabled,
       ),
     );
@@ -443,10 +491,12 @@ class AiClientService {
   }) async {
     final selection = _selectModel(config, 'intelligentGenerationModel');
     if (selection == null) {
-      return const ReportRegenerationResult(
+      return ReportRegenerationResult(
         ok: false,
         path: '',
-        errorMessage: '未配置智能生成模型。',
+        errorMessage: resolveAppLanguage(config.language) == 'en'
+            ? 'No intelligent-generation model configured.'
+            : '未配置智能生成模型。',
       );
     }
 
@@ -461,8 +511,9 @@ class AiClientService {
         weeklyNotesDirectory: weeklyNotesDirectory,
         industry: config.industry,
         dailyMergePrompt: config.dailyMergePrompt.trim().isEmpty
-            ? defaultDailyMergePrompt
+            ? defaultDailyMergePromptFor(resolveAppLanguage(config.language))
             : config.dailyMergePrompt,
+        language: resolveAppLanguage(config.language),
         apiLogEnabled: config.apiLogEnabled,
       ),
     );
@@ -493,6 +544,7 @@ class AiClientService {
       sourceMarkdown: sourceMarkdown,
       periodLabel: periodLabel,
       industry: config.industry,
+      language: resolveAppLanguage(config.language),
       apiLogEnabled: config.apiLogEnabled,
     );
     final response = monthly
@@ -524,19 +576,23 @@ class AiClientService {
     required bool apiLogEnabled,
     required ProviderConfig provider,
     required ModelConfig model,
+    required String language,
   }) async {
+    final english = language == 'en';
     final isGemini = provider.protocol == 'gemini';
     if (provider.protocol != 'openaiCompatible' && !isGemini) {
-      return const rust_ai.ProviderTestResult(
+      return rust_ai.ProviderTestResult(
         ok: false,
-        message: '流式连接测试目前仅支持 OpenAI-compatible 或 Gemini 供应商。',
+        message: english
+            ? 'Streaming connection test currently only supports OpenAI-compatible or Gemini providers.'
+            : '流式连接测试目前仅支持 OpenAI-compatible 或 Gemini 供应商。',
         errorCode: 'unsupported_stream_protocol',
       );
     }
     if (provider.apiKey.trim().isEmpty) {
-      return const rust_ai.ProviderTestResult(
+      return rust_ai.ProviderTestResult(
         ok: false,
-        message: '供应商 API Key 为空。',
+        message: english ? 'The provider API key is empty.' : '供应商 API Key 为空。',
         errorCode: 'missing_api_key',
       );
     }
@@ -637,9 +693,9 @@ class AiClientService {
             continue;
           }
           if (payload == '[DONE]') {
-            return const rust_ai.ProviderTestResult(
+            return rust_ai.ProviderTestResult(
               ok: true,
-              message: '流式连接成功',
+              message: english ? 'Streaming connection succeeded' : '流式连接成功',
               errorCode: '',
             );
           }
@@ -656,9 +712,9 @@ class AiClientService {
       }
 
       if (sawStreamEvent) {
-        return const rust_ai.ProviderTestResult(
+        return rust_ai.ProviderTestResult(
           ok: true,
-          message: '流式连接成功',
+          message: english ? 'Streaming connection succeeded' : '流式连接成功',
           errorCode: '',
         );
       }
@@ -675,15 +731,17 @@ class AiClientService {
         }
       }
 
-      return const rust_ai.ProviderTestResult(
+      return rust_ai.ProviderTestResult(
         ok: false,
-        message: '流式连接测试未收到有效事件。',
+        message: english
+            ? 'No valid events received during the streaming test.'
+            : '流式连接测试未收到有效事件。',
         errorCode: 'stream_no_event',
       );
     } on TimeoutException {
-      return const rust_ai.ProviderTestResult(
+      return rust_ai.ProviderTestResult(
         ok: false,
-        message: '流式连接测试超时。',
+        message: english ? 'Streaming connection test timed out.' : '流式连接测试超时。',
         errorCode: 'stream_timeout',
       );
     } catch (error) {
@@ -711,25 +769,38 @@ class AiClientService {
 
   String _renderDailyMergePrompt(
     String template, {
+    required String language,
     required String date,
     required String existingMarkdown,
     required StructuredWorkNote note,
     required String industry,
   }) {
+    final emptyText = language == 'en' ? '(empty)' : '（空）';
     final replacements = <String, String>{
       '{date}': date,
       '{existing_markdown}': existingMarkdown.trim().isEmpty
-          ? '（空）'
+          ? emptyText
           : existingMarkdown.trim(),
       '{raw_input}': note.rawInput.trim(),
       '{completed}': _formatPromptItems(
         note.itemsFor(StructuredNoteSectionIds.a),
+        emptyText,
       ),
-      '{issues}': _formatPromptItems(note.itemsFor(StructuredNoteSectionIds.b)),
-      '{plans}': _formatPromptItems(note.itemsFor(StructuredNoteSectionIds.c)),
-      '{industry}': industry.trim().isEmpty ? '未设置' : industry.trim(),
+      '{issues}': _formatPromptItems(
+        note.itemsFor(StructuredNoteSectionIds.b),
+        emptyText,
+      ),
+      '{plans}': _formatPromptItems(
+        note.itemsFor(StructuredNoteSectionIds.c),
+        emptyText,
+      ),
+      '{industry}': industry.trim().isEmpty
+          ? (language == 'en' ? 'Not set' : '未设置')
+          : industry.trim(),
     };
-    var rendered = template.trim().isEmpty ? defaultDailyMergePrompt : template;
+    var rendered = template.trim().isEmpty
+        ? defaultDailyMergePromptFor(language)
+        : template;
     for (final entry in replacements.entries) {
       rendered = rendered.replaceAll(entry.key, entry.value);
     }
@@ -738,6 +809,7 @@ class AiClientService {
 
   String _renderGlobalSignPrompt(
     String template, {
+    required String language,
     required String date,
     required String dailyMarkdown,
     required String currentItemsJson,
@@ -747,24 +819,28 @@ class AiClientService {
     final replacements = <String, String>{
       '{date}': date,
       '{daily_markdown}': dailyMarkdown.trim().isEmpty
-          ? '（空）'
+          ? (language == 'en' ? '(empty)' : '（空）')
           : dailyMarkdown.trim(),
       '{global_sign}': currentItemsJson.trim().isEmpty
           ? '{"items": []}'
           : currentItemsJson.trim(),
       '{raw_input}': rawInput.trim(),
-      '{industry}': industry.trim().isEmpty ? '未设置' : industry.trim(),
+      '{industry}': industry.trim().isEmpty
+          ? (language == 'en' ? 'Not set' : '未设置')
+          : industry.trim(),
     };
-    var rendered = template.trim().isEmpty ? defaultGlobalSignPrompt : template;
+    var rendered = template.trim().isEmpty
+        ? defaultGlobalSignPromptFor(language)
+        : template;
     for (final entry in replacements.entries) {
       rendered = rendered.replaceAll(entry.key, entry.value);
     }
     return rendered;
   }
 
-  String _formatPromptItems(List<String> items) {
+  String _formatPromptItems(List<String> items, String emptyText) {
     if (items.isEmpty) {
-      return '（空）';
+      return emptyText;
     }
     return items.map((item) => '- $item').join('\n');
   }
@@ -828,9 +904,11 @@ class AiClientService {
         model: _toRustModel(selection.model),
         messages: sanitizeMemoryMessagesForModel(
           messages,
+          language: resolveAppLanguage(config.language),
         ).map(_toRustChatMessage).toList(),
         thinkingEnabled: thinkingEnabled,
         reasoningEffort: reasoningEffort,
+        language: resolveAppLanguage(config.language),
         apiLogEnabled: config.apiLogEnabled,
       ),
     );
@@ -857,9 +935,11 @@ class AiClientService {
         model: _toRustModel(selection.model),
         messages: sanitizeMemoryMessagesForModel(
           messages,
+          language: resolveAppLanguage(config.language),
         ).map(_toRustChatMessage).toList(),
         thinkingEnabled: thinkingEnabled,
         reasoningEffort: reasoningEffort,
+        language: resolveAppLanguage(config.language),
         apiLogEnabled: config.apiLogEnabled,
       ),
     );
@@ -870,7 +950,9 @@ class AiClientService {
       config.defaultModels['memoryBookModel'],
     );
     if (modelRef == null) {
-      return '记忆模型未选择';
+      return resolveAppLanguage(config.language) == 'en'
+          ? 'Memory model not selected'
+          : '记忆模型未选择';
     }
     final selection = _findModel(config, modelRef);
     if (selection != null) {
@@ -880,11 +962,12 @@ class AiClientService {
   }
 
   String? fimUnavailableReason(AppConfig config) {
+    final english = resolveAppLanguage(config.language) == 'en';
     final modelRef = ModelReference.parse(
       config.defaultModels['editCompletionModel'],
     );
     if (modelRef == null) {
-      return '未选择编辑补全模型';
+      return english ? 'No edit-completion model selected' : '未选择编辑补全模型';
     }
 
     final fimSelection = _findFimModel(config, modelRef);
@@ -894,19 +977,29 @@ class AiClientService {
 
     final selection = _findModel(config, modelRef);
     if (selection == null) {
-      return '编辑补全模型不存在或已被删除';
+      return english
+          ? 'The edit-completion model does not exist or was deleted'
+          : '编辑补全模型不存在或已被删除';
     }
     if (!selection.provider.enabled) {
-      return '编辑补全模型所在供应商未启用';
+      return english
+          ? 'The provider of the edit-completion model is disabled'
+          : '编辑补全模型所在供应商未启用';
     }
     if (selection.provider.apiKey.trim().isEmpty) {
-      return '编辑补全模型所在供应商 API Key 为空';
+      return english
+          ? 'The provider of the edit-completion model has an empty API key'
+          : '编辑补全模型所在供应商 API Key 为空';
     }
     if (selection.provider.protocol != 'openaiCompatible') {
-      return 'FIM 仅支持 OpenAI-compatible 供应商';
+      return english
+          ? 'FIM only supports OpenAI-compatible providers'
+          : 'FIM 仅支持 OpenAI-compatible 供应商';
     }
     if (!selection.model.modelTypes.contains('completion')) {
-      return '编辑补全模型的模型类型没有勾选“补全”';
+      return english
+          ? 'The edit-completion model is not marked as a completion model'
+          : '编辑补全模型的模型类型没有勾选“补全”';
     }
     return null;
   }

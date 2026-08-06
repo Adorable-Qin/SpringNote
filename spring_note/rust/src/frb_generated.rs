@@ -1374,6 +1374,7 @@ impl SseDecode for crate::ai::DailyMergeRequest {
         let mut var_industry = <String>::sse_decode(deserializer);
         let mut var_mergePrompt = <String>::sse_decode(deserializer);
         let mut var_jsonOutput = <bool>::sse_decode(deserializer);
+        let mut var_language = <String>::sse_decode(deserializer);
         let mut var_apiLogEnabled = <bool>::sse_decode(deserializer);
         return crate::ai::DailyMergeRequest {
             app_data_dir: var_appDataDir,
@@ -1385,6 +1386,7 @@ impl SseDecode for crate::ai::DailyMergeRequest {
             industry: var_industry,
             merge_prompt: var_mergePrompt,
             json_output: var_jsonOutput,
+            language: var_language,
             api_log_enabled: var_apiLogEnabled,
         };
     }
@@ -1646,6 +1648,7 @@ impl SseDecode for crate::ai::MemoryToolChatRequest {
         let mut var_messages = <Vec<crate::ai::AiChatMessage>>::sse_decode(deserializer);
         let mut var_thinkingEnabled = <bool>::sse_decode(deserializer);
         let mut var_reasoningEffort = <String>::sse_decode(deserializer);
+        let mut var_language = <String>::sse_decode(deserializer);
         let mut var_apiLogEnabled = <bool>::sse_decode(deserializer);
         return crate::ai::MemoryToolChatRequest {
             app_data_dir: var_appDataDir,
@@ -1654,6 +1657,7 @@ impl SseDecode for crate::ai::MemoryToolChatRequest {
             messages: var_messages,
             thinking_enabled: var_thinkingEnabled,
             reasoning_effort: var_reasoningEffort,
+            language: var_language,
             api_log_enabled: var_apiLogEnabled,
         };
     }
@@ -1910,6 +1914,7 @@ impl SseDecode for crate::report_regeneration::RegenerateReportRequest {
         let mut var_weeklyNotesDirectory = <String>::sse_decode(deserializer);
         let mut var_industry = <String>::sse_decode(deserializer);
         let mut var_dailyMergePrompt = <String>::sse_decode(deserializer);
+        let mut var_language = <String>::sse_decode(deserializer);
         let mut var_apiLogEnabled = <bool>::sse_decode(deserializer);
         return crate::report_regeneration::RegenerateReportRequest {
             app_data_dir: var_appDataDir,
@@ -1921,6 +1926,7 @@ impl SseDecode for crate::report_regeneration::RegenerateReportRequest {
             weekly_notes_directory: var_weeklyNotesDirectory,
             industry: var_industry,
             daily_merge_prompt: var_dailyMergePrompt,
+            language: var_language,
             api_log_enabled: var_apiLogEnabled,
         };
     }
@@ -1951,6 +1957,7 @@ impl SseDecode for crate::ai::ReportRequest {
         let mut var_sourceMarkdown = <String>::sse_decode(deserializer);
         let mut var_periodLabel = <String>::sse_decode(deserializer);
         let mut var_industry = <String>::sse_decode(deserializer);
+        let mut var_language = <String>::sse_decode(deserializer);
         let mut var_apiLogEnabled = <bool>::sse_decode(deserializer);
         return crate::ai::ReportRequest {
             app_data_dir: var_appDataDir,
@@ -1959,6 +1966,7 @@ impl SseDecode for crate::ai::ReportRequest {
             source_markdown: var_sourceMarkdown,
             period_label: var_periodLabel,
             industry: var_industry,
+            language: var_language,
             api_log_enabled: var_apiLogEnabled,
         };
     }
@@ -2024,6 +2032,7 @@ impl SseDecode for crate::ai::StructuredNoteRequest {
         let mut var_sections =
             <Vec<crate::ai::StructuredNoteSectionDefinition>>::sse_decode(deserializer);
         let mut var_industry = <String>::sse_decode(deserializer);
+        let mut var_language = <String>::sse_decode(deserializer);
         let mut var_apiLogEnabled = <bool>::sse_decode(deserializer);
         return crate::ai::StructuredNoteRequest {
             app_data_dir: var_appDataDir,
@@ -2033,6 +2042,7 @@ impl SseDecode for crate::ai::StructuredNoteRequest {
             images: var_images,
             sections: var_sections,
             industry: var_industry,
+            language: var_language,
             api_log_enabled: var_apiLogEnabled,
         };
     }
@@ -2509,6 +2519,7 @@ impl flutter_rust_bridge::IntoDart for crate::ai::DailyMergeRequest {
             self.industry.into_into_dart().into_dart(),
             self.merge_prompt.into_into_dart().into_dart(),
             self.json_output.into_into_dart().into_dart(),
+            self.language.into_into_dart().into_dart(),
             self.api_log_enabled.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -2597,6 +2608,7 @@ impl flutter_rust_bridge::IntoDart for crate::ai::MemoryToolChatRequest {
             self.messages.into_into_dart().into_dart(),
             self.thinking_enabled.into_into_dart().into_dart(),
             self.reasoning_effort.into_into_dart().into_dart(),
+            self.language.into_into_dart().into_dart(),
             self.api_log_enabled.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -2931,6 +2943,7 @@ impl flutter_rust_bridge::IntoDart for crate::report_regeneration::RegenerateRep
             self.weekly_notes_directory.into_into_dart().into_dart(),
             self.industry.into_into_dart().into_dart(),
             self.daily_merge_prompt.into_into_dart().into_dart(),
+            self.language.into_into_dart().into_dart(),
             self.api_log_enabled.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -2980,6 +2993,7 @@ impl flutter_rust_bridge::IntoDart for crate::ai::ReportRequest {
             self.source_markdown.into_into_dart().into_dart(),
             self.period_label.into_into_dart().into_dart(),
             self.industry.into_into_dart().into_dart(),
+            self.language.into_into_dart().into_dart(),
             self.api_log_enabled.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -3048,6 +3062,7 @@ impl flutter_rust_bridge::IntoDart for crate::ai::StructuredNoteRequest {
             self.images.into_into_dart().into_dart(),
             self.sections.into_into_dart().into_dart(),
             self.industry.into_into_dart().into_dart(),
+            self.language.into_into_dart().into_dart(),
             self.api_log_enabled.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -3312,6 +3327,7 @@ impl SseEncode for crate::ai::DailyMergeRequest {
         <String>::sse_encode(self.industry, serializer);
         <String>::sse_encode(self.merge_prompt, serializer);
         <bool>::sse_encode(self.json_output, serializer);
+        <String>::sse_encode(self.language, serializer);
         <bool>::sse_encode(self.api_log_enabled, serializer);
     }
 }
@@ -3518,6 +3534,7 @@ impl SseEncode for crate::ai::MemoryToolChatRequest {
         <Vec<crate::ai::AiChatMessage>>::sse_encode(self.messages, serializer);
         <bool>::sse_encode(self.thinking_enabled, serializer);
         <String>::sse_encode(self.reasoning_effort, serializer);
+        <String>::sse_encode(self.language, serializer);
         <bool>::sse_encode(self.api_log_enabled, serializer);
     }
 }
@@ -3687,6 +3704,7 @@ impl SseEncode for crate::report_regeneration::RegenerateReportRequest {
         <String>::sse_encode(self.weekly_notes_directory, serializer);
         <String>::sse_encode(self.industry, serializer);
         <String>::sse_encode(self.daily_merge_prompt, serializer);
+        <String>::sse_encode(self.language, serializer);
         <bool>::sse_encode(self.api_log_enabled, serializer);
     }
 }
@@ -3710,6 +3728,7 @@ impl SseEncode for crate::ai::ReportRequest {
         <String>::sse_encode(self.source_markdown, serializer);
         <String>::sse_encode(self.period_label, serializer);
         <String>::sse_encode(self.industry, serializer);
+        <String>::sse_encode(self.language, serializer);
         <bool>::sse_encode(self.api_log_enabled, serializer);
     }
 }
@@ -3752,6 +3771,7 @@ impl SseEncode for crate::ai::StructuredNoteRequest {
         <Vec<crate::ai::AiImageAttachment>>::sse_encode(self.images, serializer);
         <Vec<crate::ai::StructuredNoteSectionDefinition>>::sse_encode(self.sections, serializer);
         <String>::sse_encode(self.industry, serializer);
+        <String>::sse_encode(self.language, serializer);
         <bool>::sse_encode(self.api_log_enabled, serializer);
     }
 }

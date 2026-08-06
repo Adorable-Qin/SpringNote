@@ -1479,8 +1479,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   DailyMergeRequest dco_decode_daily_merge_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 10)
-      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
+    if (arr.length != 11)
+      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
     return DailyMergeRequest(
       appDataDir: dco_decode_String(arr[0]),
       provider: dco_decode_ai_provider(arr[1]),
@@ -1491,7 +1491,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       industry: dco_decode_String(arr[6]),
       mergePrompt: dco_decode_String(arr[7]),
       jsonOutput: dco_decode_bool(arr[8]),
-      apiLogEnabled: dco_decode_bool(arr[9]),
+      language: dco_decode_String(arr[9]),
+      apiLogEnabled: dco_decode_bool(arr[10]),
     );
   }
 
@@ -1660,8 +1661,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   MemoryToolChatRequest dco_decode_memory_tool_chat_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return MemoryToolChatRequest(
       appDataDir: dco_decode_String(arr[0]),
       provider: dco_decode_ai_provider(arr[1]),
@@ -1669,7 +1670,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       messages: dco_decode_list_ai_chat_message(arr[3]),
       thinkingEnabled: dco_decode_bool(arr[4]),
       reasoningEffort: dco_decode_String(arr[5]),
-      apiLogEnabled: dco_decode_bool(arr[6]),
+      language: dco_decode_String(arr[6]),
+      apiLogEnabled: dco_decode_bool(arr[7]),
     );
   }
 
@@ -1879,8 +1881,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RegenerateReportRequest dco_decode_regenerate_report_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 10)
-      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
+    if (arr.length != 11)
+      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
     return RegenerateReportRequest(
       appDataDir: dco_decode_String(arr[0]),
       provider: dco_decode_ai_provider(arr[1]),
@@ -1891,7 +1893,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       weeklyNotesDirectory: dco_decode_String(arr[6]),
       industry: dco_decode_String(arr[7]),
       dailyMergePrompt: dco_decode_String(arr[8]),
-      apiLogEnabled: dco_decode_bool(arr[9]),
+      language: dco_decode_String(arr[9]),
+      apiLogEnabled: dco_decode_bool(arr[10]),
     );
   }
 
@@ -1913,8 +1916,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ReportRequest dco_decode_report_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return ReportRequest(
       appDataDir: dco_decode_String(arr[0]),
       provider: dco_decode_ai_provider(arr[1]),
@@ -1922,7 +1925,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       sourceMarkdown: dco_decode_String(arr[3]),
       periodLabel: dco_decode_String(arr[4]),
       industry: dco_decode_String(arr[5]),
-      apiLogEnabled: dco_decode_bool(arr[6]),
+      language: dco_decode_String(arr[6]),
+      apiLogEnabled: dco_decode_bool(arr[7]),
     );
   }
 
@@ -1966,8 +1970,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   StructuredNoteRequest dco_decode_structured_note_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 8)
-      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    if (arr.length != 9)
+      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
     return StructuredNoteRequest(
       appDataDir: dco_decode_String(arr[0]),
       provider: dco_decode_ai_provider(arr[1]),
@@ -1976,7 +1980,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       images: dco_decode_list_ai_image_attachment(arr[4]),
       sections: dco_decode_list_structured_note_section_definition(arr[5]),
       industry: dco_decode_String(arr[6]),
-      apiLogEnabled: dco_decode_bool(arr[7]),
+      language: dco_decode_String(arr[7]),
+      apiLogEnabled: dco_decode_bool(arr[8]),
     );
   }
 
@@ -2363,6 +2368,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_industry = sse_decode_String(deserializer);
     var var_mergePrompt = sse_decode_String(deserializer);
     var var_jsonOutput = sse_decode_bool(deserializer);
+    var var_language = sse_decode_String(deserializer);
     var var_apiLogEnabled = sse_decode_bool(deserializer);
     return DailyMergeRequest(
       appDataDir: var_appDataDir,
@@ -2374,6 +2380,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       industry: var_industry,
       mergePrompt: var_mergePrompt,
       jsonOutput: var_jsonOutput,
+      language: var_language,
       apiLogEnabled: var_apiLogEnabled,
     );
   }
@@ -2644,6 +2651,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_messages = sse_decode_list_ai_chat_message(deserializer);
     var var_thinkingEnabled = sse_decode_bool(deserializer);
     var var_reasoningEffort = sse_decode_String(deserializer);
+    var var_language = sse_decode_String(deserializer);
     var var_apiLogEnabled = sse_decode_bool(deserializer);
     return MemoryToolChatRequest(
       appDataDir: var_appDataDir,
@@ -2652,6 +2660,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       messages: var_messages,
       thinkingEnabled: var_thinkingEnabled,
       reasoningEffort: var_reasoningEffort,
+      language: var_language,
       apiLogEnabled: var_apiLogEnabled,
     );
   }
@@ -2919,6 +2928,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_weeklyNotesDirectory = sse_decode_String(deserializer);
     var var_industry = sse_decode_String(deserializer);
     var var_dailyMergePrompt = sse_decode_String(deserializer);
+    var var_language = sse_decode_String(deserializer);
     var var_apiLogEnabled = sse_decode_bool(deserializer);
     return RegenerateReportRequest(
       appDataDir: var_appDataDir,
@@ -2930,6 +2940,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       weeklyNotesDirectory: var_weeklyNotesDirectory,
       industry: var_industry,
       dailyMergePrompt: var_dailyMergePrompt,
+      language: var_language,
       apiLogEnabled: var_apiLogEnabled,
     );
   }
@@ -2960,6 +2971,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_sourceMarkdown = sse_decode_String(deserializer);
     var var_periodLabel = sse_decode_String(deserializer);
     var var_industry = sse_decode_String(deserializer);
+    var var_language = sse_decode_String(deserializer);
     var var_apiLogEnabled = sse_decode_bool(deserializer);
     return ReportRequest(
       appDataDir: var_appDataDir,
@@ -2968,6 +2980,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       sourceMarkdown: var_sourceMarkdown,
       periodLabel: var_periodLabel,
       industry: var_industry,
+      language: var_language,
       apiLogEnabled: var_apiLogEnabled,
     );
   }
@@ -3032,6 +3045,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       deserializer,
     );
     var var_industry = sse_decode_String(deserializer);
+    var var_language = sse_decode_String(deserializer);
     var var_apiLogEnabled = sse_decode_bool(deserializer);
     return StructuredNoteRequest(
       appDataDir: var_appDataDir,
@@ -3041,6 +3055,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       images: var_images,
       sections: var_sections,
       industry: var_industry,
+      language: var_language,
       apiLogEnabled: var_apiLogEnabled,
     );
   }
@@ -3394,6 +3409,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.industry, serializer);
     sse_encode_String(self.mergePrompt, serializer);
     sse_encode_bool(self.jsonOutput, serializer);
+    sse_encode_String(self.language, serializer);
     sse_encode_bool(self.apiLogEnabled, serializer);
   }
 
@@ -3625,6 +3641,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_list_ai_chat_message(self.messages, serializer);
     sse_encode_bool(self.thinkingEnabled, serializer);
     sse_encode_String(self.reasoningEffort, serializer);
+    sse_encode_String(self.language, serializer);
     sse_encode_bool(self.apiLogEnabled, serializer);
   }
 
@@ -3813,6 +3830,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.weeklyNotesDirectory, serializer);
     sse_encode_String(self.industry, serializer);
     sse_encode_String(self.dailyMergePrompt, serializer);
+    sse_encode_String(self.language, serializer);
     sse_encode_bool(self.apiLogEnabled, serializer);
   }
 
@@ -3837,6 +3855,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.sourceMarkdown, serializer);
     sse_encode_String(self.periodLabel, serializer);
     sse_encode_String(self.industry, serializer);
+    sse_encode_String(self.language, serializer);
     sse_encode_bool(self.apiLogEnabled, serializer);
   }
 
@@ -3882,6 +3901,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       serializer,
     );
     sse_encode_String(self.industry, serializer);
+    sse_encode_String(self.language, serializer);
     sse_encode_bool(self.apiLogEnabled, serializer);
   }
 

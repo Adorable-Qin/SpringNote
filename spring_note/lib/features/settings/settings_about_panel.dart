@@ -47,7 +47,7 @@ class _AboutPanel extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Text(
-                    'AI 智能便签与日报生成工具',
+                    l10n(context).settingsAppTagline,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -61,12 +61,12 @@ class _AboutPanel extends StatelessWidget {
             const _PlatformInfoRow(),
             _AboutListRow(
               icon: _AboutRowIconType.update,
-              label: '检查更新',
+              label: l10n(context).settingsCheckForUpdates,
               onTap: () => _checkForUpdates(context),
             ),
             _AboutListRow(
               icon: _AboutRowIconType.globe,
-              label: '官网',
+              label: l10n(context).settingsWebsite,
               onTap: () => _externalLinkService.open(_websiteUrl),
             ),
             _AboutListRow(
@@ -76,12 +76,12 @@ class _AboutPanel extends StatelessWidget {
             ),
             _AboutListRow(
               icon: _AboutRowIconType.license,
-              label: '许可证',
+              label: l10n(context).settingsLicense,
               onTap: () => _externalLinkService.open(_licenseUrl),
             ),
             _AboutListRow(
               icon: _AboutRowIconType.qq,
-              label: '加入QQ群',
+              label: l10n(context).settingsJoinQQGroup,
               onTap: () => _externalLinkService.open(_qqGroupUrl),
             ),
           ],
@@ -92,7 +92,9 @@ class _AboutPanel extends StatelessWidget {
 
   Future<void> _checkForUpdates(BuildContext context) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
-    messenger?.showSnackBar(const SnackBar(content: Text('正在检查更新...')));
+    messenger?.showSnackBar(
+      SnackBar(content: Text(l10n(context).settingsCheckingForUpdates)),
+    );
     final result = await updateCheckService.check(
       mode: UpdateCheckMode.userInitiated,
     );
@@ -104,7 +106,11 @@ class _AboutPanel extends StatelessWidget {
       case UpdateCheckStatus.updateAvailable:
         final latest = result.latest;
         if (latest == null) {
-          messenger?.showSnackBar(const SnackBar(content: Text('暂时无法读取更新内容')));
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(l10n(context).settingsUpdateContentUnavailable),
+            ),
+          );
           return;
         }
         await showAppUpdateDialog(
@@ -114,10 +120,12 @@ class _AboutPanel extends StatelessWidget {
           latest: latest,
         );
       case UpdateCheckStatus.idle:
-        messenger?.showSnackBar(const SnackBar(content: Text('当前已是最新版本')));
+        messenger?.showSnackBar(
+          SnackBar(content: Text(l10n(context).settingsAlreadyUpToDate)),
+        );
       case UpdateCheckStatus.failed:
         messenger?.showSnackBar(
-          const SnackBar(content: Text('暂时无法检查更新，请稍后重试')),
+          SnackBar(content: Text(l10n(context).settingsUpdateCheckFailed)),
         );
     }
   }
@@ -143,7 +151,10 @@ class _AboutListCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
             child: Row(
               children: [
-                Text('关于', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  l10n(context).settingsSectionAbout,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ],
             ),
           ),
@@ -192,7 +203,7 @@ class _PubspecVersionRow extends StatelessWidget {
       builder: (context, snapshot) {
         return _AboutListRow(
           icon: _AboutRowIconType.code,
-          label: '版本',
+          label: l10n(context).settingsVersion,
           value: snapshot.data ?? '1.0.0',
         );
       },
@@ -203,7 +214,7 @@ class _PubspecVersionRow extends StatelessWidget {
 class _PlatformInfoRow extends StatelessWidget {
   const _PlatformInfoRow();
 
-  String get _platformLabel {
+  String _platformLabel(String unknown) {
     if (Platform.isWindows) {
       return 'Windows';
     }
@@ -219,15 +230,15 @@ class _PlatformInfoRow extends StatelessWidget {
     if (Platform.isIOS) {
       return 'iOS';
     }
-    return '未知';
+    return unknown;
   }
 
   @override
   Widget build(BuildContext context) {
     return _AboutListRow(
       icon: _AboutRowIconType.system,
-      label: '系统',
-      value: _platformLabel,
+      label: l10n(context).settingsSystem,
+      value: _platformLabel(l10n(context).settingsUnknown),
     );
   }
 }

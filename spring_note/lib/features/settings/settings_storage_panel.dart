@@ -91,7 +91,7 @@ class _StoragePanelState extends State<_StoragePanel> {
       }
       setState(() {
         _scanning = false;
-        _message = '扫描失败：$error';
+        _message = l10n(context).settingsScanFailed('$error');
         _messageIsError = true;
       });
     }
@@ -143,41 +143,50 @@ class _StoragePanelState extends State<_StoragePanel> {
       }
       setState(() {
         _cleaning = false;
-        _message = '清理失败：$error';
+        _message = l10n(context).settingsCleanFailed('$error');
         _messageIsError = true;
       });
     }
   }
 
   String _cleanupMessage(NoteImageCleanupDeleteResult result) {
+    final strings = l10n(context);
     if (result.failedImages.isNotEmpty) {
-      return '已清理 ${result.deletedCount} 张，'
-          '${result.failedImages.length} 张删除失败。';
+      return strings.settingsCleanPartialFailed(
+        result.deletedCount,
+        result.failedImages.length,
+      );
     }
     if (result.deletedCount == 0 && result.skippedCount > 0) {
-      return '图片引用已发生变化，没有删除任何文件。';
+      return strings.settingsCleanNoFiles;
     }
     if (result.skippedCount > 0) {
-      return '已清理 ${result.deletedCount} 张图片，'
-          '${result.skippedCount} 张因引用变化已保留。';
+      return strings.settingsCleanSkipped(
+        result.deletedCount,
+        result.skippedCount,
+      );
     }
-    return '已清理 ${result.deletedCount} 张图片，释放 '
-        '${_formatStorageBytes(result.deletedSizeBytes)}。';
+    return strings.settingsCleanDone(
+      result.deletedCount,
+      _formatStorageBytes(result.deletedSizeBytes),
+    );
   }
 
   String _statusText() {
+    final strings = l10n(context);
     if (_cleaning) {
-      return '正在清理';
+      return strings.settingsCleaning;
     }
     if (_message case final message?) {
       return message;
     }
-    return _scanning ? '正在扫描' : '';
+    return _scanning ? strings.settingsScanning : '';
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     final scan = _scan;
     final canClean = !_busy && scan != null && scan.unusedImages.isNotEmpty;
     final statusText = _statusText();
@@ -192,10 +201,10 @@ class _StoragePanelState extends State<_StoragePanel> {
       maxWidth: 820,
       children: [
         _SettingsCard(
-          title: '图片附件',
+          title: strings.settingsImageAttachments,
           trailing: _StorageActionButton(
             key: const ValueKey('storage-rescan-button'),
-            label: '重新扫描',
+            label: strings.settingsRescan,
             width: 96,
             enabled: !_busy,
             onTap: _loadScan,
@@ -244,7 +253,7 @@ class _StoragePanelState extends State<_StoragePanel> {
                       const SizedBox(width: 18),
                       _StorageActionButton(
                         key: const ValueKey('storage-clean-button'),
-                        label: '清理图片',
+                        label: strings.settingsCleanImages,
                         width: 108,
                         filled: true,
                         enabled: canClean,
@@ -270,6 +279,7 @@ class _StorageScanState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 98),
@@ -284,7 +294,7 @@ class _StorageScanState extends StatelessWidget {
           Icon(Icons.image_search_outlined, size: 21, color: colors.textSubtle),
           const SizedBox(width: 11),
           Text(
-            scanning ? '正在扫描' : '暂无统计信息',
+            scanning ? strings.settingsScanning : strings.settingsNoStats,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: colors.textSubtle),
@@ -314,9 +324,10 @@ class _StorageOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     final metrics = [
       _StorageMetric(
-        label: '全部图片',
+        label: strings.settingsAllImages,
         value: totalCount.toString(),
         detail: _formatStorageBytes(totalSize),
         icon: _SettingsNavIconType.image,
@@ -324,7 +335,7 @@ class _StorageOverview extends StatelessWidget {
         valueKey: const ValueKey('storage-total-image-count'),
       ),
       _StorageMetric(
-        label: '仍在使用',
+        label: strings.settingsStillInUse,
         value: referencedCount.toString(),
         detail: _formatStorageBytes(referencedSize),
         icon: _SettingsNavIconType.layers,
@@ -332,7 +343,7 @@ class _StorageOverview extends StatelessWidget {
         valueKey: const ValueKey('storage-referenced-image-count'),
       ),
       _StorageMetric(
-        label: '可以清理',
+        label: strings.settingsCleanable,
         value: unusedCount.toString(),
         detail: _formatStorageBytes(unusedSize),
         icon: _SettingsNavIconType.trash,
@@ -659,6 +670,7 @@ class _UnusedImagesConfirmDialogState
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     final previewImage = _previewImage;
     return Dialog(
       backgroundColor: AppTheme.dialogSurface(context),
@@ -677,7 +689,7 @@ class _UnusedImagesConfirmDialogState
                 children: [
                   Expanded(
                     child: Text(
-                      '清理图片',
+                      strings.settingsCleanImages,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: colors.text,
                         fontSize: 18,
@@ -685,7 +697,7 @@ class _UnusedImagesConfirmDialogState
                     ),
                   ),
                   IconButton(
-                    tooltip: '关闭',
+                    tooltip: strings.actionClose,
                     onPressed: _submitting
                         ? null
                         : () => Navigator.of(context).pop(),
@@ -708,13 +720,13 @@ class _UnusedImagesConfirmDialogState
                           child: Row(
                             children: [
                               Text(
-                                '未使用 ${widget.scan.unusedImageCount}',
+                                strings.settingsUnusedCount(widget.scan.unusedImageCount),
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(color: colors.text),
                               ),
                               const Spacer(),
                               _StorageTextButton(
-                                label: _allSelected ? '取消全选' : '全选',
+                                label: _allSelected ? strings.settingsDeselectAll : strings.settingsSelectAll,
                                 onTap: _toggleAll,
                               ),
                             ],
@@ -790,8 +802,10 @@ class _UnusedImagesConfirmDialogState
                 children: [
                   Expanded(
                     child: Text(
-                      '已选 ${_selectedPaths.length} · '
-                      '${_formatStorageBytes(_selectedSize)}',
+                      strings.settingsSelectedSummary(
+                        _selectedPaths.length,
+                        _formatStorageBytes(_selectedSize),
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -801,7 +815,7 @@ class _UnusedImagesConfirmDialogState
                   ),
                   const SizedBox(width: 16),
                   _StorageActionButton(
-                    label: '取消',
+                    label: strings.actionCancel,
                     width: 82,
                     enabled: !_submitting,
                     onTap: () => Navigator.of(context).pop(),
@@ -809,7 +823,7 @@ class _UnusedImagesConfirmDialogState
                   const SizedBox(width: 10),
                   _StorageActionButton(
                     key: const ValueKey('storage-confirm-clean-button'),
-                    label: '确认删除',
+                    label: strings.settingsConfirmDelete,
                     width: 104,
                     enabled: !_submitting && _selectedPaths.isNotEmpty,
                     filled: true,
@@ -1017,6 +1031,7 @@ class _StoragePreviewPane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     final displayPath = 'images/${image.relativePath}';
     final file = _storageImageFile(dataDirectory, image.relativePath);
     return Padding(
@@ -1025,7 +1040,7 @@ class _StoragePreviewPane extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '预览',
+            strings.settingsPreview,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: colors.text),
@@ -1110,6 +1125,7 @@ class _StorageImageFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     if (thumbnail) {
       return Center(
         child: Icon(Icons.image_outlined, size: 18, color: colors.textSubtle),
@@ -1122,7 +1138,7 @@ class _StorageImageFallback extends StatelessWidget {
           Icon(Icons.broken_image_outlined, size: 30, color: colors.textSubtle),
           const SizedBox(height: 8),
           Text(
-            '无法预览这张图片',
+            strings.settingsPreviewFailed,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: colors.textSubtle),

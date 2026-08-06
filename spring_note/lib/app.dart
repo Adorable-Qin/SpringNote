@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoLocalizations;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -9,6 +10,8 @@ import 'core/services/note_service.dart';
 import 'core/services/stats_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_window_frame.dart';
+import 'l10n/app_localizations.dart';
+import 'l10n/l10n.dart';
 
 class SpringNoteApp extends StatefulWidget {
   const SpringNoteApp({
@@ -47,20 +50,40 @@ class _SpringNoteAppState extends State<SpringNoteApp> {
     }
   }
 
+  Locale? _resolveLocale(String language) {
+    return switch (language) {
+      'zh' => const Locale.fromSubtags(languageCode: 'zh', countryCode: 'CN'),
+      'en' => const Locale('en'),
+      _ => null,
+    };
+  }
+
+  bool _englishUi(BuildContext context) {
+    final explicit = _resolveLocale(_config.language);
+    if (explicit != null) {
+      return explicit.languageCode.startsWith('en');
+    }
+    return Localizations.localeOf(context).languageCode.startsWith('en');
+  }
+
   @override
   Widget build(BuildContext context) {
     final fontScale = AppTheme.fontScaleFactor(_config.fontScale);
     return MaterialApp(
       title: 'SpringNote',
       debugShowCheckedModeBanner: false,
-      locale: const Locale.fromSubtags(languageCode: 'zh', countryCode: 'CN'),
+      locale: _resolveLocale(_config.language),
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // 必须是 zh_CN 而不是裸 zh：引擎按 Locale 选择中文回退字体，
+      // 裸 zh 会丢掉简体中文偏好，回退到更细的字体（如微软正黑体）。
       supportedLocales: const [
         Locale.fromSubtags(languageCode: 'zh', countryCode: 'CN'),
+        Locale('en'),
       ],
       theme: AppTheme.light(appFont: _config.appFont),
       darkTheme: AppTheme.dark(appFont: _config.appFont),
@@ -69,10 +92,37 @@ class _SpringNoteAppState extends State<SpringNoteApp> {
       themeAnimationCurve: Curves.linear,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
-        return MediaQuery(
+        Widget content = MediaQuery(
           data: mediaQuery.copyWith(textScaler: TextScaler.linear(fontScale)),
           child: child ?? const SizedBox.shrink(),
         );
+        // 英文界面下：文本整形/字体回退仍按 zh_CN（与中文界面一致），
+        // 文案资源强制加载英文。引擎与 RichText 都按 Localizations
+        // 的 locale 选择中文回退字体，包这层后中文内容在英文界面下
+        // 不会落到更细的英文回退字体上。
+        if (_englishUi(context)) {
+          content = Localizations.override(
+            context: context,
+            locale: const Locale.fromSubtags(
+              languageCode: 'zh',
+              countryCode: 'CN',
+            ),
+            delegates: const [
+              _ForceEnglishDelegate<AppLocalizations>(AppLocalizations.delegate),
+              _ForceEnglishDelegate<MaterialLocalizations>(
+                GlobalMaterialLocalizations.delegate,
+              ),
+              _ForceEnglishDelegate<WidgetsLocalizations>(
+                GlobalWidgetsLocalizations.delegate,
+              ),
+              _ForceEnglishDelegate<CupertinoLocalizations>(
+                GlobalCupertinoLocalizations.delegate,
+              ),
+            ],
+            child: content,
+          );
+        }
+        return content;
       },
       home: AppWindowFrame(
         child: FutureBuilder<LocalDataState>(
@@ -138,7 +188,7 @@ class AppStartupError extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'SpringNote 启动失败',
+                l10n(context).coreStartupFailedTitle,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
@@ -154,4 +204,21 @@ class AppStartupError extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 始终加载英文资源的委托：配合 `Localizations.override(locale: zh_CN)`
+/// 使用，让英文界面下的文本整形/字体回退仍走 zh_CN，而界面文案保持英文。
+class _ForceEnglishDelegate<T> extends LocalizationsDelegate<T> {
+  const _ForceEnglishDelegate(this.delegate);
+
+  final LocalizationsDelegate<T> delegate;
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<T> load(Locale locale) => delegate.load(const Locale('en'));
+
+  @override
+  bool shouldReload(_ForceEnglishDelegate<T> old) => false;
 }

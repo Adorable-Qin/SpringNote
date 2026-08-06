@@ -4,6 +4,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/spring_tree.dart';
 import '../../core/widgets/spring_markdown.dart';
+import '../../l10n/l10n.dart';
 
 class MarkdownPreview extends StatelessWidget {
   const MarkdownPreview({
@@ -33,7 +34,7 @@ class MarkdownPreview extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxContentWidth),
             child: Text(
-              '预览区域会随着 Markdown 源码实时刷新',
+              l10n(context).notesPreviewEmptyHint,
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: colors.textSubtle),

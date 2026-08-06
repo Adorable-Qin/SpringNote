@@ -70,7 +70,17 @@ class MockAiService {
   }
 
   bool _usesDefaultSemantics(List<StructuredNoteSectionConfig> sections) {
-    final defaults = StructuredNoteSectionConfig.defaults;
+    return _matchesDefaults(sections, StructuredNoteSectionConfig.defaults) ||
+        _matchesDefaults(
+          sections,
+          StructuredNoteSectionConfig.defaultsFor('en'),
+        );
+  }
+
+  bool _matchesDefaults(
+    List<StructuredNoteSectionConfig> sections,
+    List<StructuredNoteSectionConfig> defaults,
+  ) {
     for (var index = 0; index < defaults.length; index++) {
       if (sections[index].aiInstruction.trim() !=
           defaults[index].aiInstruction) {

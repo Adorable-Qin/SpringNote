@@ -18,6 +18,7 @@ import 'package:spring_note/core/widgets/spring_markdown.dart';
 import 'package:spring_note/core/widgets/spring_tree.dart';
 import 'package:spring_note/features/memory/memory_input_modes.dart';
 import 'package:spring_note/features/memory/memory_page.dart';
+import 'package:spring_note/l10n/app_localizations_zh.dart';
 import 'package:spring_note/src/rust/ai.dart' as rust_ai;
 
 void main() {
@@ -69,9 +70,9 @@ void main() {
       toolCallId: 'call-keyword',
     );
 
-    expect(memoryToolResultLabel(dateResult), '已返回');
-    expect(memoryToolResultLabel(emptyResult), '无结果');
-    expect(memoryToolResultLabel(null), '无结果');
+    expect(memoryToolResultLabel(AppLocalizationsZh(), dateResult), '已返回');
+    expect(memoryToolResultLabel(AppLocalizationsZh(), emptyResult), '无结果');
+    expect(memoryToolResultLabel(AppLocalizationsZh(), null), '无结果');
   });
 
   test('memory tool cache key is stable for reordered arguments', () {

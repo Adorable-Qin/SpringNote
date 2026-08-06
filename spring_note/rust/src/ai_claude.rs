@@ -1177,6 +1177,9 @@ mod tests {
             }],
             thinking_enabled,
             reasoning_effort: effort.to_string(),
+            language: "zh".to_string(),
+
+
             api_log_enabled: false,
         }
     }

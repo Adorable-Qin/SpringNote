@@ -158,6 +158,7 @@ class _ProvidersSidebarState extends State<_ProvidersSidebar> {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     final filteredProviders = _filteredProviders;
     final effectiveSelectedProviderId =
         widget.selectedProviderId ??
@@ -175,21 +176,21 @@ class _ProvidersSidebarState extends State<_ProvidersSidebar> {
             key: const ValueKey('provider-search-field'),
             onChanged: (value) => setState(() => _query = value),
             textInputAction: TextInputAction.search,
-            decoration: const InputDecoration(hintText: '搜索供应商', isDense: true),
+            decoration: InputDecoration(hintText: strings.settingsProvidersSearchHint, isDense: true),
           ),
           const SizedBox(height: 14),
           Expanded(
             child: widget.providers.isEmpty
                 ? Center(
                     child: Text(
-                      '暂无供应商',
+                      strings.settingsNoProviders,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   )
                 : filteredProviders.isEmpty
                 ? Center(
                     child: Text(
-                      '未找到匹配的供应商',
+                      strings.settingsNoMatchingProviders,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   )
@@ -222,7 +223,7 @@ class _ProvidersSidebarState extends State<_ProvidersSidebar> {
                 }
               },
               icon: const Icon(Icons.add_rounded, size: 17),
-              label: const Text('添加'),
+              label: Text(strings.settingsAdd),
             ),
           ),
         ],
@@ -327,6 +328,7 @@ class _ProviderDetailsState extends State<_ProviderDetails> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     final provider = widget.provider;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -355,7 +357,7 @@ class _ProviderDetailsState extends State<_ProviderDetails> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _LooseField(
-                      label: '名称',
+                      label: strings.settingsProviderName,
                       value: provider.name,
                       onChanged: (value) {
                         widget.onProviderChanged(
@@ -391,7 +393,7 @@ class _ProviderDetailsState extends State<_ProviderDetails> {
                       },
                     ),
                     _LooseField(
-                      label: 'API 路径',
+                      label: strings.settingsApiPath,
                       value: provider.apiPath,
                       onChanged: (value) {
                         widget.onProviderChanged(
@@ -422,7 +424,7 @@ class _ProviderDetailsState extends State<_ProviderDetails> {
 
   Future<void> _testConnection() async {
     if (widget.provider.models.isEmpty) {
-      setState(() => _actionMessage = '请先添加至少一个模型。');
+      setState(() => _actionMessage = l10n(context).settingsAddModelFirst);
       return;
     }
 
@@ -456,20 +458,20 @@ class _ProviderDetailsState extends State<_ProviderDetails> {
           onModelAdded: (model) async {
             await widget.onModelChanged(widget.provider, model);
             if (mounted) {
-              setState(() => _actionMessage = '已添加 ${model.displayName}');
+              setState(() => _actionMessage = l10n(context).settingsModelAdded(model.displayName));
             }
           },
           onModelRemoved: (modelId) async {
             await widget.onModelDeleted(widget.provider, modelId);
             if (mounted) {
-              setState(() => _actionMessage = '已移除模型');
+              setState(() => _actionMessage = l10n(context).settingsModelRemoved);
             }
           },
         ),
       );
     } catch (_) {
       if (mounted) {
-        setState(() => _actionMessage = '获取模型失败，请检查供应商配置。');
+        setState(() => _actionMessage = l10n(context).settingsFetchModelsFailed);
       }
     } finally {
       if (mounted) {
@@ -492,6 +494,7 @@ class _ProviderDetailsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -518,7 +521,7 @@ class _ProviderDetailsHeader extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               _ProviderActionIconButton(
-                tooltip: '删除供应商',
+                tooltip: strings.settingsDeleteProvider,
                 onPressed: () async {
                   final confirmed = await showDialog<bool>(
                     context: context,
@@ -550,6 +553,7 @@ class _DeleteProviderConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Dialog(
       backgroundColor: AppTheme.dialogSurface(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
@@ -562,7 +566,7 @@ class _DeleteProviderConfirmDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '删除供应商',
+                strings.settingsDeleteProvider,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: colors.text,
                   fontWeight: FontWeight.w600,
@@ -570,7 +574,7 @@ class _DeleteProviderConfirmDialog extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                '确定要删除该供应商吗？此操作不可撤销。',
+                strings.settingsDeleteProviderConfirm,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.text,
                   height: 1.5,
@@ -581,13 +585,13 @@ class _DeleteProviderConfirmDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   _DeleteDialogButton(
-                    label: '取消',
+                    label: strings.actionCancel,
                     isDestructive: false,
                     onTap: () => Navigator.of(context).pop(false),
                   ),
                   const SizedBox(width: 10),
                   _DeleteDialogButton(
-                    label: '删除',
+                    label: strings.actionDelete,
                     isDestructive: true,
                     onTap: () => Navigator.of(context).pop(true),
                   ),
@@ -724,8 +728,9 @@ class _ProviderConnectionTestDialogState
     }
 
     setState(() {
+      final strings = l10n(context);
       _status = _ProviderConnectionTestStatus.testing(
-        _useStream ? '流式测试中' : '测试中',
+        _useStream ? strings.settingsTestingStream : strings.settingsTesting,
       );
     });
 
@@ -736,6 +741,7 @@ class _ProviderConnectionTestDialogState
               apiLogEnabled: widget.apiLogEnabled,
               provider: widget.provider,
               model: model,
+              language: currentAppLanguage(context),
             )
           : await widget.aiClientService.testProviderConnection(
               appDataDir: widget.appDataDir,
@@ -747,14 +753,24 @@ class _ProviderConnectionTestDialogState
         return;
       }
       setState(() {
+        final strings = l10n(context);
         _status = result.ok
-            ? _ProviderConnectionTestStatus.success(result.message)
-            : _ProviderConnectionTestStatus.failure(result.message);
+            ? _ProviderConnectionTestStatus.success(
+                result.message,
+                strings.settingsConnectionSucceeded,
+              )
+            : _ProviderConnectionTestStatus.failure(
+                result.message,
+                strings.settingsConnectionFailed,
+              );
       });
     } catch (_) {
       if (mounted) {
         setState(() {
-          _status = _ProviderConnectionTestStatus.failure('连接测试失败');
+          _status = _ProviderConnectionTestStatus.failure(
+            l10n(context).settingsConnectionTestFailed,
+            l10n(context).settingsConnectionFailed,
+          );
         });
       }
     }
@@ -764,6 +780,7 @@ class _ProviderConnectionTestDialogState
   Widget build(BuildContext context) {
     final selectedModel = _selectedModel;
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Dialog(
       key: const ValueKey('provider-connection-test-dialog'),
       backgroundColor: AppTheme.dialogSurface(context),
@@ -777,7 +794,7 @@ class _ProviderConnectionTestDialogState
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
               child: Text(
-                '测试连接',
+                strings.settingsTestConnection,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: colors.text,
@@ -797,7 +814,7 @@ class _ProviderConnectionTestDialogState
               child: Row(
                 children: [
                   Text(
-                    '使用流式',
+                    strings.settingsUseStreaming,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: colors.text,
                       height: 1.2,
@@ -839,13 +856,13 @@ class _ProviderConnectionTestDialogState
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   _ProviderTestDialogButton(
-                    label: '取消',
+                    label: strings.actionCancel,
                     filled: false,
                     onTap: _testing ? null : () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 10),
                   _ProviderTestDialogButton(
-                    label: _testing ? '测试中' : '测试',
+                    label: _testing ? strings.settingsTesting : strings.settingsTest,
                     filled: true,
                     onTap: _testing ? null : _runTest,
                   ),
@@ -874,17 +891,23 @@ class _ProviderConnectionTestStatus {
     );
   }
 
-  factory _ProviderConnectionTestStatus.success(String message) {
+  factory _ProviderConnectionTestStatus.success(
+    String message,
+    String fallback,
+  ) {
     return _ProviderConnectionTestStatus._(
       kind: _ProviderConnectionTestStatusKind.success,
-      message: message.isEmpty ? '连接成功' : message,
+      message: message.isEmpty ? fallback : message,
     );
   }
 
-  factory _ProviderConnectionTestStatus.failure(String message) {
+  factory _ProviderConnectionTestStatus.failure(
+    String message,
+    String fallback,
+  ) {
     return _ProviderConnectionTestStatus._(
       kind: _ProviderConnectionTestStatusKind.failure,
-      message: message.isEmpty ? '连接失败' : message,
+      message: message.isEmpty ? fallback : message,
     );
   }
 
@@ -915,6 +938,7 @@ class _ProviderSelectedModelButtonState
     final enabled = widget.onTap != null;
     final model = widget.model;
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return MouseRegion(
       cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
       onEnter: (_) {
@@ -949,7 +973,7 @@ class _ProviderSelectedModelButtonState
                 ),
               Center(
                 child: Text(
-                  model?.displayName ?? '选择模型',
+                  model?.displayName ?? strings.settingsSelectModel,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colors.text,
@@ -974,6 +998,7 @@ class _ProviderConnectionResultView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     final current = status;
     if (current == null) {
       return const SizedBox(height: 18);
@@ -994,7 +1019,7 @@ class _ProviderConnectionResultView extends StatelessWidget {
     return Tooltip(
       message: current.message,
       child: Text(
-        success ? '测试成功' : current.message,
+        success ? strings.settingsTestSucceeded : current.message,
         key: ValueKey(
           success
               ? 'provider-connection-success'
@@ -1060,6 +1085,7 @@ class _ProviderConnectionModelPickerDialogState
   @override
   Widget build(BuildContext context) {
     final models = _models;
+    final strings = l10n(context);
     return Dialog(
       key: const ValueKey('provider-connection-model-picker-dialog'),
       backgroundColor: AppTheme.dialogSurface(context),
@@ -1075,7 +1101,7 @@ class _ProviderConnectionModelPickerDialogState
               child: _SettingsSearchField(
                 controller: _controller,
                 autofocus: true,
-                hintText: '搜索模型或服务商',
+                hintText: strings.settingsSearchModelsOrProviders,
                 onChanged: (value) => setState(() => _query = value),
               ),
             ),
@@ -1083,7 +1109,7 @@ class _ProviderConnectionModelPickerDialogState
               child: models.isEmpty
                   ? Center(
                       child: Text(
-                        '没有匹配的模型',
+                        strings.settingsNoMatchingModels,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     )
@@ -1355,7 +1381,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
     final normalizedQuery = _query.trim().toLowerCase();
     final grouped = <String, List<ModelConfig>>{};
     for (final model in _models) {
-      final groupName = _providerModelGroupName(model.modelId);
+      final groupName = _providerModelGroupName(model.modelId, l10n(context).settingsOtherModels);
       final searchable = '${model.displayName} ${model.modelId} $groupName'
           .toLowerCase();
       if (normalizedQuery.isNotEmpty && !searchable.contains(normalizedQuery)) {
@@ -1399,7 +1425,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
           _loading = false;
           _models = const [];
           _errorMessage = result.errorMessage.isEmpty
-              ? '获取模型失败，请检查供应商配置。'
+              ? l10n(context).settingsFetchModelsFailed
               : result.errorMessage;
         });
         return;
@@ -1423,7 +1449,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
             b.displayName.toLowerCase(),
           ),
         );
-      final groups = _buildProviderModelGroups(models);
+      final groups = _buildProviderModelGroups(models, l10n(context).settingsOtherModels);
       final selectedGroups = {
         for (final group in groups)
           if (group.models.any(
@@ -1447,7 +1473,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
         setState(() {
           _loading = false;
           _models = const [];
-          _errorMessage = '获取模型失败，请检查供应商配置。';
+          _errorMessage = l10n(context).settingsFetchModelsFailed;
         });
       }
     }
@@ -1504,6 +1530,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
     final groups = _groups;
     final searching = _query.trim().isNotEmpty;
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Dialog(
       key: const ValueKey('provider-model-fetch-dialog'),
       backgroundColor: AppTheme.dialogSurface(context),
@@ -1523,7 +1550,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${widget.provider.name} 模型',
+                          strings.settingsProviderModelsTitle(widget.provider.name),
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(
                             context,
@@ -1531,7 +1558,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '选择要添加到当前提供商的模型',
+                          strings.settingsSelectModelsSubtitle,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: colors.textSubtle),
                         ),
@@ -1539,12 +1566,12 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
                     ),
                   ),
                   IconButton(
-                    tooltip: '刷新',
+                    tooltip: strings.settingsRefresh,
                     onPressed: _loading ? null : _loadModels,
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                   ),
                   IconButton(
-                    tooltip: '关闭',
+                    tooltip: strings.actionClose,
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded, size: 18),
                   ),
@@ -1556,7 +1583,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
               child: _SettingsSearchField(
                 controller: _controller,
                 autofocus: true,
-                hintText: '搜索模型',
+                hintText: strings.settingsSearchModels,
                 onChanged: (value) => setState(() => _query = value),
               ),
             ),
@@ -1574,7 +1601,7 @@ class _ProviderModelFetchDialogState extends State<_ProviderModelFetchDialog> {
                       )
                     : groups.isEmpty
                     ? _ProviderModelEmptyView(
-                        message: _models.isEmpty ? '没有获取到模型' : '没有匹配的模型',
+                        message: _models.isEmpty ? strings.settingsNoModelsFetched : strings.settingsNoMatchingModels,
                       )
                     : ScrollConfiguration(
                         key: const ValueKey('provider-model-groups'),
@@ -1993,6 +2020,7 @@ class _ProviderModelLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Center(
       key: const ValueKey('provider-model-loading'),
       child: Column(
@@ -2008,7 +2036,7 @@ class _ProviderModelLoadingView extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            '正在获取模型...',
+            strings.settingsFetchingModels,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: colors.textSubtle),
@@ -2028,6 +2056,7 @@ class _ProviderModelErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Center(
       key: const ValueKey('provider-model-error'),
       child: Column(
@@ -2044,7 +2073,7 @@ class _ProviderModelErrorView extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded, size: 16),
-            label: const Text('重试'),
+            label: Text(strings.settingsRetry),
           ),
         ],
       ),
@@ -2072,11 +2101,17 @@ class _ProviderModelEmptyView extends StatelessWidget {
   }
 }
 
-List<_ProviderModelGroup> _buildProviderModelGroups(List<ModelConfig> models) {
+List<_ProviderModelGroup> _buildProviderModelGroups(
+  List<ModelConfig> models,
+  String otherModelsLabel,
+) {
   final grouped = <String, List<ModelConfig>>{};
   for (final model in models) {
     grouped
-        .putIfAbsent(_providerModelGroupName(model.modelId), () => [])
+        .putIfAbsent(
+          _providerModelGroupName(model.modelId, otherModelsLabel),
+          () => [],
+        )
         .add(model);
   }
   final groupNames = grouped.keys.toList()
@@ -2095,12 +2130,12 @@ List<_ProviderModelGroup> _buildProviderModelGroups(List<ModelConfig> models) {
   ];
 }
 
-String _providerModelGroupName(String modelId) {
+String _providerModelGroupName(String modelId, String otherModelsLabel) {
   final slashIndex = modelId.indexOf('/');
   if (slashIndex > 0) {
     return modelId.substring(0, slashIndex);
   }
-  return '其他模型';
+  return otherModelsLabel;
 }
 
 String _providerModelDisplayName(String modelId, String displayName) {
@@ -2140,15 +2175,16 @@ class _ModelsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return _SettingsCard(
-      title: '模型',
+      title: strings.settingsModels,
       titleAccessory: _ModelCountPill(count: provider.models.length),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _ProviderActionIconButton(
             key: const ValueKey('test-provider-connection-button'),
-            tooltip: testingConnection ? '测试中' : '测试连接',
+            tooltip: testingConnection ? strings.settingsTesting : strings.settingsTestConnection,
             onPressed: testingConnection ? null : onTestConnection,
             icon: testingConnection
                 ? const SizedBox(
@@ -2161,7 +2197,7 @@ class _ModelsList extends StatelessWidget {
           const SizedBox(width: 4),
           _ProviderActionIconButton(
             key: const ValueKey('fetch-provider-models-button'),
-            tooltip: fetchingModels ? '获取中' : '获取模型',
+            tooltip: fetchingModels ? strings.settingsFetching : strings.settingsFetchModels,
             onPressed: fetchingModels ? null : onFetchModels,
             icon: fetchingModels
                 ? const SizedBox(
@@ -2174,7 +2210,7 @@ class _ModelsList extends StatelessWidget {
           const SizedBox(width: 4),
           _ProviderActionIconButton(
             key: const ValueKey('add-model-button'),
-            tooltip: '添加模型',
+            tooltip: strings.settingsAddModel,
             onPressed: () async {
               final model = await showDialog<ModelConfig>(
                 context: context,
@@ -2205,7 +2241,7 @@ class _ModelsList extends StatelessWidget {
             ),
           ),
         if (provider.models.isEmpty)
-          _SimpleRow(label: '暂无模型', value: '点击右上角添加')
+          _SimpleRow(label: strings.settingsNoModels, value: strings.settingsAddModelViaButton)
         else
           for (final model in provider.models)
             Container(
@@ -2231,7 +2267,7 @@ class _ModelsList extends StatelessWidget {
                   ),
                   IconButton(
                     key: ValueKey('edit-model-${model.modelId}'),
-                    tooltip: '编辑模型',
+                    tooltip: strings.settingsEditModel,
                     onPressed: () async {
                       final updated = await showDialog<ModelConfig>(
                         context: context,
@@ -2244,7 +2280,7 @@ class _ModelsList extends StatelessWidget {
                     icon: const Icon(Icons.tune_rounded, size: 18),
                   ),
                   IconButton(
-                    tooltip: '删除模型',
+                    tooltip: strings.settingsDeleteModel,
                     onPressed: () => onModelDeleted(provider, model.modelId),
                     icon: const Icon(Icons.close_rounded, size: 18),
                   ),
@@ -2405,8 +2441,9 @@ class _AddProviderDialogState extends State<_AddProviderDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     return _DialogFrame(
-      title: '添加供应商',
+      title: strings.settingsAddProvider,
       width: 760,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -2428,18 +2465,18 @@ class _AddProviderDialogState extends State<_AddProviderDialog> {
           ),
           const SizedBox(height: 16),
           _DialogSwitchRow(
-            label: '是否启用',
+            label: strings.settingsEnabled,
             value: _enabled,
             onChanged: (value) => setState(() => _enabled = value),
           ),
-          _DialogTextField(label: '名称', controller: _nameController),
+          _DialogTextField(label: strings.settingsProviderName, controller: _nameController),
           _DialogTextField(
             label: 'API Key',
             controller: _apiKeyController,
             obscureText: true,
           ),
           _DialogTextField(label: 'Base URL', controller: _baseUrlController),
-          _DialogTextField(label: 'API 路径', controller: _apiPathController),
+          _DialogTextField(label: strings.settingsApiPath, controller: _apiPathController),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
@@ -2458,7 +2495,7 @@ class _AddProviderDialogState extends State<_AddProviderDialog> {
                 );
               },
               icon: const Icon(Icons.add_rounded, size: 17),
-              label: const Text('添加'),
+              label: Text(strings.settingsAdd),
             ),
           ),
         ],
@@ -2571,20 +2608,21 @@ class _AddModelDialogState extends State<_AddModelDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     return _DialogFrame(
-      title: '添加模型',
+      title: strings.settingsAddModel,
       width: 560,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _DialogTextField(
             key: const ValueKey('add-model-id-field'),
-            label: '模型 ID',
+            label: strings.settingsModelId,
             controller: _modelIdController,
           ),
           _DialogTextField(
             key: const ValueKey('add-model-name-field'),
-            label: '模型名称',
+            label: strings.settingsModelName,
             controller: _displayNameController,
           ),
           const SizedBox(height: 16),
@@ -2606,7 +2644,7 @@ class _AddModelDialogState extends State<_AddModelDialog> {
                   ),
                 );
               },
-              child: const Text('添加'),
+              child: Text(strings.settingsAdd),
             ),
           ),
         ],
@@ -2640,9 +2678,10 @@ class _EditModelDialogState extends State<_EditModelDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     return _ModelEditDialogShell(
-      title: '编辑模型',
-      subtitle: '调整模型展示名称、输入类型与可用能力',
+      title: strings.settingsEditModel,
+      subtitle: strings.settingsEditModelSubtitle,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -2654,8 +2693,8 @@ class _EditModelDialogState extends State<_EditModelDialog> {
           _ModelOptionsCard(
             children: [
               _OptionGroup(
-                label: '模型类型',
-                values: const {'chat': '聊天', 'completion': '补全'},
+                label: strings.settingsModelType,
+                values: {'chat': strings.settingsModelTypeChat, 'completion': strings.settingsModelTypeCompletion},
                 selected: _modelTypes,
                 onChanged: (value) => setState(() => _modelTypes = value),
               ),
@@ -2665,14 +2704,14 @@ class _EditModelDialogState extends State<_EditModelDialog> {
                     setState(() => _completionProtocol = value),
               ),
               _OptionGroup(
-                label: '输入模式',
-                values: const {'text': '文本', 'image': '图片'},
+                label: strings.settingsInputMode,
+                values: {'text': strings.settingsInputModeText, 'image': strings.settingsInputModeImage},
                 selected: _inputModes,
                 onChanged: (value) => setState(() => _inputModes = value),
               ),
               _OptionGroup(
-                label: '能力',
-                values: const {'tools': '工具', 'reasoning': '推理'},
+                label: strings.settingsCapability,
+                values: {'tools': strings.settingsCapabilityTools, 'reasoning': strings.settingsCapabilityReasoning},
                 selected: _capabilities,
                 onChanged: (value) => setState(() => _capabilities = value),
               ),
@@ -2683,14 +2722,14 @@ class _EditModelDialogState extends State<_EditModelDialog> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               _ModelDialogButton(
-                label: '取消',
+                label: strings.actionCancel,
                 filled: false,
                 onTap: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 10),
               _ModelDialogButton(
                 key: const ValueKey('confirm-edit-model-button'),
-                label: '确认',
+                label: strings.actionConfirm,
                 filled: true,
                 onTap: () {
                   Navigator.of(context).pop(
@@ -2728,6 +2767,7 @@ class _ModelEditDialogShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Dialog(
       backgroundColor: AppTheme.dialogSurface(context),
       insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
@@ -2769,7 +2809,7 @@ class _ModelEditDialogShell extends StatelessWidget {
                     ),
                   ),
                   _ModelDialogIconButton(
-                    tooltip: '关闭',
+                    tooltip: strings.actionClose,
                     icon: Icons.close_rounded,
                     onTap: () => Navigator.of(context).pop(),
                   ),
@@ -2796,13 +2836,14 @@ class _ModelIdentityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     return Column(
       children: [
-        _ModelReadOnlyField(label: '模型 ID', value: modelId),
+        _ModelReadOnlyField(label: strings.settingsModelId, value: modelId),
         const SizedBox(height: 10),
         _ModelTextField(
           key: const ValueKey('edit-model-name-field'),
-          label: '模型名称',
+          label: strings.settingsModelName,
           controller: nameController,
         ),
       ],
@@ -2907,6 +2948,7 @@ class _CompletionProtocolGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     final current = selected.trim().isEmpty ? 'deepseek_coder' : selected;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2916,7 +2958,7 @@ class _CompletionProtocolGroup extends StatelessWidget {
           SizedBox(
             width: 86,
             child: Text(
-              '补全协议',
+              strings.settingsCompletionProtocol,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 color: colors.text,
                 fontWeight: FontWeight.w700,
@@ -3079,8 +3121,9 @@ class _ModelCopyIconButtonState extends State<_ModelCopyIconButton> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     return _ModelDialogIconButton(
-      tooltip: _copied ? '已复制' : '复制模型 ID',
+      tooltip: _copied ? strings.settingsCopied : strings.settingsCopyModelId,
       icon: _copied ? Icons.check_rounded : Icons.copy_rounded,
       active: _copied,
       onTap: _copy,

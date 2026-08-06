@@ -717,7 +717,9 @@ void main() {
     final fakeDailyNoteService = _FakeDailyNoteService();
     final fakeHomeOverviewService = _FakeHomeOverviewService();
     final fakePendingImageService = _FakePendingImageService();
-    final localDataState = _testLocalDataState();
+    final localDataState = _testLocalDataState(
+      config: AppConfig.defaults().copyWith(language: 'zh'),
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -1290,6 +1292,7 @@ class _FakeDailyNoteService extends DailyNoteService {
     List<StructuredNoteSectionConfig> sectionConfigs =
         StructuredNoteSectionConfig.defaults,
     String? mergedMarkdown,
+    String language = 'zh',
   }) async {
     savedNote = note;
     return '$dailyNotesDirectory\\2026-06-18.md';

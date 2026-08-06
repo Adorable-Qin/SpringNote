@@ -23,9 +23,13 @@ class StructuredNoteSectionConfig {
     );
   }
 
-  static List<StructuredNoteSectionConfig> fromJson(Object? value) {
+  static List<StructuredNoteSectionConfig> fromJson(
+    Object? value, {
+    String language = 'zh',
+  }) {
+    final fallbacks = defaultsFor(language);
     if (value is! List) {
-      return defaults;
+      return fallbacks;
     }
     final byId = <String, Map>{};
     for (final item in value.whereType<Map>()) {
@@ -35,7 +39,7 @@ class StructuredNoteSectionConfig {
       }
     }
     return [
-      for (final fallback in defaults) _fromMap(byId[fallback.id], fallback),
+      for (final fallback in fallbacks) _fromMap(byId[fallback.id], fallback),
     ];
   }
 
@@ -97,4 +101,28 @@ class StructuredNoteSectionConfig {
       aiInstruction: '提取后续计划、下一步行动、待办或准备事项。',
     ),
   ];
+
+  static const _defaultsEn = [
+    StructuredNoteSectionConfig(
+      id: StructuredNoteSectionIds.a,
+      title: 'Done',
+      aiInstruction: 'Extract work that has been completed or saw clear progress.',
+    ),
+    StructuredNoteSectionConfig(
+      id: StructuredNoteSectionIds.b,
+      title: 'Issues',
+      aiInstruction: 'Extract problems, errors, blockers, or risks.',
+    ),
+    StructuredNoteSectionConfig(
+      id: StructuredNoteSectionIds.c,
+      title: 'Next plans',
+      aiInstruction:
+          'Extract follow-up plans, next actions, todos, or preparations.',
+    ),
+  ];
+
+  /// 按生效语言返回首页三栏的默认配置（[language] 为 'zh' 或 'en'）。
+  static List<StructuredNoteSectionConfig> defaultsFor(String language) {
+    return language == 'en' ? _defaultsEn : defaults;
+  }
 }

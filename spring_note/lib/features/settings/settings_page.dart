@@ -28,6 +28,7 @@ import '../../core/services/wallpaper_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/markdown_editor_highlight.dart';
 import '../../core/widgets/update_dialog.dart';
+import '../../l10n/l10n.dart';
 import 'settings_stats_panel.dart';
 
 part 'settings_preferences_panel.dart';
@@ -40,18 +41,17 @@ part 'settings_about_panel.dart';
 part 'settings_shared_widgets.dart';
 
 enum _SettingsSection {
-  preferences('偏好设置', _SettingsNavIconType.monitor),
-  providers('供应商', _SettingsNavIconType.boxes),
-  models('默认模型', _SettingsNavIconType.heart),
-  hotkeys('快捷键', _SettingsNavIconType.keyboard),
-  cloudSync('云同步', _SettingsNavIconType.cloud),
-  storage('存储管理', _SettingsNavIconType.storage),
-  stats('统计', _SettingsNavIconType.chart),
-  about('关于', _SettingsNavIconType.info);
+  preferences(_SettingsNavIconType.monitor),
+  providers(_SettingsNavIconType.boxes),
+  models(_SettingsNavIconType.heart),
+  hotkeys(_SettingsNavIconType.keyboard),
+  cloudSync(_SettingsNavIconType.cloud),
+  storage(_SettingsNavIconType.storage),
+  stats(_SettingsNavIconType.chart),
+  about(_SettingsNavIconType.info);
 
-  const _SettingsSection(this.label, this.icon);
+  const _SettingsSection(this.icon);
 
-  final String label;
   final _SettingsNavIconType icon;
 }
 
@@ -160,10 +160,25 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _settingsError = error.toString();
+          _settingsError = _migrationErrorText(error);
         });
       }
     }
+  }
+
+  String _migrationErrorText(Object error) {
+    final strings = l10n(context);
+    if (error is DataDirectoryMigrationException) {
+      return switch (error.error) {
+        DataDirectoryMigrationError.nestedInsideCurrent =>
+          strings.settingsMigrationErrorNested,
+        DataDirectoryMigrationError.isAFile =>
+          strings.settingsMigrationErrorIsFile,
+        DataDirectoryMigrationError.macOSSecurityScopedAccessFailed =>
+          strings.settingsMigrationErrorMacAccess,
+      };
+    }
+    return error.toString();
   }
 
   Future<void> _migrateDataDirectory(String? targetDirectory) async {
@@ -194,7 +209,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _settingsError = error.toString();
+          _settingsError = _migrationErrorText(error);
         });
       }
     }
@@ -204,7 +219,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
-      barrierLabel: '关闭',
+      barrierLabel: l10n(context).actionClose,
       barrierColor: Colors.black.withValues(alpha: 0.18),
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (context, _, _) => const _DataMigrationCompleteDialog(),
@@ -338,7 +353,10 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Row(
                   children: [
-                    Text('设置', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      l10n(context).settingsTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const Spacer(),
                     if (_saving)
                       const SizedBox(
@@ -450,6 +468,20 @@ class _SettingsNavItem extends StatefulWidget {
 class _SettingsNavItemState extends State<_SettingsNavItem> {
   bool _hovered = false;
 
+  String _sectionLabel() {
+    final strings = l10n(context);
+    return switch (widget.section) {
+      _SettingsSection.preferences => strings.settingsSectionPreferences,
+      _SettingsSection.providers => strings.settingsSectionProviders,
+      _SettingsSection.models => strings.settingsSectionModels,
+      _SettingsSection.hotkeys => strings.settingsSectionHotkeys,
+      _SettingsSection.cloudSync => strings.settingsSectionCloudSync,
+      _SettingsSection.storage => strings.settingsSectionStorage,
+      _SettingsSection.stats => strings.settingsSectionStats,
+      _SettingsSection.about => strings.settingsSectionAbout,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
@@ -509,7 +541,7 @@ class _SettingsNavItemState extends State<_SettingsNavItem> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            widget.section.label,
+                            _sectionLabel(),
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: animatedColor,

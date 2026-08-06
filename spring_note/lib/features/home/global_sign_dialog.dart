@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/models/global_sign_item.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/l10n.dart';
 
 /// 返回 null 表示 AI 不可用、已走本地兜底（弹窗关闭，首页展示提示）；
 /// 否则返回刷新后的最新全局签列表，弹窗原地更新。
@@ -196,7 +197,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          '全局签',
+                          l10n(context).homeGlobalSign,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: colors.text,
@@ -225,7 +226,7 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
               child: _items.isEmpty
                   ? Center(
                       child: Text(
-                        '暂无内容',
+                        l10n(context).homeEmptyHint,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colors.textSubtle,
                         ),
@@ -271,7 +272,9 @@ class _GlobalSignDialogState extends State<GlobalSignDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      _hasChanges ? '有未确认的变更' : '完成 / 取消 / 修改后请点击确认',
+                      _hasChanges
+                          ? l10n(context).homeGlobalSignUnconfirmedChanges
+                          : l10n(context).homeGlobalSignConfirmHint,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -373,7 +376,9 @@ class _GlobalSignItemRow extends StatelessWidget {
             const SizedBox(width: 6),
             _GlobalSignItemAction(
               key: ValueKey('global-sign-done-${item.id}'),
-              tooltip: done ? '撤销完成' : '完成',
+              tooltip: done
+                  ? l10n(context).homeGlobalSignTooltipUndoComplete
+                  : l10n(context).homeGlobalSignTooltipComplete,
               icon: done
                   ? Icons.check_circle_rounded
                   : Icons.check_circle_outline_rounded,
@@ -382,14 +387,16 @@ class _GlobalSignItemRow extends StatelessWidget {
             ),
             _GlobalSignItemAction(
               key: ValueKey('global-sign-cancel-${item.id}'),
-              tooltip: cancelled ? '撤销取消' : '取消',
+              tooltip: cancelled
+                  ? l10n(context).homeGlobalSignTooltipUndoCancel
+                  : l10n(context).homeGlobalSignTooltipCancel,
               icon: cancelled ? Icons.undo_rounded : Icons.close_rounded,
               active: cancelled,
               onTap: enabled ? onToggleCancelled : null,
             ),
             _GlobalSignItemAction(
               key: ValueKey('global-sign-delete-${item.id}'),
-              tooltip: '删除',
+              tooltip: l10n(context).homeGlobalSignTooltipDelete,
               icon: Icons.delete_outline_rounded,
               active: false,
               onTap: enabled ? onHardDelete : null,
@@ -471,7 +478,7 @@ class _GlobalSignConfirmButton extends StatelessWidget {
                   ),
                 )
               : Text(
-                  '确认',
+                  l10n(context).actionConfirm,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: foreground,
                     fontWeight: FontWeight.w600,
@@ -503,7 +510,7 @@ class _GlobalSignHardDeleteDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '删除这条全局签？',
+                l10n(context).homeGlobalSignDeleteConfirmTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: colors.text,
                   fontWeight: FontWeight.w700,
@@ -511,7 +518,7 @@ class _GlobalSignHardDeleteDialog extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                '删除后不会写入日报，也不会经过 AI 整理，且无法恢复。',
+                l10n(context).homeGlobalSignDeleteConfirmMessage,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.textMuted,
                   height: 1.5,
@@ -523,14 +530,14 @@ class _GlobalSignHardDeleteDialog extends StatelessWidget {
                 children: [
                   _GlobalSignDialogButton(
                     key: const ValueKey('global-sign-hard-delete-cancel'),
-                    label: '取消',
+                    label: l10n(context).actionCancel,
                     filled: false,
                     onTap: () => Navigator.of(context).pop(false),
                   ),
                   const SizedBox(width: 10),
                   _GlobalSignDialogButton(
                     key: const ValueKey('global-sign-hard-delete-confirm'),
-                    label: '删除',
+                    label: l10n(context).actionDelete,
                     filled: true,
                     onTap: () => Navigator.of(context).pop(true),
                   ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/local_data_state.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/l10n.dart';
 import '../../src/rust/stats.dart' as rust_stats;
 
 class SettingsStatsPanel extends StatefulWidget {
@@ -62,21 +63,23 @@ class _SettingsStatsPanelState extends State<SettingsStatsPanel> {
       _StatsRangePreset.all => _StatsDateRange(
         start: DateTime(2000),
         end: today,
-        label: '全部',
+        label: l10n(context).settingsStatsAll,
         all: true,
       ),
       _StatsRangePreset.recent30 => _StatsDateRange(
         start: today.subtract(const Duration(days: 29)),
         end: today,
-        label: '最近30天',
+        label: l10n(context).settingsStatsRecent30Days,
       ),
       _StatsRangePreset.lastMonth => _lastMonthRange(today),
       _StatsRangePreset.lastQuarter => _lastQuarterRange(today),
       _StatsRangePreset.custom => _StatsDateRange(
         start: _customStart,
         end: _customEnd,
-        label:
-            '${StatsService.formatDate(_customStart)} 至 ${StatsService.formatDate(_customEnd)}',
+        label: l10n(context).settingsStatsDateRange(
+          StatsService.formatDate(_customEnd),
+          StatsService.formatDate(_customStart),
+        ),
       ),
     };
   }
@@ -84,7 +87,7 @@ class _SettingsStatsPanelState extends State<SettingsStatsPanel> {
   _StatsDateRange _lastMonthRange(DateTime today) {
     final start = DateTime(today.year, today.month - 1);
     final end = DateTime(today.year, today.month, 0);
-    return _StatsDateRange(start: start, end: end, label: '上个月');
+    return _StatsDateRange(start: start, end: end, label: l10n(context).settingsStatsLastMonth);
   }
 
   _StatsDateRange _lastQuarterRange(DateTime today) {
@@ -95,7 +98,7 @@ class _SettingsStatsPanelState extends State<SettingsStatsPanel> {
       currentQuarterStart.month - 3,
     );
     final end = currentQuarterStart.subtract(const Duration(days: 1));
-    return _StatsDateRange(start: start, end: end, label: '上个季度');
+    return _StatsDateRange(start: start, end: end, label: l10n(context).settingsStatsLastQuarter);
   }
 
   DateTime _dateOnly(DateTime date) {
@@ -133,6 +136,7 @@ class _SettingsStatsPanelState extends State<SettingsStatsPanel> {
     return FutureBuilder<_StatsPanelData>(
       future: _future,
       builder: (context, snapshot) {
+        final strings = l10n(context);
         final data = snapshot.data;
         final selected = data?.selected ?? StatsService.emptySnapshot;
         final yearly = data?.yearly ?? StatsService.emptySnapshot;
@@ -147,15 +151,15 @@ class _SettingsStatsPanelState extends State<SettingsStatsPanel> {
               onSelected: _selectRange,
             ),
             _StatsSectionCard(
-              title: '年度热力图',
+              title: strings.settingsStatsYearlyHeatmap,
               child: _YearHeatmap(activity: yearly.activity),
             ),
             _StatsSectionCard(
-              title: '总览',
+              title: strings.settingsStatsOverview,
               child: _StatsMetricsGrid(snapshot: selected),
             ),
             _StatsSectionCard(
-              title: '用量趋势',
+              title: strings.settingsStatsUsageTrend,
               subtitle: range.label,
               child: _UsageTrendChart(snapshot: selected, range: range),
             ),
@@ -235,12 +239,13 @@ class _StatsRangeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
-      (_StatsRangePreset.all, '全部'),
-      (_StatsRangePreset.recent30, '最近 30 天'),
-      (_StatsRangePreset.lastMonth, '上个月'),
-      (_StatsRangePreset.lastQuarter, '上个季度'),
-      (_StatsRangePreset.custom, '自定义'),
+    final strings = l10n(context);
+    final items = [
+      (_StatsRangePreset.all, strings.settingsStatsAll),
+      (_StatsRangePreset.recent30, strings.settingsStatsRecent30),
+      (_StatsRangePreset.lastMonth, strings.settingsStatsLastMonth),
+      (_StatsRangePreset.lastQuarter, strings.settingsStatsLastQuarter),
+      (_StatsRangePreset.custom, strings.settingsStatsCustom),
     ];
     return Row(
       children: [
@@ -429,18 +434,19 @@ class _StatsMetricsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     final summary = snapshot.summary;
     final metrics = [
-      ('总结数', summary.summaries),
-      ('编辑补全次数', summary.fimCompletions),
-      ('总记录数', summary.totalRecords),
-      ('日报数', summary.dailyNotes),
-      ('周报数', summary.weeklyNotes),
-      ('月报数', summary.monthlyNotes),
-      ('输入 Tokens', summary.inputTokens),
-      ('输出 Tokens', summary.outputTokens),
-      ('缓存 Tokens', summary.cachedTokens),
-      ('应用启动次数', summary.appLaunches),
+      (strings.settingsStatsSummaries, summary.summaries),
+      (strings.settingsStatsFimCompletions, summary.fimCompletions),
+      (strings.settingsStatsTotalRecords, summary.totalRecords),
+      (strings.settingsStatsDailyNotes, summary.dailyNotes),
+      (strings.settingsStatsWeeklyNotes, summary.weeklyNotes),
+      (strings.settingsStatsMonthlyNotes, summary.monthlyNotes),
+      (strings.settingsStatsInputTokens, summary.inputTokens),
+      (strings.settingsStatsOutputTokens, summary.outputTokens),
+      (strings.settingsStatsCachedTokens, summary.cachedTokens),
+      (strings.settingsStatsAppLaunches, summary.appLaunches),
     ];
 
     return LayoutBuilder(
@@ -560,6 +566,7 @@ class _YearHeatmapState extends State<_YearHeatmap> {
   Widget build(BuildContext context) {
     _alignToLatestAfterLayout();
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     final heatmapColors = AppTheme.activityHeatmapColors(context);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -583,7 +590,7 @@ class _YearHeatmapState extends State<_YearHeatmap> {
       slots[slotIndex] = date;
       final weekIndex = slotIndex ~/ 7;
       if (date.month != lastMonth) {
-        monthLabels[weekIndex] = '${date.month}月';
+        monthLabels[weekIndex] = strings.settingsStatsMonthLabel(date.month);
         lastMonth = date.month;
       }
     }
@@ -822,6 +829,7 @@ class _HeatmapWeekdayLabels extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return SizedBox(
       width: 22,
       child: Column(
@@ -837,9 +845,9 @@ class _HeatmapWeekdayLabels extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     switch (index) {
-                      1 => '一',
-                      3 => '三',
-                      5 => '五',
+                      1 => strings.settingsStatsWeekdayMon,
+                      3 => strings.settingsStatsWeekdayWed,
+                      5 => strings.settingsStatsWeekdayFri,
                       _ => '',
                     },
                     style: textStyle.bodySmall?.copyWith(
@@ -1018,6 +1026,7 @@ class _UsageTrendChartState extends State<_UsageTrendChart> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = l10n(context);
     final series = _buildProviderSeries(widget.snapshot.providerUsage);
     final days = _buildUsageDays(widget.snapshot, series);
     final colors = AppTheme.colors(context);
@@ -1112,7 +1121,7 @@ class _UsageTrendChartState extends State<_UsageTrendChart> {
           runSpacing: 8,
           children: [
             if (providers.isEmpty)
-              Text('暂无模型调用记录', style: Theme.of(context).textTheme.bodyMedium)
+              Text(strings.settingsStatsNoUsageRecords, style: Theme.of(context).textTheme.bodyMedium)
             else
               for (final provider in providers)
                 Row(
@@ -1146,6 +1155,7 @@ class _UsageTrendChartState extends State<_UsageTrendChart> {
   _ProviderSeries _buildProviderSeries(
     List<rust_stats.ProviderTokenUsage> usage,
   ) {
+    final strings = l10n(context);
     final totals = <String, int>{};
     for (final item in usage) {
       totals[item.providerName] =
@@ -1172,7 +1182,10 @@ class _UsageTrendChartState extends State<_UsageTrendChart> {
     ];
     if (sortedNames.length > topNames.length) {
       providers.add(
-        const _ProviderLegendItem(name: '其他', color: Color(0xFF94A3B8)),
+        _ProviderLegendItem(
+          name: strings.settingsStatsOther,
+          color: const Color(0xFF94A3B8),
+        ),
       );
     }
     return _ProviderSeries(providers);
@@ -1189,7 +1202,7 @@ class _UsageTrendChartState extends State<_UsageTrendChart> {
     for (final item in snapshot.providerUsage) {
       final providerName = series.contains(item.providerName)
           ? item.providerName
-          : '其他';
+          : l10n(context).settingsStatsOther;
       final daily = providerUsageByDate.putIfAbsent(item.date, () => {});
       daily[providerName] = (daily[providerName] ?? 0) + item.tokens;
     }
@@ -1565,21 +1578,22 @@ class _UsageBarTooltip extends StatelessWidget {
     final usage = point.usage;
     final providerRows = _providerRows();
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     final rows = providerRows.isNotEmpty
         ? providerRows
         : [
             _UsageTooltipRow(
-              label: '输入 Tokens',
+              label: strings.settingsStatsInputTokens,
               value: usage?.inputTokens ?? 0,
               color: const Color(0xFF94A3B8),
             ),
             _UsageTooltipRow(
-              label: '输出 Tokens',
+              label: strings.settingsStatsOutputTokens,
               value: usage?.outputTokens ?? 0,
               color: const Color(0xFFA3A3A3),
             ),
             _UsageTooltipRow(
-              label: '缓存 Tokens',
+              label: strings.settingsStatsCachedTokens,
               value: usage?.cachedTokens ?? 0,
               color: const Color(0xFFCBD5E1),
             ),
@@ -1759,6 +1773,7 @@ class _StatsCustomRangeDialogState extends State<_StatsCustomRangeDialog> {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Dialog(
       backgroundColor: AppTheme.dialogSurface(context),
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -1774,7 +1789,7 @@ class _StatsCustomRangeDialogState extends State<_StatsCustomRangeDialog> {
               Row(
                 children: [
                   Text(
-                    '自定义时间段',
+                    strings.settingsStatsCustomRangeTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -1794,7 +1809,7 @@ class _StatsCustomRangeDialogState extends State<_StatsCustomRangeDialog> {
                 children: [
                   Expanded(
                     child: _StatsDateField(
-                      label: '开始',
+                      label: strings.settingsStatsStart,
                       date: _start,
                       active: _activeDateField == _StatsDateFieldRole.start,
                       onTap: _pickStart,
@@ -1803,7 +1818,7 @@ class _StatsCustomRangeDialogState extends State<_StatsCustomRangeDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _StatsDateField(
-                      label: '结束',
+                      label: strings.settingsStatsEnd,
                       date: _end,
                       active: _activeDateField == _StatsDateFieldRole.end,
                       onTap: _pickEnd,
@@ -1816,7 +1831,7 @@ class _StatsCustomRangeDialogState extends State<_StatsCustomRangeDialog> {
                 children: [
                   Expanded(
                     child: _StatsDialogButton(
-                      label: '取消',
+                      label: strings.actionCancel,
                       filled: false,
                       onTap: () => Navigator.of(context).pop(),
                     ),
@@ -1824,14 +1839,16 @@ class _StatsCustomRangeDialogState extends State<_StatsCustomRangeDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _StatsDialogButton(
-                      label: '应用',
+                      label: strings.settingsStatsApply,
                       filled: true,
                       onTap: () => Navigator.of(context).pop(
                         _StatsDateRange(
                           start: _start,
                           end: _end,
-                          label:
-                              '${StatsService.formatDate(_start)} 至 ${StatsService.formatDate(_end)}',
+                          label: strings.settingsStatsDateRange(
+                            StatsService.formatDate(_end),
+                            StatsService.formatDate(_start),
+                          ),
                         ),
                       ),
                     ),
@@ -2066,6 +2083,7 @@ class _StatsCalendarDialogState extends State<_StatsCalendarDialog> {
   Widget build(BuildContext context) {
     final dates = _visibleDates(_visibleMonth);
     final colors = AppTheme.colors(context);
+    final strings = l10n(context);
     return Dialog(
       backgroundColor: AppTheme.dialogSurface(context),
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -2122,14 +2140,14 @@ class _StatsCalendarDialogState extends State<_StatsCalendarDialog> {
               const SizedBox(height: 18),
               Row(
                 children: [
-                  for (final label in const [
-                    '周一',
-                    '周二',
-                    '周三',
-                    '周四',
-                    '周五',
-                    '周六',
-                    '周日',
+                  for (final label in [
+                    strings.settingsStatsWeekdayMon,
+                    strings.settingsStatsWeekdayTue,
+                    strings.settingsStatsWeekdayWed,
+                    strings.settingsStatsWeekdayThu,
+                    strings.settingsStatsWeekdayFri,
+                    strings.settingsStatsWeekdaySat,
+                    strings.settingsStatsWeekdaySun,
                   ])
                     Expanded(
                       child: Text(

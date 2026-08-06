@@ -6,6 +6,25 @@ import 'package:path/path.dart' as p;
 import '../models/wallpaper_settings.dart';
 import 'image_file_types.dart';
 
+/// 用户选择的壁纸图片格式不受支持。
+///
+/// 继承 [ArgumentError] 以兼容既有调用方/测试的类型匹配；服务层不持有
+/// BuildContext，抛出的异常只携带机器可读信息，用户可见文案由 UI 层构造。
+class UnsupportedImageFormatException extends ArgumentError {
+  UnsupportedImageFormatException(this.extension)
+    : super('Unsupported image format: $extension');
+
+  final String extension;
+}
+
+/// 用户选择的壁纸源图片不存在。
+///
+/// 继承 [FileSystemException] 以兼容既有调用方/测试的类型匹配。
+class SourceImageMissingException extends FileSystemException {
+  SourceImageMissingException(String path)
+    : super('Source image does not exist', path);
+}
+
 /// 壁纸相关静态工具方法。
 ///
 /// 与 Blue_Star_Host_Computer 的 `WallpaperProvider`（继承 ChangeNotifier、
@@ -101,11 +120,11 @@ class WallpaperService {
     final extRaw = p.extension(sourceFile.path);
     // 先检查原始扩展名是否允许，再规范化（避免 fallback 绕过检查）
     if (!hasAllowedImageExtension(sourceFile.path)) {
-      throw ArgumentError('不支持的图片格式: $extRaw');
+      throw UnsupportedImageFormatException(extRaw);
     }
     final ext = normalizedImageExtension(extRaw, fallback: 'jpg');
     if (!await sourceFile.exists()) {
-      throw FileSystemException('源图片不存在', sourceFile.path);
+      throw SourceImageMissingException(sourceFile.path);
     }
 
     final dir = Directory(wallpaperDirectory(dataDirectory));

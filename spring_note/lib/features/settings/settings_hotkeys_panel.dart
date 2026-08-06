@@ -17,13 +17,17 @@ class _HotkeysPanel extends StatelessWidget {
       maxWidth: 1120,
       children: [
         _SettingsCard(
-          title: '全局快捷键',
+          title: l10n(context).settingsGlobalHotkeysTitle,
           children: [
             _HotkeySettingRow(
-              label: '显示/隐藏页面',
+              label: l10n(context).settingsShowHidePage,
               value: toggleWindow,
               enabled: hotkeysSupported,
-              description: hotkeysSupported ? null : _platformFeatureMessage(),
+              description: hotkeysSupported
+                  ? null
+                  : _platformFeatureMessage(
+                      l10n(context).settingsPlatformNotSupported,
+                    ),
               onRecorded: hotkeysSupported
                   ? (value) {
                       final hotkeys = Map<String, String?>.from(config.hotkeys);
@@ -36,7 +40,7 @@ class _HotkeysPanel extends StatelessWidget {
                 children: [
                   const SizedBox(width: 4),
                   _HotkeyActionButton(
-                    tooltip: '重置',
+                    tooltip: l10n(context).settingsReset,
                     icon: Icons.restart_alt_rounded,
                     onPressed: hotkeysSupported
                         ? () {
@@ -70,7 +74,7 @@ class _HotkeysPanel extends StatelessWidget {
           ],
         ),
         _SettingsCard(
-          title: '输入快捷键',
+          title: l10n(context).settingsInputShortcutsTitle,
           children: [
             _SubmitShortcutSettingRow(
               value: config.submitShortcut,
@@ -97,7 +101,7 @@ class _SubmitShortcutSettingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final modifier = Platform.isMacOS ? 'Cmd' : 'Ctrl';
     return _SettingRowShell(
-      label: '发送消息',
+      label: l10n(context).settingsSendMessage,
       child: SizedBox(
         width: 220,
         child: _DropdownSelectField(
@@ -235,14 +239,14 @@ class _HotkeyRecorderFieldState extends State<_HotkeyRecorderField> {
 
     final keyToken = _hotkeyTokenForKey(event.logicalKey, macOS: _isMacOS);
     if (keyToken == null) {
-      setState(() => _errorText = '暂不支持这个按键');
+      setState(() => _errorText = l10n(context).settingsHotkeyNotSupported);
       return KeyEventResult.handled;
     }
     if (modifiers.isEmpty) {
       setState(
         () => _errorText = _isMacOS
-            ? '需包含 Cmd、Ctrl、Option 或 Shift'
-            : '需包含 Ctrl、Alt、Shift 或 Win',
+            ? l10n(context).settingsHotkeyNeedModifiersMac
+            : l10n(context).settingsHotkeyNeedModifiersWin,
       );
       return KeyEventResult.handled;
     }
@@ -263,10 +267,14 @@ class _HotkeyRecorderFieldState extends State<_HotkeyRecorderField> {
         return error;
       }
       final modifiers = _pressedModifierTokens(macOS: _isMacOS);
-      return modifiers.isEmpty ? '请按下快捷键' : '${modifiers.join('+')}+…';
+      return modifiers.isEmpty
+          ? l10n(context).settingsHotkeyPressHint
+          : '${modifiers.join('+')}+…';
     }
     final value = widget.value.trim();
-    return value.isEmpty ? '未设置' : _displayHotkey(value, macOS: _isMacOS);
+    return value.isEmpty
+        ? l10n(context).settingsHotkeyNotSet
+        : _displayHotkey(value, macOS: _isMacOS);
   }
 
   @override

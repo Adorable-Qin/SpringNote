@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/desktop_widget_controller.dart';
 import '../../core/services/level_progress_controller.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/l10n.dart';
 
 class DesktopStatusWidget extends StatelessWidget {
   const DesktopStatusWidget({
@@ -61,7 +62,10 @@ class DesktopStatusWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Lv.${levelProgressState.level} 实习生 (${levelProgressState.experiencePercent}%)',
+                        l10n(context).homeDesktopLevelTitle(
+                          levelProgressState.level,
+                          levelProgressState.experiencePercent,
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.textSubtle,
                           fontWeight: FontWeight.w600,

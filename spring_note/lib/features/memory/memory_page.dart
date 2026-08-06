@@ -14,20 +14,25 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/spring_tree.dart';
 import 'memory_input_modes.dart';
 import '../../core/widgets/spring_markdown.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n.dart';
 
 bool shouldCollapseMemoryReasoning(MemoryMessage message) {
   return message.content.trim().isNotEmpty || message.toolCalls.isNotEmpty;
 }
 
-String memoryToolResultLabel(MemoryMessage? resultMessage) {
+String memoryToolResultLabel(
+  AppLocalizations strings,
+  MemoryMessage? resultMessage,
+) {
   final resultCount = resultMessage?.sources.length ?? 0;
   if (resultCount > 0) {
-    return '$resultCount 条结果';
+    return strings.memoryToolResultCount(resultCount);
   }
   if (resultMessage?.content.trim().isNotEmpty ?? false) {
-    return '已返回';
+    return strings.memoryToolResultReturned;
   }
-  return '无结果';
+  return strings.memoryToolResultNone;
 }
 
 String memoryToolCacheKey(String toolName, Map<String, Object?> arguments) {
@@ -357,6 +362,8 @@ class _MemoryPageState extends State<MemoryPage> {
         .clamp(1, 12);
     final turnSources = <MemorySource>[];
     final toolResultCache = <String, MemoryToolExecution>{};
+    // 提示文案在异步间隙之前取好。
+    final strings = l10n(context);
 
     for (var turn = 0; turn < maxTurns; turn++) {
       final requestStartedAt = DateTime.now();
@@ -387,7 +394,7 @@ class _MemoryPageState extends State<MemoryPage> {
           return MemoryMessage(
             role: 'ai',
             content: event.errorMessage.trim().isEmpty
-                ? '模型请求失败。'
+                ? strings.memoryModelRequestFailed
                 : event.errorMessage.trim(),
             createdAt: DateTime.now(),
             sources: turnSources,
@@ -446,7 +453,9 @@ class _MemoryPageState extends State<MemoryPage> {
       if (toolCalls.isEmpty) {
         final finalMessage = MemoryMessage(
           role: 'ai',
-          content: content.trim().isEmpty ? '我没有拿到可用回答。' : content.trim(),
+          content: content.trim().isEmpty
+              ? strings.memoryNoUsableAnswer
+              : content.trim(),
           reasoningContent: reasoningContent.trim(),
           reasoningDurationMs: reasoningDurationMs,
           createdAt: DateTime.now(),
@@ -516,7 +525,7 @@ class _MemoryPageState extends State<MemoryPage> {
 
     return MemoryMessage(
       role: 'ai',
-      content: '工具调用轮次已达到上限。请把问题缩小到具体日期、项目名或关键词后再试。',
+      content: strings.memoryToolCallsLimitReached,
       createdAt: DateTime.now(),
       sources: turnSources,
     );
@@ -728,20 +737,28 @@ class _MemoryPageState extends State<MemoryPage> {
   }
 
   String _mockAnswer(String question, MemoryRecallResult recall) {
+    final strings = l10n(context);
     if (recall.sources.isEmpty) {
-      return '## AI 回答\n\n我还没有在日报、周报或月报中检索到和「$question」直接相关的记录。你可以换一个更具体的关键词，例如项目名、模块名、问题现象或日期。';
+      return strings.memoryMockAnswerEmpty(question);
     }
     final toolList = recall.steps
         .map(
-          (step) =>
-              '- Thought：${step.thought}\n  Act：${step.tool.label}（${step.tool.query}）\n  Observation：${step.observation}',
+          (step) => strings.memoryMockAnswerToolStep(
+            step.thought,
+            step.tool.label,
+            step.tool.query,
+            step.observation,
+          ),
         )
         .join('\n');
     final sourceList = recall.sources
         .take(3)
-        .map((source) => '- **${source.title}**：${source.snippet}')
+        .map((source) => strings.memoryMockAnswerSourceItem(
+              source.snippet,
+              source.title,
+            ))
         .join('\n');
-    return '## 使用的工具\n\n$toolList\n\n## 找到的相关回忆\n\n$sourceList\n\n---\n\n## AI 回答\n\n当前未配置可用的回忆书模型，所以先基于本地工具检索给出摘要。上面这些记录可能和「$question」有关，你可以配置回忆书模型后获得更完整的解释、归纳和追问建议。';
+    return strings.memoryMockAnswerWithSources(toolList, sourceList, question);
   }
 
   @override
@@ -791,7 +808,7 @@ class _MemoryPageState extends State<MemoryPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '准备好了，随时开始',
+                l10n(context).memoryEntryTitle,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w400,
                   color: colors.text,
@@ -801,7 +818,7 @@ class _MemoryPageState extends State<MemoryPage> {
               _MemoryComposer(
                 controller: _entryController,
                 focusNode: _entryFocusNode,
-                hintText: '问问你的回忆...',
+                hintText: l10n(context).memoryEntryHint,
                 answering: _answering,
                 onSubmit: _sendFromEntry,
                 menuLink: _entryMenuLink,
@@ -815,18 +832,18 @@ class _MemoryPageState extends State<MemoryPage> {
                 children: [
                   _QuickPromptChip(
                     icon: Icons.history_rounded,
-                    label: '查看今天日报',
-                    onTap: () => _send('查看今天的日报', tagSource: _entryController),
+                    label: l10n(context).memoryQuickPromptTodayDaily,
+                    onTap: () => _send(l10n(context).memoryQuickPromptTodayDaily, tagSource: _entryController),
                   ),
                   _QuickPromptChip(
                     icon: Icons.auto_awesome_rounded,
-                    label: '查看本周日报',
-                    onTap: () => _send('查看本周的日报', tagSource: _entryController),
+                    label: l10n(context).memoryQuickPromptWeekDaily,
+                    onTap: () => _send(l10n(context).memoryQuickPromptWeekDaily, tagSource: _entryController),
                   ),
                   _QuickPromptChip(
                     icon: Icons.calendar_month_rounded,
-                    label: '查看本月月报',
-                    onTap: () => _send('查看本月月报', tagSource: _entryController),
+                    label: l10n(context).memoryQuickPromptMonthReport,
+                    onTap: () => _send(l10n(context).memoryQuickPromptMonthReport, tagSource: _entryController),
                   ),
                 ],
               ),
@@ -1034,7 +1051,7 @@ class _MemoryPageState extends State<MemoryPage> {
                           child: _MemoryComposer(
                             controller: _chatController,
                             focusNode: _chatFocusNode,
-                            hintText: '继续追问你的回忆...',
+                            hintText: l10n(context).memoryChatHint,
                             answering: _answering,
                             onSubmit: _sendFromChat,
                             menuOpensUpward: true,
@@ -1382,7 +1399,7 @@ class _MemoryHeader extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            '回忆书',
+            l10n(context).memoryPageTitle,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: colors.text,
               fontWeight: FontWeight.w700,
@@ -1397,7 +1414,7 @@ class _MemoryHeader extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Tooltip(
-            message: '开启新对话',
+            message: l10n(context).memoryNewConversationTooltip,
             waitDuration: const Duration(milliseconds: 450),
             child: IconButton(
               onPressed: onNewConversation,
@@ -1826,7 +1843,7 @@ class _InputModeMenuButtonState extends State<_InputModeMenuButton> {
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  mode.label,
+                                  memoryInputModeLabel(context, mode),
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
@@ -1836,7 +1853,7 @@ class _InputModeMenuButtonState extends State<_InputModeMenuButton> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    mode.description,
+                                    memoryInputModeDescription(context, mode),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -1867,7 +1884,7 @@ class _InputModeMenuButtonState extends State<_InputModeMenuButton> {
       groupId: _tapRegionGroupId,
       onTapOutside: (_) => _closeMenu(),
       child: IconButton(
-        tooltip: '输入模式',
+        tooltip: l10n(context).memoryInputModeTooltip,
         onPressed: _toggleMenu,
         icon: Icon(Icons.add_rounded, color: colors.textMuted),
       ),
@@ -2295,7 +2312,7 @@ class _MemoryWaitingIndicator extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '正在思考并调用工具...',
+                l10n(context).memoryWaitingIndicator,
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: colors.textSubtle),
@@ -2345,7 +2362,10 @@ class _ToolAttachmentChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final resultLabel = memoryToolResultLabel(attachment.resultMessage);
+    final resultLabel = memoryToolResultLabel(
+      l10n(context),
+      attachment.resultMessage,
+    );
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -2381,7 +2401,7 @@ class _ToolAttachmentChip extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                _toolLabel(attachment.toolCall.name),
+                _toolLabel(context, attachment.toolCall.name),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colors.text,
                   fontWeight: FontWeight.w700,
@@ -2427,7 +2447,7 @@ class _ToolAttachmentChip extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _toolLabel(attachment.toolCall.name),
+                        _toolLabel(context, attachment.toolCall.name),
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               color: colors.text,
@@ -2448,17 +2468,18 @@ class _ToolAttachmentChip extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _ToolDetailBlock(
-                          title: '工具名称',
+                          title: l10n(context).memoryToolNameLabel,
                           content: attachment.toolCall.name,
                         ),
                         _ToolDetailBlock(
-                          title: '传入参数',
+                          title: l10n(context).memoryToolArgumentsLabel,
                           content: _prettyJson(attachment.toolCall.arguments),
                         ),
                         _ToolDetailBlock(
-                          title: '返回结果',
+                          title: l10n(context).memoryToolResultLabel,
                           content: _prettyJson(
-                            attachment.resultMessage?.content ?? '暂无返回结果',
+                            attachment.resultMessage?.content ??
+                                l10n(context).memoryToolNoResult,
                           ),
                         ),
                       ],
@@ -2482,18 +2503,19 @@ class _ToolAttachmentChip extends StatelessWidget {
     }
   }
 
-  String _toolLabel(String name) {
+  String _toolLabel(BuildContext context, String name) {
+    final strings = l10n(context);
     return switch (name) {
-      'get_current_date' => '获取当前日期',
-      'keyword_search' => '关键词搜索',
-      'search_daily_notes' => '搜索日报关键词',
-      'search_weekly_notes' => '搜索周报关键词',
-      'search_monthly_notes' => '搜索月报关键词',
-      'read_daily_note' => '读取日报',
-      'read_week_daily_notes' => '读取周内日报',
-      'read_weekly_note' => '读取周报',
-      'read_month_weekly_notes' => '读取月内周报',
-      'read_month_report' => '读取月报',
+      'get_current_date' => strings.memoryToolLabelGetCurrentDate,
+      'keyword_search' => strings.memoryToolLabelKeywordSearch,
+      'search_daily_notes' => strings.memoryToolLabelSearchDailyNotes,
+      'search_weekly_notes' => strings.memoryToolLabelSearchWeeklyNotes,
+      'search_monthly_notes' => strings.memoryToolLabelSearchMonthlyNotes,
+      'read_daily_note' => strings.memoryToolLabelReadDailyNote,
+      'read_week_daily_notes' => strings.memoryToolLabelReadWeekDailyNotes,
+      'read_weekly_note' => strings.memoryToolLabelReadWeeklyNote,
+      'read_month_weekly_notes' => strings.memoryToolLabelReadMonthWeeklyNotes,
+      'read_month_report' => strings.memoryToolLabelReadMonthReport,
       _ => name,
     };
   }
@@ -2651,7 +2673,7 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
                       child: Text.rich(
                         TextSpan(
                           children: [
-                            const TextSpan(text: '深度思考'),
+                            TextSpan(text: l10n(context).memoryReasoningTitle),
                             if (widget.duration != null)
                               TextSpan(
                                 text:

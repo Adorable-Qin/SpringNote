@@ -111,7 +111,7 @@ void main() {
     );
 
     final reloaded = AppConfig.fromJson(config.toJson());
-    final fallback = AppConfig.fromJson({});
+    final fallback = AppConfig.fromJson(const {'language': 'zh'});
 
     expect(reloaded.structuredNoteSections[0].id, 'oa');
     expect(reloaded.structuredNoteSections[0].title, '进展');

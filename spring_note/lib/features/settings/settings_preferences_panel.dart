@@ -23,9 +23,9 @@ class _PreferencesPanel extends StatelessWidget {
   final String? errorMessage;
   final ValueChanged<String?> onDataDirectoryChanged;
 
-  String _wallpaperImageSummary(String? path) {
+  String _wallpaperImageSummary(String? path, String notSelected) {
     if (path == null || path.isEmpty) {
-      return '未选择';
+      return notSelected;
     }
     final name = path.split('/').last;
     return name.length > 32 ? '${name.substring(0, 32)}...' : name;
@@ -37,8 +37,8 @@ class _PreferencesPanel extends StatelessWidget {
     required ValueChanged<AppConfig> onChanged,
   }) async {
     try {
-      const imageType = XTypeGroup(
-        label: '图片',
+      final imageType = XTypeGroup(
+        label: l10n(context).settingsImageFileType,
         extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'],
       );
       final file = await openFile(acceptedTypeGroups: [imageType]);
@@ -72,9 +72,9 @@ class _PreferencesPanel extends StatelessWidget {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('选择图片失败: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n(context).settingsImagePickFailed(error))),
+      );
     }
   }
 
@@ -84,8 +84,8 @@ class _PreferencesPanel extends StatelessWidget {
     required ValueChanged<AppConfig> onChanged,
   }) async {
     try {
-      const imageType = XTypeGroup(
-        label: '图片',
+      final imageType = XTypeGroup(
+        label: l10n(context).settingsImageFileType,
         extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'],
       );
       final file = await openFile(acceptedTypeGroups: [imageType]);
@@ -127,48 +127,51 @@ class _PreferencesPanel extends StatelessWidget {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('选择图片失败: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n(context).settingsImagePickFailed(error))),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final windowsOnlyLabel = _platformFeatureMessage();
+    final strings = l10n(context);
+    final windowsOnlyLabel = _platformFeatureMessage(
+      strings.settingsPlatformNotSupported,
+    );
     final colors = AppTheme.colors(context);
     return _SettingsScrollFrame(
       maxWidth: 1080,
       children: [
         _SettingsCard(
-          title: '个人信息',
+          title: strings.settingsPersonalInfoTitle,
           children: [
             _NumberSettingRow(
-              label: '每日工作时长',
+              label: strings.settingsDailyWorkHours,
               value: config.dailyWorkHours,
-              suffix: '小时',
+              suffix: strings.settingsHoursSuffix,
               onChanged: (value) =>
                   onChanged(config.copyWith(dailyWorkHours: value)),
             ),
             _NumberSettingRow(
-              label: '日薪',
+              label: strings.settingsDailySalary,
               value: config.dailySalary,
               suffix: '¥',
               onChanged: (value) =>
                   onChanged(config.copyWith(dailySalary: value)),
             ),
             _TextSettingRow(
-              label: '所在行业',
+              label: strings.settingsIndustry,
               value: config.industry,
               onChanged: (value) => onChanged(config.copyWith(industry: value)),
             ),
           ],
         ),
         _SettingsCard(
-          title: '字体与显示',
+          title: strings.settingsFontDisplayTitle,
           children: [
             _FontSettingRow(
-              label: '应用字体',
+              label: strings.settingsAppFont,
               value: config.appFont,
               onChanged: (value) => onChanged(config.copyWith(appFont: value)),
             ),
@@ -177,8 +180,12 @@ class _PreferencesPanel extends StatelessWidget {
               onChanged: (value) =>
                   onChanged(config.copyWith(themeMode: value)),
             ),
+            _LanguageSettingRow(
+              value: config.language,
+              onChanged: (value) => onChanged(config.copyWith(language: value)),
+            ),
             _NumberSettingRow(
-              label: '字体大小',
+              label: strings.settingsFontSize,
               value: config.fontScale,
               suffix: '%',
               minValue: 80,
@@ -187,7 +194,7 @@ class _PreferencesPanel extends StatelessWidget {
                   onChanged(config.copyWith(fontScale: value)),
             ),
             _SwitchSettingRow(
-              label: 'Markdown 语法高亮',
+              label: strings.settingsMarkdownHighlight,
               value: config.markdownSyntaxHighlightEnabled,
               onChanged: (value) => onChanged(
                 config.copyWith(markdownSyntaxHighlightEnabled: value),
@@ -196,10 +203,10 @@ class _PreferencesPanel extends StatelessWidget {
           ],
         ),
         _SettingsCard(
-          title: '行为与启动',
+          title: strings.settingsBehaviorTitle,
           children: [
             _SwitchSettingRow(
-              label: '开机自启动',
+              label: strings.settingsAutoStart,
               value: config.autoStart,
               enabled: PlatformFeatureSupport.supportsAutoStart,
               description: PlatformFeatureSupport.supportsAutoStart
@@ -210,13 +217,13 @@ class _PreferencesPanel extends StatelessWidget {
                   : null,
             ),
             _SwitchSettingRow(
-              label: '显示更新',
+              label: strings.settingsShowUpdates,
               value: config.showUpdates,
               onChanged: (value) =>
                   onChanged(config.copyWith(showUpdates: value)),
             ),
             _SwitchSettingRow(
-              label: '记录 API 网络日志',
+              label: strings.settingsApiLog,
               value: config.apiLogEnabled,
               onChanged: (value) =>
                   onChanged(config.copyWith(apiLogEnabled: value)),
@@ -224,13 +231,17 @@ class _PreferencesPanel extends StatelessWidget {
           ],
         ),
         _SettingsCard(
-          title: '壁纸',
+          title: strings.settingsWallpaperTitle,
           children: [
             _ChoiceSettingRow<WallpaperMode>(
-              label: '模式',
+              label: strings.settingsWallpaperMode,
               value: config.wallpaperSettings.mode,
               options: WallpaperMode.values,
-              labels: const ['默认背景', '本地图片', '纯色'],
+              labels: [
+                strings.settingsWallpaperModeDefault,
+                strings.settingsWallpaperModeImage,
+                strings.settingsWallpaperModeSolid,
+              ],
               onChanged: (mode) => onChanged(
                 config.copyWith(
                   wallpaperSettings: config.wallpaperSettings.copyWith(
@@ -242,9 +253,10 @@ class _PreferencesPanel extends StatelessWidget {
             ),
             if (config.wallpaperSettings.mode == WallpaperMode.image) ...[
               _ActionSettingRow(
-                label: '选择图片',
+                label: strings.settingsSelectImage,
                 value: _wallpaperImageSummary(
                   config.wallpaperSettings.imagePath,
+                  strings.settingsImageNotSelected,
                 ),
                 onTap: () => _pickWallpaperImage(
                   context: context,
@@ -253,10 +265,14 @@ class _PreferencesPanel extends StatelessWidget {
                 ),
               ),
               _ChoiceSettingRow<WallpaperFillMode>(
-                label: '填充',
+                label: strings.settingsWallpaperFill,
                 value: config.wallpaperSettings.fillMode,
                 options: WallpaperFillMode.values,
-                labels: const ['拉伸', '覆盖', '居中'],
+                labels: [
+                  strings.settingsWallpaperFillStretch,
+                  strings.settingsWallpaperFillCover,
+                  strings.settingsWallpaperFillCenter,
+                ],
                 onChanged: (fillMode) => onChanged(
                   config.copyWith(
                     wallpaperSettings: config.wallpaperSettings.copyWith(
@@ -268,7 +284,7 @@ class _PreferencesPanel extends StatelessWidget {
             ],
             if (config.wallpaperSettings.mode == WallpaperMode.solid)
               _ColorSettingRow(
-                label: '背景颜色',
+                label: strings.settingsBackgroundColor,
                 color: Color(config.wallpaperSettings.solidColorArgb),
                 onChanged: (color) => onChanged(
                   config.copyWith(
@@ -279,7 +295,7 @@ class _PreferencesPanel extends StatelessWidget {
                 ),
               ),
             _SliderSettingRow(
-              label: '不透明度',
+              label: strings.settingsOpacity,
               value: config.wallpaperSettings.opacity,
               onChanged: (value) => onChanged(
                 config.copyWith(
@@ -290,7 +306,7 @@ class _PreferencesPanel extends StatelessWidget {
               ),
             ),
             _SliderSettingRow(
-              label: '模糊度',
+              label: strings.settingsBlur,
               value: config.wallpaperSettings.blur,
               max: 25,
               valueFormatter: (value) => value.toStringAsFixed(0),
@@ -303,7 +319,7 @@ class _PreferencesPanel extends StatelessWidget {
               ),
             ),
             _SliderSettingRow(
-              label: '蒙版浓度',
+              label: strings.settingsMaskOpacity,
               value: config.wallpaperSettings.maskOpacity,
               onChanged: (value) => onChanged(
                 config.copyWith(
@@ -314,7 +330,7 @@ class _PreferencesPanel extends StatelessWidget {
               ),
             ),
             _SwitchSettingRow(
-              label: '透明控件模式',
+              label: strings.settingsTransparentControls,
               value: config.wallpaperSettings.transparentControls,
               onChanged: (value) => onChanged(
                 config.copyWith(
@@ -325,7 +341,7 @@ class _PreferencesPanel extends StatelessWidget {
               ),
             ),
             _SliderSettingRow(
-              label: '控件不透明度',
+              label: strings.settingsControlOpacity,
               value: config.wallpaperSettings.controlAlpha,
               enabled: config.wallpaperSettings.transparentControls,
               onChanged: (value) => onChanged(
@@ -337,7 +353,7 @@ class _PreferencesPanel extends StatelessWidget {
               ),
             ),
             _SwitchSettingRow(
-              label: '保留卡片描边',
+              label: strings.settingsShowBorders,
               value: config.wallpaperSettings.showBorders,
               enabled: config.wallpaperSettings.transparentControls,
               onChanged: (value) => onChanged(
@@ -349,7 +365,7 @@ class _PreferencesPanel extends StatelessWidget {
               ),
             ),
             _SliderSettingRow(
-              label: '文字颜色加深',
+              label: strings.settingsTextContrast,
               value: config.wallpaperSettings.textContrast,
               enabled: config.wallpaperSettings.transparentControls,
               onChanged: (value) => onChanged(
@@ -361,7 +377,7 @@ class _PreferencesPanel extends StatelessWidget {
               ),
             ),
             _ActionSettingRow(
-              label: '恢复默认',
+              label: strings.actionRestore,
               value: '',
               onTap: () => onChanged(
                 config.copyWith(wallpaperSettings: WallpaperSettings.defaults),
@@ -370,10 +386,10 @@ class _PreferencesPanel extends StatelessWidget {
           ],
         ),
         _SettingsCard(
-          title: '托盘',
+          title: strings.settingsTrayTitle,
           children: [
             _SwitchSettingRow(
-              label: '显示托盘图标',
+              label: strings.settingsShowTrayIcon,
               value: PlatformFeatureSupport.supportsTray && config.showTrayIcon,
               enabled: PlatformFeatureSupport.supportsTray,
               description: PlatformFeatureSupport.supportsTray
@@ -389,7 +405,7 @@ class _PreferencesPanel extends StatelessWidget {
                   : null,
             ),
             _SwitchSettingRow(
-              label: '关闭时最小化到托盘',
+              label: strings.settingsCloseToTray,
               value:
                   PlatformFeatureSupport.supportsTray &&
                   config.showTrayIcon &&
@@ -407,7 +423,7 @@ class _PreferencesPanel extends StatelessWidget {
           ],
         ),
         _SettingsCard(
-          title: '数据保存',
+          title: strings.settingsDataSaveTitle,
           children: [
             _DataDirectorySettingRow(
               dataDirectory: dataDirectory,
@@ -418,10 +434,10 @@ class _PreferencesPanel extends StatelessWidget {
           ],
         ),
         _SettingsCard(
-          title: '组件设置',
+          title: strings.settingsComponentTitle,
           children: [
             _SwitchSettingRow(
-              label: '显示桌面组件',
+              label: strings.settingsShowDesktopWidget,
               value:
                   PlatformFeatureSupport.supportsDesktopWidget &&
                   config.showDesktopWidget,
@@ -435,7 +451,7 @@ class _PreferencesPanel extends StatelessWidget {
                   : null,
             ),
             _SwitchSettingRow(
-              label: '桌面组件圆球模式',
+              label: strings.settingsOrbMode,
               value:
                   PlatformFeatureSupport.supportsDesktopWidget &&
                   config.showDesktopWidget &&
@@ -458,13 +474,17 @@ class _PreferencesPanel extends StatelessWidget {
         if (PlatformFeatureSupport.supportsDesktopWidget &&
             config.showDesktopWidget)
           _SettingsCard(
-            title: '组件壁纸',
+            title: strings.settingsWidgetWallpaperTitle,
             children: [
               _ChoiceSettingRow<DesktopWidgetWallpaperMode>(
-                label: '模式',
+                label: strings.settingsWallpaperMode,
                 value: config.desktopWidgetWallpaperSettings.mode,
                 options: DesktopWidgetWallpaperMode.values,
-                labels: const ['默认白色', '纯色', '本地图片'],
+                labels: [
+                  strings.settingsWidgetWallpaperModeDefaultWhite,
+                  strings.settingsWallpaperModeSolid,
+                  strings.settingsWallpaperModeImage,
+                ],
                 onChanged: (mode) => onChanged(
                   config.copyWith(
                     desktopWidgetWallpaperSettings: config
@@ -480,7 +500,7 @@ class _PreferencesPanel extends StatelessWidget {
               if (config.desktopWidgetWallpaperSettings.mode ==
                   DesktopWidgetWallpaperMode.solid)
                 _ColorSettingRow(
-                  label: '背景颜色',
+                  label: strings.settingsBackgroundColor,
                   color: Color(
                     config.desktopWidgetWallpaperSettings.solidColorArgb,
                   ),
@@ -497,9 +517,10 @@ class _PreferencesPanel extends StatelessWidget {
               if (config.desktopWidgetWallpaperSettings.mode ==
                   DesktopWidgetWallpaperMode.image)
                 _ActionSettingRow(
-                  label: '选择图片',
+                  label: strings.settingsSelectImage,
                   value: _wallpaperImageSummary(
                     config.desktopWidgetWallpaperSettings.imagePath,
+                    strings.settingsImageNotSelected,
                   ),
                   onTap: () => _pickWidgetWallpaperImage(
                     context: context,
@@ -510,7 +531,7 @@ class _PreferencesPanel extends StatelessWidget {
               if (config.desktopWidgetWallpaperSettings.mode !=
                   DesktopWidgetWallpaperMode.defaultWhite)
                 _SliderSettingRow(
-                  label: '不透明度',
+                  label: strings.settingsOpacity,
                   value: config.desktopWidgetWallpaperSettings.opacity,
                   onChanged: (value) => onChanged(
                     config.copyWith(
@@ -521,7 +542,7 @@ class _PreferencesPanel extends StatelessWidget {
                   ),
                 ),
               _ActionSettingRow(
-                label: '恢复默认',
+                label: strings.actionRestore,
                 value: '',
                 onTap: () => onChanged(
                   config.copyWith(
@@ -533,10 +554,10 @@ class _PreferencesPanel extends StatelessWidget {
             ],
           ),
         _SettingsCard(
-          title: '提示词',
+          title: strings.settingsPromptTitle,
           children: [
             _ActionSettingRow(
-              label: '首页栏目',
+              label: strings.settingsHomeSections,
               value: '',
               onTap: () async {
                 final sections =
@@ -552,7 +573,7 @@ class _PreferencesPanel extends StatelessWidget {
               },
             ),
             _ActionSettingRow(
-              label: '日报整理',
+              label: strings.settingsDailyMergePrompt,
               value: '',
               onTap: () async {
                 final prompt = await showDialog<String>(
@@ -562,15 +583,31 @@ class _PreferencesPanel extends StatelessWidget {
                     config: config,
                     aiClientService: aiClientService,
                     dialogKey: const ValueKey('daily-merge-prompt-dialog'),
-                    title: '编辑日报整理提示词',
-                    hintText: '输入日报整理 Prompt...',
+                    title: strings.settingsEditDailyMergePromptTitle,
+                    hintText: strings.settingsDailyMergePromptHint,
                     initialPrompt: config.dailyMergePrompt,
-                    defaultPrompt: defaultDailyMergePrompt,
-                    variables: const [
-                      (Icons.calendar_month_outlined, '{date}', '当前日期'),
-                      (Icons.article_outlined, '{existing_markdown}', '已有日报内容'),
-                      (Icons.edit_note_rounded, '{raw_input}', '新增随手记录'),
-                      (Icons.business_center_outlined, '{industry}', '用户所在行业'),
+                    defaultPrompt: defaultDailyMergePromptFor(currentAppLanguage(context)),
+                    variables: [
+                      (
+                        Icons.calendar_month_outlined,
+                        '{date}',
+                        strings.settingsVariableCurrentDate,
+                      ),
+                      (
+                        Icons.article_outlined,
+                        '{existing_markdown}',
+                        strings.settingsVariableExistingDailyContent,
+                      ),
+                      (
+                        Icons.edit_note_rounded,
+                        '{raw_input}',
+                        strings.settingsVariableRawInput,
+                      ),
+                      (
+                        Icons.business_center_outlined,
+                        '{industry}',
+                        strings.settingsVariableIndustry,
+                      ),
                     ],
                   ),
                 );
@@ -580,7 +617,7 @@ class _PreferencesPanel extends StatelessWidget {
               },
             ),
             _ActionSettingRow(
-              label: '全局签整理',
+              label: strings.settingsGlobalSignPrompt,
               value: '',
               onTap: () async {
                 final prompt = await showDialog<String>(
@@ -590,16 +627,36 @@ class _PreferencesPanel extends StatelessWidget {
                     config: config,
                     aiClientService: aiClientService,
                     dialogKey: const ValueKey('global-sign-prompt-dialog'),
-                    title: '编辑全局签提示词',
-                    hintText: '输入全局签整理 Prompt...',
+                    title: strings.settingsEditGlobalSignPromptTitle,
+                    hintText: strings.settingsGlobalSignPromptHint,
                     initialPrompt: config.globalSignPrompt,
-                    defaultPrompt: defaultGlobalSignPrompt,
-                    variables: const [
-                      (Icons.calendar_month_outlined, '{date}', '当前日期'),
-                      (Icons.article_outlined, '{daily_markdown}', '当日日报内容'),
-                      (Icons.push_pin_outlined, '{global_sign}', '当前全局签 JSON'),
-                      (Icons.edit_note_rounded, '{raw_input}', '新增随手记录'),
-                      (Icons.business_center_outlined, '{industry}', '用户所在行业'),
+                    defaultPrompt: defaultGlobalSignPromptFor(currentAppLanguage(context)),
+                    variables: [
+                      (
+                        Icons.calendar_month_outlined,
+                        '{date}',
+                        strings.settingsVariableCurrentDate,
+                      ),
+                      (
+                        Icons.article_outlined,
+                        '{daily_markdown}',
+                        strings.settingsVariableDailyContent,
+                      ),
+                      (
+                        Icons.push_pin_outlined,
+                        '{global_sign}',
+                        strings.settingsVariableGlobalSignJson,
+                      ),
+                      (
+                        Icons.edit_note_rounded,
+                        '{raw_input}',
+                        strings.settingsVariableRawInput,
+                      ),
+                      (
+                        Icons.business_center_outlined,
+                        '{industry}',
+                        strings.settingsVariableIndustry,
+                      ),
                     ],
                   ),
                 );
@@ -611,39 +668,39 @@ class _PreferencesPanel extends StatelessWidget {
           ],
         ),
         _SettingsCard(
-          title: '回忆书检索',
+          title: strings.settingsMemoryTitle,
           children: [
             _NumberSettingRow(
-              label: '回忆书单轮最大搜索次数',
+              label: strings.settingsMemorySearchLimit,
               value: config.memorySearchLimit,
-              suffix: '次',
+              suffix: strings.settingsTimesSuffix,
               minValue: 1,
               maxValue: 120,
               onChanged: (value) =>
                   onChanged(config.copyWith(memorySearchLimit: value)),
             ),
             _NumberSettingRow(
-              label: '单条结果返回最大字符数',
+              label: strings.settingsMemoryResultMaxChars,
               value: config.memoryResultMaxCharacters,
-              suffix: '字',
+              suffix: strings.settingsCharsSuffix,
               minValue: 80,
               maxValue: 10000,
               onChanged: (value) =>
                   onChanged(config.copyWith(memoryResultMaxCharacters: value)),
             ),
             _NumberSettingRow(
-              label: '连续日报读取最大数量',
+              label: strings.settingsMemoryWeekDailyLimit,
               value: config.memoryWeekDailyNoteLimit,
-              suffix: '条',
+              suffix: strings.settingsItemsSuffix,
               minValue: 1,
               maxValue: 31,
               onChanged: (value) =>
                   onChanged(config.copyWith(memoryWeekDailyNoteLimit: value)),
             ),
             _NumberSettingRow(
-              label: '关键词搜索结果最大数量',
+              label: strings.settingsMemoryKeywordSearchLimit,
               value: config.memoryKeywordSearchResultLimit,
-              suffix: '条',
+              suffix: strings.settingsItemsSuffix,
               minValue: 1,
               maxValue: 200,
               onChanged: (value) => onChanged(
@@ -651,18 +708,18 @@ class _PreferencesPanel extends StatelessWidget {
               ),
             ),
             _NumberSettingRow(
-              label: '命中关键词截取前最大字符数',
+              label: strings.settingsMemoryKeywordBefore,
               value: config.memoryKeywordContextBefore,
-              suffix: '字',
+              suffix: strings.settingsCharsSuffix,
               minValue: 0,
               maxValue: 4000,
               onChanged: (value) =>
                   onChanged(config.copyWith(memoryKeywordContextBefore: value)),
             ),
             _NumberSettingRow(
-              label: '命中关键词截取后最大字符数',
+              label: strings.settingsMemoryKeywordAfter,
               value: config.memoryKeywordContextAfter,
-              suffix: '字',
+              suffix: strings.settingsCharsSuffix,
               minValue: 0,
               maxValue: 6000,
               onChanged: (value) =>
@@ -673,7 +730,7 @@ class _PreferencesPanel extends StatelessWidget {
         if (errorMessage != null)
           _SettingsMessage(text: errorMessage!, error: true),
         Text(
-          '配置文件：$configPath',
+          strings.settingsConfigFileLabel(configPath),
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: colors.textSubtle),
@@ -683,11 +740,11 @@ class _PreferencesPanel extends StatelessWidget {
   }
 }
 
-String _platformFeatureMessage() {
+String _platformFeatureMessage(String unsupportedMessage) {
   if (Platform.isWindows) {
     return '';
   }
-  return '当前平台暂不支持';
+  return unsupportedMessage;
 }
 
 class _DataMigrationCompleteDialog extends StatelessWidget {
@@ -712,7 +769,7 @@ class _DataMigrationCompleteDialog extends StatelessWidget {
               _DataMigrationSuccessIcon(colors: colors),
               const SizedBox(height: 10),
               Text(
-                '数据迁移完成',
+                l10n(context).settingsDataMigrationComplete,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: colors.text,
@@ -723,7 +780,7 @@ class _DataMigrationCompleteDialog extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '已成功切换至新的数据目录。\n确认数据正常后，可删除原目录以释放存储空间。',
+                l10n(context).settingsDataMigrationDetail,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.textSubtle,
@@ -733,7 +790,7 @@ class _DataMigrationCompleteDialog extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               _DataMigrationDialogButton(
-                label: '确定',
+                label: l10n(context).actionConfirm,
                 onTap: () => Navigator.of(context).pop(),
               ),
             ],
@@ -917,7 +974,7 @@ class _StructuredNoteSectionsDialogState
                 children: [
                   Expanded(
                     child: Text(
-                      '首页栏目',
+                      l10n(context).settingsHomeSections,
                       style: textTheme.titleMedium?.copyWith(
                         color: colors.text,
                         fontWeight: FontWeight.w800,
@@ -925,7 +982,7 @@ class _StructuredNoteSectionsDialogState
                     ),
                   ),
                   IconButton(
-                    tooltip: '关闭',
+                    tooltip: l10n(context).actionClose,
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded),
                   ),
@@ -949,19 +1006,19 @@ class _StructuredNoteSectionsDialogState
               child: Row(
                 children: [
                   _ProviderTestDialogButton(
-                    label: '恢复默认',
+                    label: l10n(context).actionRestore,
                     filled: false,
                     onTap: _restoreDefault,
                   ),
                   const Spacer(),
                   _ProviderTestDialogButton(
-                    label: '取消',
+                    label: l10n(context).actionCancel,
                     filled: false,
                     onTap: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 10),
                   _ProviderTestDialogButton(
-                    label: '保存',
+                    label: l10n(context).actionSave,
                     filled: true,
                     onTap: _save,
                   ),
@@ -977,10 +1034,10 @@ class _StructuredNoteSectionsDialogState
   void _restoreDefault() {
     for (
       var index = 0;
-      index < StructuredNoteSectionConfig.defaults.length;
+      index < StructuredNoteSectionConfig.defaultsFor(currentAppLanguage(context)).length;
       index++
     ) {
-      final section = StructuredNoteSectionConfig.defaults[index];
+      final section = StructuredNoteSectionConfig.defaultsFor(currentAppLanguage(context))[index];
       _titleControllers[index].text = section.title;
       _instructionControllers[index].text = section.aiInstruction;
     }
@@ -1031,7 +1088,7 @@ class _StructuredNoteSectionsEditor extends StatelessWidget {
                       SizedBox(
                         width: 176,
                         child: Text(
-                          '标题',
+                          l10n(context).settingsSectionTitleHeader,
                           style: textTheme.labelSmall?.copyWith(
                             color: colors.textSubtle,
                           ),
@@ -1040,7 +1097,7 @@ class _StructuredNoteSectionsEditor extends StatelessWidget {
                       const SizedBox(width: 25),
                       Expanded(
                         child: Text(
-                          'AI 说明',
+                          l10n(context).settingsAiInstructionHeader,
                           style: textTheme.labelSmall?.copyWith(
                             color: colors.textSubtle,
                           ),
@@ -1102,7 +1159,9 @@ class _StructuredNoteSectionEditor extends StatelessWidget {
       controller: titleController,
       maxLines: 1,
       textAlignVertical: TextAlignVertical.center,
-      decoration: _structuredSectionInputDecoration('栏目标题'),
+      decoration: _structuredSectionInputDecoration(
+        l10n(context).settingsSectionTitleHint,
+      ),
       style: editorTextStyle,
     );
     final instructionField = TextField(
@@ -1110,7 +1169,9 @@ class _StructuredNoteSectionEditor extends StatelessWidget {
       controller: instructionController,
       minLines: stacked ? 2 : 1,
       maxLines: 3,
-      decoration: _structuredSectionInputDecoration('描述分类规则'),
+      decoration: _structuredSectionInputDecoration(
+        l10n(context).settingsSectionInstructionHint,
+      ),
       style: editorTextStyle,
     );
 
@@ -1280,7 +1341,7 @@ class _PromptEditDialogState extends State<_PromptEditDialog> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    tooltip: '关闭',
+                    tooltip: l10n(context).actionClose,
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded),
                   ),
@@ -1389,19 +1450,19 @@ class _PromptEditDialogState extends State<_PromptEditDialog> {
               child: Row(
                 children: [
                   _ProviderTestDialogButton(
-                    label: '恢复默认',
+                    label: l10n(context).actionRestore,
                     filled: false,
                     onTap: _restoreDefault,
                   ),
                   const Spacer(),
                   _ProviderTestDialogButton(
-                    label: '取消',
+                    label: l10n(context).actionCancel,
                     filled: false,
                     onTap: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 10),
                   _ProviderTestDialogButton(
-                    label: '保存',
+                    label: l10n(context).actionSave,
                     filled: true,
                     onTap: () => Navigator.of(context).pop(_controller.text),
                   ),
@@ -1416,15 +1477,15 @@ class _PromptEditDialogState extends State<_PromptEditDialog> {
 
   String get _promptFimStatusText {
     if (_predicting) {
-      return 'AI 补全预测中';
+      return l10n(context).settingsFimPredicting;
     }
     if (_fimPrediction != null) {
-      return 'Tab 全部 · Ctrl+L 单行 · Ctrl+K 单字';
+      return l10n(context).settingsFimAcceptHint;
     }
     if (_fimMessage != null) {
       return _fimMessage!;
     }
-    return 'AI 实时补全已就绪';
+    return l10n(context).settingsFimReady;
   }
 
   bool get _promptFimActive =>
@@ -1505,7 +1566,9 @@ class _PromptEditDialogState extends State<_PromptEditDialog> {
 
     final reason = widget.aiClientService.fimUnavailableReason(widget.config);
     if (reason != null) {
-      setState(() => _fimMessage = 'FIM 未触发：$reason');
+      setState(
+        () => _fimMessage = l10n(context).settingsFimNotTriggered(reason),
+      );
       return;
     }
 
@@ -1563,8 +1626,8 @@ class _PromptEditDialogState extends State<_PromptEditDialog> {
       if (prediction?.isEmpty ?? true) {
         _fimPrediction = null;
         _fimMessage = fimError != null && fimError.isNotEmpty
-            ? 'FIM 请求失败：$fimError'
-            : 'FIM 已请求，但没有返回可用预测';
+            ? l10n(context).settingsFimRequestFailed(fimError)
+            : l10n(context).settingsFimNoPrediction;
       } else {
         _fimPrediction = prediction;
         _fimMessage = null;
@@ -1812,7 +1875,10 @@ class _PromptFimTextEditingController extends TextEditingController {
 }
 
 class _PromptVariablesHint extends StatelessWidget {
-  const _PromptVariablesHint({required this.textTheme, required this.variables});
+  const _PromptVariablesHint({
+    required this.textTheme,
+    required this.variables,
+  });
 
   final TextTheme textTheme;
   final List<(IconData, String, String)> variables;
@@ -1953,7 +2019,7 @@ class _DataDirectorySettingRowState extends State<_DataDirectorySettingRow> {
     }
     final path = await getDirectoryPath(
       initialDirectory: widget.dataDirectory,
-      confirmButtonText: '选择此文件夹',
+      confirmButtonText: l10n(context).settingsSelectThisFolder,
     );
     if (path == null || path.trim().isEmpty) {
       return;
@@ -1964,7 +2030,7 @@ class _DataDirectorySettingRowState extends State<_DataDirectorySettingRow> {
   @override
   Widget build(BuildContext context) {
     return _SettingRowShell(
-      label: '保存目录',
+      label: l10n(context).settingsSaveDirectory,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: Row(
@@ -1975,9 +2041,9 @@ class _DataDirectorySettingRowState extends State<_DataDirectorySettingRow> {
                 controller: _controller,
                 enabled: !widget.saving,
                 readOnly: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   isDense: true,
-                  hintText: '当前保存目录',
+                  hintText: l10n(context).settingsDataDirectoryHint,
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
@@ -1987,7 +2053,7 @@ class _DataDirectorySettingRowState extends State<_DataDirectorySettingRow> {
             ),
             const SizedBox(width: 8),
             _DataDirectoryActionButton(
-              tooltip: '选择并迁移目录',
+              tooltip: l10n(context).settingsSelectMigrateDirectory,
               onPressed: widget.saving ? null : _pickDirectory,
               child: widget.saving
                   ? const SizedBox(
@@ -2002,7 +2068,7 @@ class _DataDirectorySettingRowState extends State<_DataDirectorySettingRow> {
             ),
             const SizedBox(width: 2),
             _DataDirectoryActionButton(
-              tooltip: '恢复默认目录',
+              tooltip: l10n(context).settingsRestoreDefaultDirectory,
               onPressed: widget.saving || widget.defaultDirectory
                   ? null
                   : () => widget.onChanged(null),
@@ -2239,7 +2305,9 @@ class _FontSettingRowState extends State<_FontSettingRow> {
 
   @override
   Widget build(BuildContext context) {
-    final label = widget.value == 'system' ? '系统默认' : widget.value;
+    final label = widget.value == 'system'
+        ? l10n(context).settingsSystemDefault
+        : widget.value;
 
     return _SettingRowShell(
       label: widget.label,
@@ -2363,7 +2431,10 @@ class _FontPickerDialogState extends State<_FontPickerDialog> {
     }
     return values
         .where(
-          (font) => _fontLabel(font).toLowerCase().contains(normalizedQuery),
+          (font) => _fontLabel(
+            font,
+            l10n(context).settingsSystemDefault,
+          ).toLowerCase().contains(normalizedQuery),
         )
         .toList();
   }
@@ -2392,14 +2463,14 @@ class _FontPickerDialogState extends State<_FontPickerDialog> {
               child: Row(
                 children: [
                   Text(
-                    '选择字体',
+                    l10n(context).settingsSelectFont,
                     style: Theme.of(
                       context,
                     ).textTheme.titleMedium?.copyWith(color: colors.text),
                   ),
                   const Spacer(),
                   IconButton(
-                    tooltip: '关闭',
+                    tooltip: l10n(context).actionClose,
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded, size: 18),
                   ),
@@ -2411,7 +2482,7 @@ class _FontPickerDialogState extends State<_FontPickerDialog> {
               child: _SettingsSearchField(
                 controller: _controller,
                 autofocus: true,
-                hintText: '搜索系统字体',
+                hintText: l10n(context).settingsSearchSystemFonts,
                 onChanged: (value) => setState(() => _query = value),
               ),
             ),
@@ -2419,7 +2490,7 @@ class _FontPickerDialogState extends State<_FontPickerDialog> {
               child: fonts.isEmpty
                   ? Center(
                       child: Text(
-                        '没有匹配的字体',
+                        l10n(context).settingsNoMatchingFonts,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     )
@@ -2517,7 +2588,7 @@ class _FontOptionTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          _fontLabel(font),
+                          _fontLabel(font, l10n(context).settingsSystemDefault),
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
@@ -2541,8 +2612,8 @@ class _FontOptionTile extends StatelessWidget {
   }
 }
 
-String _fontLabel(String font) {
-  return font == 'system' ? '系统默认' : font;
+String _fontLabel(String font, String systemDefault) {
+  return font == 'system' ? systemDefault : font;
 }
 
 class _FontResetButton extends StatefulWidget {
@@ -2568,7 +2639,7 @@ class _FontResetButtonState extends State<_FontResetButton> {
         : (active ? colors.text : colors.textSubtle);
 
     return Tooltip(
-      message: '重置字体',
+      message: l10n(context).settingsResetFont,
       waitDuration: const Duration(milliseconds: 450),
       child: MouseRegion(
         cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import '../../core/attachments/attachment_manager.dart';
 import '../../core/attachments/pending_image.dart';
 
+import '../../core/models/app_language.dart';
 import '../../core/models/local_data_state.dart';
 import '../../core/models/global_sign_item.dart';
 import '../../core/models/structured_note_section_config.dart';
@@ -29,6 +30,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/page_scaffold.dart';
 import '../../core/widgets/update_dialog.dart';
 import '../../src/rust/stats.dart' as rust_stats;
+import '../../l10n/l10n.dart';
 import 'global_sign_dialog.dart';
 
 typedef HomeAttachmentPicker = Future<List<HomeAttachment>> Function();
@@ -263,10 +265,14 @@ class _HomePageState extends State<HomePage> {
                 )
                 .toList()
           : const <AiImageInput>[];
+      final submissionLanguage = resolveAppLanguage(
+        widget.localDataState.config.language,
+      );
       final submissionInput = _inputWithAttachmentSummary(
         input,
         savedPendingImages,
         submittedAttachments,
+        submissionLanguage,
       );
       final configuredModel = widget
           .localDataState
@@ -328,6 +334,7 @@ class _HomePageState extends State<HomePage> {
         note: structured,
         sectionConfigs: widget.localDataState.config.structuredNoteSections,
         mergedMarkdown: aiMergedMarkdown,
+        language: submissionLanguage,
       );
       widget.onDailyNoteSaved?.call(savedPath);
       await widget.statsService.recordHomeGeneration(
@@ -353,9 +360,9 @@ class _HomePageState extends State<HomePage> {
         _overview = nextOverview;
         _lastSavedPath = savedPath;
         _aiNotice = aiFailed || !hasConfiguredModel || aiMergedMarkdown == null
-            ? '未配置可用模型或 AI 返回不可用，本次已使用本地 mock / 简单合并。'
+            ? l10n(context).homeAiNoticeNoModel
             : savedPendingImages.isNotEmpty && !modelSupportsImages
-            ? '当前智能生成模型未标记支持图像输入，图片已保存进日报但未发送给 AI。'
+            ? l10n(context).homeAiNoticeImageUnsupported
             : null;
       });
       submissionCompleted = true;
@@ -364,7 +371,7 @@ class _HomePageState extends State<HomePage> {
       final globalSignUpdated = await _updateGlobalSign(now, submissionInput);
       if (mounted && !globalSignUpdated && _aiNotice == null) {
         setState(() {
-          _aiNotice = '三栏与日报已生成，但全局签 AI 更新失败，全局签内容未变更。';
+          _aiNotice = l10n(context).homeAiNoticeGlobalSignFailed;
         });
       }
       await _levelProgressController.recordValidSubmission();
@@ -420,6 +427,7 @@ class _HomePageState extends State<HomePage> {
     String input,
     List<SavedPendingImage> savedPendingImages,
     List<HomeAttachment> attachments,
+    String language,
   ) {
     final trimmed = input.trim();
     if (attachments.isEmpty && savedPendingImages.isEmpty) {
@@ -432,8 +440,9 @@ class _HomePageState extends State<HomePage> {
         ..writeln(trimmed)
         ..writeln();
     }
+    final english = language == 'en';
     if (savedPendingImages.isNotEmpty) {
-      buffer.writeln('图片：');
+      buffer.writeln(english ? 'Images:' : '图片：');
       for (final image in savedPendingImages) {
         buffer.writeln('![${image.name}](${image.markdownPath})');
       }
@@ -442,11 +451,11 @@ class _HomePageState extends State<HomePage> {
       }
     }
     if (attachments.isNotEmpty) {
-      buffer.writeln('附件：');
+      buffer.writeln(english ? 'Attachments:' : '附件：');
       for (final attachment in attachments) {
         final type = switch (attachment.kind) {
-          HomeAttachmentKind.image => '图片',
-          HomeAttachmentKind.document => '文件',
+          HomeAttachmentKind.image => english ? 'image' : '图片',
+          HomeAttachmentKind.document => english ? 'file' : '文件',
         };
         buffer.writeln('- [$type] ${attachment.name}: ${attachment.path}');
       }
@@ -476,7 +485,7 @@ class _HomePageState extends State<HomePage> {
       await _pasteClipboardText();
     } catch (_) {
       if (mounted) {
-        setState(() => _attachmentError = '无法读取剪贴板图片。');
+        setState(() => _attachmentError = l10n(context).homeClipboardImageError);
       }
     } finally {
       _isPastingImages = false;
@@ -489,7 +498,7 @@ class _HomePageState extends State<HomePage> {
       data = await Clipboard.getData(Clipboard.kTextPlain);
     } catch (_) {
       if (mounted) {
-        setState(() => _attachmentError = '无法读取剪贴板文字。');
+        setState(() => _attachmentError = l10n(context).homeClipboardTextError);
       }
       return;
     }
@@ -533,7 +542,7 @@ class _HomePageState extends State<HomePage> {
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _attachmentError = '无法添加图片，请重新选择文件。');
+        setState(() => _attachmentError = l10n(context).homeAddImageError);
       }
     }
   }
@@ -570,7 +579,7 @@ class _HomePageState extends State<HomePage> {
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _attachmentError = '无法添加附件，请重新选择文件。');
+        setState(() => _attachmentError = l10n(context).homeAddAttachmentError);
       }
     }
   }
@@ -608,23 +617,29 @@ class _HomePageState extends State<HomePage> {
     final messages = <String>[];
     if (oversizedNames.isNotEmpty) {
       messages.add(
-        '单张图片不能超过 ${_formatBytes(_maxHomeImageAttachmentBytes)}：'
-        '${_formatNameList(oversizedNames)}。',
+        l10n(context).homeImageOversized(
+          _formatBytes(_maxHomeImageAttachmentBytes),
+          _formatNameList(oversizedNames),
+        ),
       );
     }
     if (skippedForLimit > 0) {
       messages.add(
-        '最多添加 $_maxHomeImageAttachments 张图片，已忽略 $skippedForLimit 张。',
+        l10n(context).homeImageLimitExceeded(
+          skippedForLimit,
+          _maxHomeImageAttachments,
+        ),
       );
     }
     if (unsupportedAiNames.isNotEmpty) {
       messages.add(
-        '这些图片会保存进日报，但不会发送给 AI：'
-        '${_formatNameList(unsupportedAiNames)}。',
+        l10n(context).homeImageUnsupportedForAi(
+          _formatNameList(unsupportedAiNames),
+        ),
       );
     }
     if (added == 0 && messages.isEmpty) {
-      messages.add('没有可添加的图片。');
+      messages.add(l10n(context).homeNoImageToAdd);
     }
     return messages.isEmpty ? null : messages.join('\n');
   }
@@ -651,9 +666,11 @@ class _HomePageState extends State<HomePage> {
 
   String _formatNameList(List<String> names) {
     const maxNames = 3;
-    final visible = names.take(maxNames).join('、');
+    final visible = names.take(maxNames).join(l10n(context).homeImageNamesSeparator);
     final remaining = names.length - maxNames;
-    return remaining > 0 ? '$visible 等 $remaining 张' : visible;
+    return remaining > 0
+        ? l10n(context).homeImageNamesRemaining(remaining, visible)
+        : visible;
   }
 
   Future<List<PendingImage>> _defaultImagePicker() async {
@@ -677,7 +694,7 @@ class _HomePageState extends State<HomePage> {
           webWildCards: ['image/*'],
         ),
       ],
-      confirmButtonText: '选择图片',
+      confirmButtonText: l10n(context).homePickImageButton,
     );
 
     final images = <PendingImage>[];
@@ -725,7 +742,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ],
-      confirmButtonText: '选择文件',
+      confirmButtonText: l10n(context).homePickFileButton,
     );
     return files
         .map(
@@ -902,14 +919,25 @@ class _HomePageState extends State<HomePage> {
     final now = DateTime.now();
     final appDataDir = widget.localDataState.dataDirectory;
     final config = widget.localDataState.config;
+    final signLanguage = resolveAppLanguage(config.language);
     // 带【已完成】【已取消】标记的版本：供全局签提示词识别需要移除的项。
     final refreshInput = _buildGlobalSignRefreshInput(
       editedItems,
       doneItems,
       cancelledItems,
+      signLanguage,
     );
     // 口语化版本：供三栏与日报使用，避免系统术语进入日报正文。
-    final dailyInput = _buildGlobalSignDailyInput(doneItems, cancelledItems);
+    final dailyInput = _buildGlobalSignDailyInput(
+      doneItems,
+      cancelledItems,
+      signLanguage,
+    );
+
+    // 提示文案在异步间隙之前取好。
+    final noticeFallbackDone = l10n(context).homeGlobalSignFallbackDone;
+    final noticeFallbackUpdated = l10n(context).homeGlobalSignFallbackUpdated;
+    final noticeFallbackSaved = l10n(context).homeGlobalSignFallbackSaved;
 
     // 有完成/取消时走一遍智能生成的逻辑刷新日报与三栏；仅修改内容不涉及日报。
     if (dailyInput.isNotEmpty) {
@@ -936,6 +964,7 @@ class _HomePageState extends State<HomePage> {
             note: aiStructured,
             sectionConfigs: config.structuredNoteSections,
             mergedMarkdown: aiMergedMarkdown,
+            language: signLanguage,
           );
           widget.onDailyNoteSaved?.call(savedPath);
           dailyHandledByAi = true;
@@ -965,8 +994,9 @@ class _HomePageState extends State<HomePage> {
           doneItems: doneItems,
           cancelledItems: cancelledItems,
           dailyInput: dailyInput,
+          language: signLanguage,
           writeDailyNote: true,
-          notice: '无法调用 AI，已在本地更新全局签，并将完成/取消内容写入当日日报。',
+          notice: noticeFallbackDone,
         );
       }
     }
@@ -1011,10 +1041,11 @@ class _HomePageState extends State<HomePage> {
       doneItems: doneItems,
       cancelledItems: cancelledItems,
       dailyInput: dailyInput,
+      language: signLanguage,
       writeDailyNote: false,
       notice: dailyInput.isNotEmpty
-          ? '日报已更新，但全局签 AI 刷新失败，已在本地移除完成/取消项。'
-          : '全局签 AI 刷新失败，已在本地保存修改。',
+          ? noticeFallbackUpdated
+          : noticeFallbackSaved,
     );
   }
 
@@ -1025,6 +1056,7 @@ class _HomePageState extends State<HomePage> {
     required List<GlobalSignItem> doneItems,
     required List<GlobalSignItem> cancelledItems,
     required String dailyInput,
+    required String language,
     required bool writeDailyNote,
     required String notice,
   }) async {
@@ -1049,7 +1081,10 @@ class _HomePageState extends State<HomePage> {
           StructuredWorkNoteSection(
             id: StructuredNoteSectionIds.a,
             items: [
-              for (final item in doneItems) '已完成：${item.content}',
+              for (final item in doneItems)
+                language == 'en'
+                    ? 'Completed: ${item.content}'
+                    : '已完成：${item.content}',
             ],
           ),
           const StructuredWorkNoteSection(
@@ -1068,6 +1103,7 @@ class _HomePageState extends State<HomePage> {
           date: now,
           note: fallbackNote,
           sectionConfigs: widget.localDataState.config.structuredNoteSections,
+          language: language,
         );
         widget.onDailyNoteSaved?.call(savedPath);
       } catch (_) {
@@ -1083,10 +1119,14 @@ class _HomePageState extends State<HomePage> {
   String _buildGlobalSignDailyInput(
     List<GlobalSignItem> doneItems,
     List<GlobalSignItem> cancelledItems,
+    String language,
   ) {
+    final english = language == 'en';
     final lines = <String>[
-      for (final item in doneItems) '已完成：${item.content}',
-      for (final item in cancelledItems) '已取消：${item.content}',
+      for (final item in doneItems)
+        english ? 'Completed: ${item.content}' : '已完成：${item.content}',
+      for (final item in cancelledItems)
+        english ? 'Cancelled: ${item.content}' : '已取消：${item.content}',
     ];
     return lines.join('\n');
   }
@@ -1095,6 +1135,7 @@ class _HomePageState extends State<HomePage> {
     List<GlobalSignItem> editedItems,
     List<GlobalSignItem> doneItems,
     List<GlobalSignItem> cancelledItems,
+    String language,
   ) {
     final remaining = [
       for (final item in editedItems)
@@ -1102,10 +1143,11 @@ class _HomePageState extends State<HomePage> {
             !cancelledItems.any((deleted) => deleted.id == item.id))
           item,
     ];
+    final english = language == 'en';
     void writeGroup(StringBuffer buffer, String title, List<String> contents) {
       buffer.writeln(title);
       if (contents.isEmpty) {
-        buffer.writeln('- 无');
+        buffer.writeln(english ? '- None' : '- 无');
       } else {
         for (final content in contents) {
           buffer.writeln('- $content');
@@ -1113,14 +1155,15 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    final buffer = StringBuffer()..writeln('全局签变更：');
-    writeGroup(buffer, '【已完成】', [
+    final buffer = StringBuffer()
+      ..writeln(english ? 'Global sign changes:' : '全局签变更：');
+    writeGroup(buffer, english ? '【Completed】' : '【已完成】', [
       for (final item in doneItems) item.content,
     ]);
-    writeGroup(buffer, '【已取消】', [
+    writeGroup(buffer, english ? '【Cancelled】' : '【已取消】', [
       for (final item in cancelledItems) item.content,
     ]);
-    writeGroup(buffer, '【当前全局签】', [
+    writeGroup(buffer, english ? '【Current Global Sign】' : '【当前全局签】', [
       for (final item in remaining) item.content,
     ]);
     return buffer.toString().trimRight();
@@ -1139,7 +1182,10 @@ class _HomePageState extends State<HomePage> {
             children: [
               Row(
                 children: [
-                  Text('首页', style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    l10n(context).homePageTitle,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const Spacer(),
                   _HomeMoreMenuButton(onOpenGlobalSign: _openGlobalSign),
                 ],
@@ -1452,7 +1498,7 @@ class _IncomeSummary extends StatelessWidget {
               const SizedBox(height: 8),
               Text.rich(
                 TextSpan(
-                  text: '累计总收益 ',
+                  text: l10n(context).homeEarningsTotalPrefix,
                   children: [
                     TextSpan(
                       text: _formatCoinAmount(visibleTotalCoins),
@@ -1580,7 +1626,7 @@ class _ActivityPreview extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              '最近活跃',
+              l10n(context).homeActivityRecent,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: dark ? const Color(0xFF34D399) : const Color(0xFF10B981),
                 fontSize: 11,
@@ -1604,13 +1650,19 @@ class _ActivityPreview extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _ActivityMetric(label: '本周总结', value: '$weekCount 次'),
-                const SizedBox(width: 24),
-                _ActivityMetric(label: '连续记录', value: '$streak 天'),
+                _ActivityMetric(
+                  label: l10n(context).homeActivityWeeklySummary,
+                  value: l10n(context).homeActivityCountTimes(weekCount),
+                ),
                 const SizedBox(width: 24),
                 _ActivityMetric(
-                  label: '上次同步',
-                  value: '刚刚',
+                  label: l10n(context).homeActivityStreak,
+                  value: l10n(context).homeActivityCountDays(streak),
+                ),
+                const SizedBox(width: 24),
+                _ActivityMetric(
+                  label: l10n(context).homeActivityLastSync,
+                  value: l10n(context).homeActivityJustNow,
                   valueColor: colors.textSubtle,
                 ),
               ],
@@ -2165,7 +2217,7 @@ class _QuickCaptureCard extends StatelessWidget {
                       textAlignVertical: TextAlignVertical.top,
                       textInputAction: TextInputAction.newline,
                       decoration: InputDecoration(
-                        hintText: '写下你的想法，AI 将自动整理并生成结构化内容...',
+                        hintText: l10n(context).homeInputHint,
                         hintStyle: Theme.of(context).textTheme.bodyMedium
                             ?.copyWith(color: colors.textSubtle),
                         hoverColor: Colors.transparent,
@@ -2227,25 +2279,25 @@ class _QuickCaptureCard extends StatelessWidget {
                   children: [
                     _ToolIcon(
                       type: _ToolIconType.image,
-                      tooltip: '上传图片',
+                      tooltip: l10n(context).homeUploadImageTooltip,
                       enabled: !isSubmitting,
                       onTap: onPickImages,
                     ),
                     const SizedBox(width: 4),
                     _ToolIcon(
                       type: _ToolIconType.paperclip,
-                      tooltip: '添加文件',
+                      tooltip: l10n(context).homeAddFileTooltip,
                       enabled: !isSubmitting,
                       onTap: onPickDocuments,
                     ),
                     const SizedBox(width: 4),
-                    const _ToolIcon(
+                    _ToolIcon(
                       type: _ToolIconType.atSign,
-                      tooltip: '提及功能',
+                      tooltip: l10n(context).homeMentionTooltip,
                     ),
                     const Spacer(),
                     Text(
-                      '$characterCount 字',
+                      l10n(context).homeCharacterCount(characterCount),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: colors.textSubtle,
                         fontSize: 12,
@@ -2329,7 +2381,9 @@ class _SmartGenerateButtonState extends State<_SmartGenerateButton> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                widget.isSubmitting ? '整理中' : '智能生成',
+                widget.isSubmitting
+                    ? l10n(context).homeGenerating
+                    : l10n(context).homeSmartGenerate,
                 style: TextStyle(
                   color: foregroundColor,
                   fontSize: 12,
@@ -2447,7 +2501,7 @@ class _PendingImageChip extends StatelessWidget {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                '图片 · ${image.name}',
+                l10n(context).homeImageChipLabel(image.name),
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.textMuted,
@@ -2523,7 +2577,9 @@ class _AttachmentChip extends StatelessWidget {
     final icon = attachment.kind == HomeAttachmentKind.image
         ? Icons.image_outlined
         : Icons.description_outlined;
-    final typeLabel = attachment.kind == HomeAttachmentKind.image ? '图片' : '文件';
+    final typeLabel = attachment.kind == HomeAttachmentKind.image
+        ? l10n(context).homeAttachmentImageLabel
+        : l10n(context).homeAttachmentFileLabel;
 
     return Tooltip(
       message: attachment.path,
@@ -2543,7 +2599,7 @@ class _AttachmentChip extends StatelessWidget {
             const SizedBox(width: 6),
             Flexible(
               child: Text(
-                '$typeLabel · ${attachment.name}',
+                l10n(context).homeAttachmentChipLabel(attachment.name, typeLabel),
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.textMuted,
@@ -3242,7 +3298,7 @@ class _OverviewDetailsDialogState extends State<_OverviewDetailsDialog> {
               child: items.isEmpty
                   ? Center(
                       child: Text(
-                        '暂无内容',
+                        l10n(context).homeEmptyHint,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colors.textSubtle,
                         ),
@@ -3409,7 +3465,7 @@ class _SavedPathBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '已写入当日日报：$path',
+              l10n(context).homeSavedPath(path),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(
@@ -3523,8 +3579,8 @@ class _UpdateNoticeBannerState extends State<_UpdateNoticeBanner> {
     final colors = AppTheme.colors(context);
     final message = switch (widget.result.status) {
       UpdateCheckStatus.updateAvailable =>
-        '发现新版本 ${latest?.version ?? ''}，点击查看更新内容',
-      UpdateCheckStatus.failed => '更新检测失败',
+        l10n(context).homeUpdateAvailable(latest?.version ?? ''),
+      UpdateCheckStatus.failed => l10n(context).homeUpdateCheckFailed,
       UpdateCheckStatus.idle => '',
     };
     final foreground = widget.result.status == UpdateCheckStatus.failed
@@ -3747,7 +3803,7 @@ class _HomeMoreMenuState extends State<_HomeMoreMenu> {
             _HomeMoreMenuItem(
               key: const ValueKey('home-more-menu-global-sign'),
               icon: Icons.bookmark_outline_rounded,
-              label: '全局签',
+              label: l10n(context).homeGlobalSign,
               hovered: _hoveredItem == 'global-sign',
               onHoverChanged: (hovered) {
                 setState(() => _hoveredItem = hovered ? 'global-sign' : null);

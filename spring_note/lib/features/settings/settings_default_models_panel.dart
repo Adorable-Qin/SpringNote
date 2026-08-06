@@ -17,16 +17,16 @@ class _DefaultModelsPanel extends StatelessWidget {
       maxWidth: 1120,
       children: [
         _DefaultModelCard(
-          title: '智能生成模型',
-          description: '用于首页随手记录后的结构化整理和日报合并。',
+          title: l10n(context).settingsModelIntelligent,
+          description: l10n(context).settingsModelIntelligentDesc,
           value: config.defaultModels['intelligentGenerationModel'],
           models: models,
           onSelected: (value) =>
               _setDefault('intelligentGenerationModel', value),
         ),
         _DefaultModelCard(
-          title: '编辑补全模型',
-          description: '用于便签页补全。模型类型包含补全时，默认按 completions FIM 调用。',
+          title: l10n(context).settingsModelEditCompletion,
+          description: l10n(context).settingsModelEditCompletionDesc,
           value: config.defaultModels['editCompletionModel'],
           models: models
               .where((option) => option.model.modelTypes.contains('completion'))
@@ -34,8 +34,8 @@ class _DefaultModelsPanel extends StatelessWidget {
           onSelected: (value) => _setDefault('editCompletionModel', value),
         ),
         _DefaultModelCard(
-          title: '回忆书模型',
-          description: '用于回忆书问答和历史记录检索回答。',
+          title: l10n(context).settingsModelMemoryBook,
+          description: l10n(context).settingsModelMemoryBookDesc,
           value: config.defaultModels['memoryBookModel'],
           models: models,
           onSelected: (value) => _setDefault('memoryBookModel', value),
@@ -139,7 +139,9 @@ class _DefaultModelCard extends StatelessWidget {
                           ? colors.surfacePressed
                           : const Color(0xFFDCFCE7),
                       child: Text(
-                        value == null ? '未' : '已',
+                        value == null
+                            ? l10n(context).settingsModelUnset
+                            : l10n(context).settingsModelSet,
                         style: TextStyle(
                           color: value == null
                               ? colors.textMuted
@@ -152,7 +154,7 @@ class _DefaultModelCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         selected == null
-                            ? '未选择模型'
+                            ? l10n(context).settingsNoModelSelected
                             : '${selected.model.displayName} · ${selected.provider.name}',
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(
@@ -215,7 +217,8 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
 
   bool get _showNoneOption {
     final normalizedQuery = _query.trim().toLowerCase();
-    return normalizedQuery.isEmpty || '未选择'.contains(normalizedQuery);
+    return normalizedQuery.isEmpty ||
+        l10n(context).settingsNotSelected.contains(normalizedQuery);
   }
 
   List<_ModelPickerProviderGroup> get _groups {
@@ -316,7 +319,7 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '选择${widget.title}',
+                          l10n(context).settingsSelectModelTitled(widget.title),
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(
                             context,
@@ -324,7 +327,7 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '按供应商选择默认模型',
+                          l10n(context).settingsSelectModelByProvider,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: colors.textSubtle),
                         ),
@@ -332,7 +335,7 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
                     ),
                   ),
                   IconButton(
-                    tooltip: '关闭',
+                    tooltip: l10n(context).actionClose,
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded, size: 18),
                   ),
@@ -344,7 +347,7 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
               child: _SettingsSearchField(
                 controller: _controller,
                 autofocus: true,
-                hintText: '搜索模型',
+                hintText: l10n(context).settingsSearchModels,
                 onChanged: (value) => setState(() => _query = value),
               ),
             ),
@@ -352,7 +355,7 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
               child: groups.isEmpty && !showNoneOption
                   ? Center(
                       child: Text(
-                        '没有匹配的模型',
+                        l10n(context).settingsNoMatchingModels,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     )
@@ -497,7 +500,8 @@ class _ModelOptionTile extends StatelessWidget {
         ? colors.surfacePressed
         : colors.surfaceHover;
     final option = model;
-    final title = option?.model.displayName ?? '未选择';
+    final title =
+        option?.model.displayName ?? l10n(context).settingsNotSelected;
     final contentColor = active ? colors.text : colors.textMuted;
 
     return MouseRegion(

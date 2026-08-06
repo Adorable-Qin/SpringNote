@@ -13,12 +13,16 @@ class AppUpdateInfo {
     required this.changeTime,
     required this.downloadUrl,
     required this.changelog,
+    this.changelogLoadFailed = false,
   });
 
   final String version;
   final String changeTime;
   final String downloadUrl;
   final String changelog;
+
+  /// 更新内容是否因拉取失败而不可用（区别于"确实没有更新内容"）。
+  final bool changelogLoadFailed;
 
   String get installerName {
     final uri = Uri.tryParse(downloadUrl);
@@ -64,13 +68,41 @@ class UpdateInstallProgress {
   }
 }
 
-class UpdateInstallException implements Exception {
-  const UpdateInstallException(this.message);
+/// 自动更新失败原因。服务层不持有 BuildContext，抛出的异常只携带
+/// 机器可读的 [UpdateInstallErrorCode]（和可选的原始 detail），由 UI 层
+/// 通过 [UpdateInstallException.code] 映射为当前语言的用户可见提示。
+enum UpdateInstallErrorCode {
+  unsupportedPlatform,
+  updaterMissing,
+  downloadFailed,
+  downloadTimeout,
+  networkUnavailable,
+  downloadFailedRetry,
+  checksumFailed,
+  checksumInfoUnreadable,
+  checksumInfoMissing,
+  macUpdateFailed,
+  macUpdateNotFound,
+  macUpdateDismissed,
+  macUpdateInterrupted,
+  macUpdateLaunchFailed,
+}
 
-  final String message;
+class UpdateInstallException implements Exception {
+  const UpdateInstallException(this.code, {this.detail});
+
+  final UpdateInstallErrorCode code;
+
+  /// 原始细节（如 HTTP 状态码、原生更新器消息），可为空。
+  final String? detail;
 
   @override
-  String toString() => message;
+  String toString() {
+    final detail = this.detail;
+    return detail == null || detail.isEmpty
+        ? 'UpdateInstallException($code)'
+        : 'UpdateInstallException($code): $detail';
+  }
 }
 
 enum UpdateCheckStatus { idle, updateAvailable, failed }
@@ -168,7 +200,9 @@ class UpdateCheckService {
       return;
     }
 
-    throw const UpdateInstallException('当前平台暂不支持自动更新。');
+    throw const UpdateInstallException(
+      UpdateInstallErrorCode.unsupportedPlatform,
+    );
   }
 
   Future<void> _installMacUpdate(
@@ -206,14 +240,15 @@ class UpdateCheckService {
         return UpdateCheckResult.idle;
       }
 
-      final changelog = await _readChangelog();
+      final changelogResult = await _readChangelog();
       return UpdateCheckResult.updateAvailable(
         currentVersion: currentVersion,
         latest: AppUpdateInfo(
           version: latestVersion,
-          changeTime: changeTime.isEmpty ? '未提供' : changeTime,
+          changeTime: changeTime,
           downloadUrl: downloadUrl,
-          changelog: changelog,
+          changelog: changelogResult.text,
+          changelogLoadFailed: changelogResult.loadFailed,
         ),
       );
     } on FormatException {
@@ -264,12 +299,14 @@ class UpdateCheckService {
     }
   }
 
-  Future<String> _readChangelog() async {
+  /// 返回更新内容正文，以及该正文是否因拉取失败而不可用。空文案与拉取失败
+  /// 的展示文案不同，由 UI 层根据 [AppUpdateInfo.changelogLoadFailed] 决定。
+  Future<({String text, bool loadFailed})> _readChangelog() async {
     try {
       final changelog = await _readUrl(_updateUrl('LATESTCHANGELOG.md'));
-      return changelog.trim().isEmpty ? '暂无更新内容。' : changelog;
+      return (text: changelog.trim(), loadFailed: false);
     } catch (_) {
-      return '更新内容加载失败。';
+      return (text: '', loadFailed: true);
     }
   }
 
@@ -341,7 +378,9 @@ class UpdateCheckService {
     final app = File(Platform.resolvedExecutable);
     final updater = File(_joinPath(app.parent.path, 'SpringNoteUpdater.exe'));
     if (!await updater.exists()) {
-      throw const UpdateInstallException('更新助手缺失，请下载最新安装包手动更新。');
+      throw const UpdateInstallException(
+        UpdateInstallErrorCode.updaterMissing,
+      );
     }
     final updaterCopy = File(_joinPath(tempDir.path, 'SpringNoteUpdater.exe'));
     await updater.copy(updaterCopy.path);
@@ -377,7 +416,10 @@ class UpdateCheckService {
       final request = await client.getUrl(Uri.parse(url)).timeout(_timeout);
       final response = await request.close().timeout(_timeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw UpdateInstallException('下载安装包失败 (${response.statusCode})');
+        throw UpdateInstallException(
+          UpdateInstallErrorCode.downloadFailed,
+          detail: '${response.statusCode}',
+        );
       }
 
       await file.parent.create(recursive: true);
@@ -404,11 +446,17 @@ class UpdateCheckService {
     } on UpdateInstallException {
       rethrow;
     } on TimeoutException {
-      throw const UpdateInstallException('下载更新超时，请稍后重试。');
+      throw const UpdateInstallException(
+        UpdateInstallErrorCode.downloadTimeout,
+      );
     } on SocketException {
-      throw const UpdateInstallException('网络不可用，请检查连接后重试。');
+      throw const UpdateInstallException(
+        UpdateInstallErrorCode.networkUnavailable,
+      );
     } catch (_) {
-      throw const UpdateInstallException('下载安装包失败，请稍后重试。');
+      throw const UpdateInstallException(
+        UpdateInstallErrorCode.downloadFailedRetry,
+      );
     } finally {
       await sink?.close();
       client.close(force: true);
@@ -422,7 +470,9 @@ class UpdateCheckService {
     final expected = await _readExpectedSha256(latest);
     final actual = await _calculateWindowsSha256(installer);
     if (actual.toLowerCase() != expected.toLowerCase()) {
-      throw const UpdateInstallException('安装包校验失败，请稍后重试。');
+      throw const UpdateInstallException(
+        UpdateInstallErrorCode.checksumFailed,
+      );
     }
   }
 
@@ -430,7 +480,9 @@ class UpdateCheckService {
     final downloadUri = Uri.parse(latest.downloadUrl);
     final segments = downloadUri.pathSegments;
     if (segments.isEmpty) {
-      throw const UpdateInstallException('无法读取安装包校验信息。');
+      throw const UpdateInstallException(
+        UpdateInstallErrorCode.checksumInfoUnreadable,
+      );
     }
 
     final checksumUri = downloadUri.replace(
@@ -450,7 +502,9 @@ class UpdateCheckService {
       }
     }
 
-    throw const UpdateInstallException('未找到安装包校验信息。');
+    throw const UpdateInstallException(
+      UpdateInstallErrorCode.checksumInfoMissing,
+    );
   }
 
   Future<String> _calculateWindowsSha256(File file) async {
@@ -460,7 +514,9 @@ class UpdateCheckService {
       'SHA256',
     ]);
     if (result.exitCode != 0) {
-      throw const UpdateInstallException('安装包校验失败，请稍后重试。');
+      throw const UpdateInstallException(
+        UpdateInstallErrorCode.checksumFailed,
+      );
     }
 
     final output = '${result.stdout}\n${result.stderr}';
@@ -471,7 +527,9 @@ class UpdateCheckService {
       }
     }
 
-    throw const UpdateInstallException('安装包校验失败，请稍后重试。');
+    throw const UpdateInstallException(
+      UpdateInstallErrorCode.checksumFailed,
+    );
   }
 
   String _safeFileName(String fileName) {
@@ -561,15 +619,17 @@ class MacUpdateInstaller {
     void Function(UpdateInstallProgress progress)? onProgress,
   }) async {
     if (!Platform.isMacOS) {
-      throw const UpdateInstallException('当前平台暂不支持 macOS 自动更新。');
+      throw const UpdateInstallException(
+        UpdateInstallErrorCode.unsupportedPlatform,
+      );
     }
 
     final completer = Completer<void>();
     StreamSubscription<dynamic>? subscription;
 
-    void fail(String message) {
+    void fail(UpdateInstallErrorCode code, {String? detail}) {
       if (!completer.isCompleted) {
-        completer.completeError(UpdateInstallException(message));
+        completer.completeError(UpdateInstallException(code, detail: detail));
       }
     }
 
@@ -594,17 +654,23 @@ class MacUpdateInstaller {
 
           final type = data['type']?.toString();
           if (type == 'error') {
-            fail(_eventMessage(data, 'macOS 更新失败，请稍后重试。'));
+            fail(
+              UpdateInstallErrorCode.macUpdateFailed,
+              detail: _eventDetail(data),
+            );
           } else if (type == 'notFound') {
-            fail(_eventMessage(data, '没有找到可安装的 macOS 更新。'));
+            fail(
+              UpdateInstallErrorCode.macUpdateNotFound,
+              detail: _eventDetail(data),
+            );
           } else if (type == 'dismissed') {
-            fail('macOS 更新流程已结束，请稍后重试。');
+            fail(UpdateInstallErrorCode.macUpdateDismissed);
           } else if (type == 'relaunching' || type == 'installed') {
             complete();
           }
         },
-        onError: (_) => fail('macOS 更新失败，请稍后重试。'),
-        onDone: () => fail('macOS 更新流程已中断，请稍后重试。'),
+        onError: (_) => fail(UpdateInstallErrorCode.macUpdateFailed),
+        onDone: () => fail(UpdateInstallErrorCode.macUpdateInterrupted),
       );
       await methodChannel.invokeMethod<void>('installUpdate', {
         'feedUrl': feedUrl,
@@ -612,9 +678,10 @@ class MacUpdateInstaller {
       await completer.future;
     } on PlatformException catch (error) {
       throw UpdateInstallException(
-        error.message?.trim().isNotEmpty == true
+        UpdateInstallErrorCode.macUpdateLaunchFailed,
+        detail: error.message?.trim().isNotEmpty == true
             ? error.message!.trim()
-            : 'macOS 更新启动失败，请稍后重试。',
+            : null,
       );
     } finally {
       final activeSubscription = subscription;
@@ -658,9 +725,11 @@ class MacUpdateInstaller {
     };
   }
 
-  String _eventMessage(Map<Object?, Object?> data, String fallback) {
+  /// 原生更新器事件自带的 message（可能为空），非空时作为 [UpdateInstallException.detail]
+  /// 原样透传给 UI；为空则交给 UI 层使用本地化回退文案。
+  String? _eventDetail(Map<Object?, Object?> data) {
     final message = data['message']?.toString().trim();
-    return message == null || message.isEmpty ? fallback : message;
+    return message == null || message.isEmpty ? null : message;
   }
 
   int _intValue(Object? value) {

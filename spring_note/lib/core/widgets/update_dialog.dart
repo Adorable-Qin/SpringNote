@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 
+import '../../l10n/l10n.dart';
 import '../services/update_check_service.dart';
 import '../theme/app_theme.dart';
 import 'spring_tree.dart';
@@ -67,7 +68,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
             children: [
               Row(
                 children: [
-                  Text('发现新版本', style: textTheme.titleLarge),
+                  Text(l10n(context).coreUpdateDialogTitle, style: textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
                     onPressed: _installing
@@ -82,16 +83,25 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  _UpdateMetaPill(label: '当前版本', value: widget.currentVersion),
-                  _UpdateMetaPill(label: '最新版本', value: widget.latest.version),
                   _UpdateMetaPill(
-                    label: '更新时间',
-                    value: widget.latest.changeTime,
+                    label: l10n(context).coreUpdateCurrentVersionLabel,
+                    value: widget.currentVersion,
+                  ),
+                  _UpdateMetaPill(
+                    label: l10n(context).coreUpdateLatestVersionLabel,
+                    value: widget.latest.version,
+                  ),
+                  _UpdateMetaPill(
+                    label: l10n(context).coreUpdateChangeTimeLabel,
+                    value: widget.latest.changeTime.isEmpty
+                        ? l10n(context).coreUpdateChangeTimeNotProvided
+                        : widget.latest.changeTime,
                   ),
                 ],
               ),
               const SizedBox(height: 18),
-              Text('更新内容', style: textTheme.titleMedium),
+              Text(l10n(context).coreUpdateChangelogTitle,
+                  style: textTheme.titleMedium),
               const SizedBox(height: 10),
               Flexible(
                 child: Container(
@@ -103,7 +113,19 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
                   ),
                   child: SelectionArea(
                     child: SingleChildScrollView(
-                      child: DefaultTextStyle.merge(
+                      child: widget.latest.changelogLoadFailed ||
+                              widget.latest.changelog.trim().isEmpty
+                          ? Text(
+                              widget.latest.changelogLoadFailed
+                                  ? l10n(context).coreUpdateChangelogLoadFailed
+                                  : l10n(context).coreUpdateChangelogEmpty,
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: springMarkdownTextColor(context),
+                                fontSize: 14,
+                                height: 1.55,
+                              ),
+                            )
+                          : DefaultTextStyle.merge(
                         style: textTheme.bodyLarge?.copyWith(
                           color: springMarkdownTextColor(context),
                           fontSize: 14,
@@ -188,7 +210,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       }
       setState(() {
         _installing = false;
-        _errorMessage = error.message;
+        _errorMessage = _localizedUpdateInstallError(context, error);
       });
     } catch (_) {
       if (!mounted) {
@@ -196,10 +218,54 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       }
       setState(() {
         _installing = false;
-        _errorMessage = '更新启动失败，请稍后重试。';
+        _errorMessage = l10n(context).coreUpdateLaunchFailed;
       });
     }
   }
+}
+
+/// 把 [UpdateInstallException] 映射为当前语言的用户可见提示。
+String _localizedUpdateInstallError(
+  BuildContext context,
+  UpdateInstallException error,
+) {
+  final strings = l10n(context);
+  final detail = error.detail;
+  final hasDetail = detail != null && detail.isNotEmpty;
+  return switch (error.code) {
+    UpdateInstallErrorCode.unsupportedPlatform =>
+      strings.coreUpdateErrorUnsupportedPlatform,
+    UpdateInstallErrorCode.updaterMissing =>
+      strings.coreUpdateErrorUpdaterMissing,
+    UpdateInstallErrorCode.downloadFailed => hasDetail
+        ? strings.coreUpdateErrorDownloadFailed(detail)
+        : strings.coreUpdateErrorDownloadFailedRetry,
+    UpdateInstallErrorCode.downloadTimeout =>
+      strings.coreUpdateErrorDownloadTimeout,
+    UpdateInstallErrorCode.networkUnavailable =>
+      strings.coreUpdateErrorNetworkUnavailable,
+    UpdateInstallErrorCode.downloadFailedRetry =>
+      strings.coreUpdateErrorDownloadFailedRetry,
+    UpdateInstallErrorCode.checksumFailed =>
+      strings.coreUpdateErrorChecksumFailed,
+    UpdateInstallErrorCode.checksumInfoUnreadable =>
+      strings.coreUpdateErrorChecksumUnreadable,
+    UpdateInstallErrorCode.checksumInfoMissing =>
+      strings.coreUpdateErrorChecksumMissing,
+    UpdateInstallErrorCode.macUpdateFailed => hasDetail
+        ? detail
+        : strings.coreUpdateErrorMacFailed,
+    UpdateInstallErrorCode.macUpdateNotFound => hasDetail
+        ? detail
+        : strings.coreUpdateErrorMacNotFound,
+    UpdateInstallErrorCode.macUpdateDismissed =>
+      strings.coreUpdateErrorMacDismissed,
+    UpdateInstallErrorCode.macUpdateInterrupted =>
+      strings.coreUpdateErrorMacInterrupted,
+    UpdateInstallErrorCode.macUpdateLaunchFailed => hasDetail
+        ? detail
+        : strings.coreUpdateErrorMacLaunchFailed,
+  };
 }
 
 class _UpdateInstallStatus extends StatelessWidget {
@@ -227,14 +293,15 @@ class _UpdateInstallStatus extends StatelessWidget {
 
     final current = progress;
     final text = switch (current?.stage) {
-      UpdateInstallStage.preparing => '正在准备更新...',
-      UpdateInstallStage.downloading => _downloadText(current),
-      UpdateInstallStage.verifying => '正在校验安装包...',
-      UpdateInstallStage.extracting => _extractingText(current),
-      UpdateInstallStage.installing => '正在安装更新...',
-      UpdateInstallStage.launching =>
-        Platform.isWindows ? '正在启动安装器，SpringNote 即将退出并重启...' : '正在重启并替换为新版本...',
-      null => '正在准备更新...',
+      UpdateInstallStage.preparing => l10n(context).coreUpdatePreparing,
+      UpdateInstallStage.downloading => _downloadText(context, current),
+      UpdateInstallStage.verifying => l10n(context).coreUpdateVerifying,
+      UpdateInstallStage.extracting => _extractingText(context, current),
+      UpdateInstallStage.installing => l10n(context).coreUpdateInstalling,
+      UpdateInstallStage.launching => Platform.isWindows
+          ? l10n(context).coreUpdateLaunchingWindows
+          : l10n(context).coreUpdateLaunching,
+      null => l10n(context).coreUpdatePreparing,
     };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,21 +327,24 @@ class _UpdateInstallStatus extends StatelessWidget {
     );
   }
 
-  String _downloadText(UpdateInstallProgress? progress) {
-    final received = progress?.receivedBytes ?? 0;
+  String _downloadText(BuildContext context, UpdateInstallProgress? progress) {
+    final received = _formatBytes(progress?.receivedBytes ?? 0);
     final total = progress?.totalBytes;
     if (total == null || total <= 0) {
-      return '正在下载安装包 ${_formatBytes(received)}';
+      return l10n(context).coreUpdateDownloading(received);
     }
-    return '正在下载安装包 ${_formatBytes(received)} / ${_formatBytes(total)}';
+    return l10n(
+      context,
+    ).coreUpdateDownloadingProgress(received, _formatBytes(total));
   }
 
-  String _extractingText(UpdateInstallProgress? progress) {
+  String _extractingText(BuildContext context, UpdateInstallProgress? progress) {
     final fraction = progress?.fraction;
     if (fraction == null) {
-      return '正在解压更新...';
+      return l10n(context).coreUpdateExtracting;
     }
-    return '正在解压更新 ${(fraction * 100).clamp(0, 100).toStringAsFixed(0)}%';
+    final percent = (fraction * 100).clamp(0, 100).toStringAsFixed(0);
+    return l10n(context).coreUpdateExtractingProgress(percent);
   }
 
   String _formatBytes(int bytes) {
@@ -487,7 +557,9 @@ class _UpdateActionButtonState extends State<_UpdateActionButton> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  widget.installing ? '正在准备更新' : '立即更新',
+                  widget.installing
+                      ? l10n(context).coreUpdateButtonPreparing
+                      : l10n(context).coreUpdateButtonInstallNow,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
