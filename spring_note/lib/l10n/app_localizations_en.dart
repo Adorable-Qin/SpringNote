@@ -1534,7 +1534,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsThemeLight => 'Light';
 
   @override
-  String get settingsThemeSystem => 'Follow system';
+  String get settingsThemeSystem => 'System';
 
   @override
   String get settingsThemeDark => 'Dark';
@@ -1574,7 +1574,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Answers questions and searches history in the memory book.';
 
   @override
-  String get settingsModelUnset => 'Not set';
+  String get settingsModelUnset => 'Not';
 
   @override
   String get settingsModelSet => 'Set';
