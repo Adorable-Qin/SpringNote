@@ -630,6 +630,45 @@ class _PreferencesPanel extends StatelessWidget {
               },
             ),
             _ActionSettingRow(
+              label: strings.settingsWeeklyReportPrompt,
+              value: '',
+              onTap: () async {
+                final prompt = await showDialog<String>(
+                  context: context,
+                  builder: (_) => _PromptEditDialog(
+                    appDataDir: appDataDir,
+                    config: config,
+                    aiClientService: aiClientService,
+                    dialogKey: const ValueKey('weekly-report-prompt-dialog'),
+                    title: strings.settingsEditWeeklyReportPromptTitle,
+                    hintText: strings.settingsWeeklyReportPromptHint,
+                    initialPrompt: config.weeklyReportPrompt,
+                    defaultPrompt: defaultWeeklyReportPromptFor(currentAppLanguage(context)),
+                    variables: [
+                      (
+                        Icons.date_range_outlined,
+                        '{period_label}',
+                        strings.settingsVariablePeriodLabel,
+                      ),
+                      (
+                        Icons.article_outlined,
+                        '{source_markdown}',
+                        strings.settingsVariableSourceMarkdown,
+                      ),
+                      (
+                        Icons.business_center_outlined,
+                        '{industry}',
+                        strings.settingsVariableIndustry,
+                      ),
+                    ],
+                  ),
+                );
+                if (prompt != null) {
+                  onChanged(config.copyWith(weeklyReportPrompt: prompt));
+                }
+              },
+            ),
+            _ActionSettingRow(
               label: strings.settingsGlobalSignPrompt,
               value: '',
               onTap: () async {
@@ -675,45 +714,6 @@ class _PreferencesPanel extends StatelessWidget {
                 );
                 if (prompt != null) {
                   onChanged(config.copyWith(globalSignPrompt: prompt));
-                }
-              },
-            ),
-            _ActionSettingRow(
-              label: strings.settingsWeeklyReportPrompt,
-              value: '',
-              onTap: () async {
-                final prompt = await showDialog<String>(
-                  context: context,
-                  builder: (_) => _PromptEditDialog(
-                    appDataDir: appDataDir,
-                    config: config,
-                    aiClientService: aiClientService,
-                    dialogKey: const ValueKey('weekly-report-prompt-dialog'),
-                    title: strings.settingsEditWeeklyReportPromptTitle,
-                    hintText: strings.settingsWeeklyReportPromptHint,
-                    initialPrompt: config.weeklyReportPrompt,
-                    defaultPrompt: defaultWeeklyReportPromptFor(currentAppLanguage(context)),
-                    variables: [
-                      (
-                        Icons.date_range_outlined,
-                        '{period_label}',
-                        strings.settingsVariablePeriodLabel,
-                      ),
-                      (
-                        Icons.article_outlined,
-                        '{source_markdown}',
-                        strings.settingsVariableSourceMarkdown,
-                      ),
-                      (
-                        Icons.business_center_outlined,
-                        '{industry}',
-                        strings.settingsVariableIndustry,
-                      ),
-                    ],
-                  ),
-                );
-                if (prompt != null) {
-                  onChanged(config.copyWith(weeklyReportPrompt: prompt));
                 }
               },
             ),
