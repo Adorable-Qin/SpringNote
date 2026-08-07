@@ -40,7 +40,8 @@ export default defineConfig({
                 items: [
                   { text: '数据概览', link: '/guide/home-data' },
                   { text: '快速输入框', link: '/guide/home-input' },
-                  { text: '首页三栏', link: '/guide/home-columns' }
+                  { text: '首页三栏', link: '/guide/home-columns' },
+                  { text: '全局签', link: '/guide/global-sign' }
                 ]
               },
               {
@@ -150,7 +151,8 @@ export default defineConfig({
                 items: [
                   { text: 'Data Overview', link: '/en/guide/home-data' },
                   { text: 'Quick Input', link: '/en/guide/home-input' },
-                  { text: 'Home Columns', link: '/en/guide/home-columns' }
+                  { text: 'Home Columns', link: '/en/guide/home-columns' },
+                  { text: 'Global Sign', link: '/en/guide/global-sign' }
                 ]
               },
               {

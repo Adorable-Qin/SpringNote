@@ -21,3 +21,5 @@ Smart Generation reads the current input and returns structured results based on
 Structured results are saved as the day's home overview and participate in daily note generation. The final daily note content depends on whether AI merge succeeds: when merge succeeds, the model's returned Markdown is used; when merge fails or no model is available, the application's local merge result is used. The application does not guarantee that an unprocessed copy of the original input is retained separately when AI merge succeeds.
 
 When generating again, new results are merged with the existing overview; existing column content is not unconditionally cleared due to an empty result. If no model is available, the provider is unreachable, the request fails, or the structured result does not match column definitions, the text and saved images are still preserved.
+
+Smart Generation also updates Global Sign at the same time: AI maintains a persistent cross-day list based on the day's input. A failed Global Sign AI update does not affect the columns or the daily note, and Global Sign keeps its previous content. See [Global Sign](./global-sign.md) for viewing and editing.

@@ -18,11 +18,13 @@ The default industry is "Internet". It serves as context for AI requests like da
 
 ## Font & Display
 
-Font & Display includes application font, theme mode, font size, and Markdown syntax highlighting.
+Font & Display includes application font, theme mode, language, font size, and Markdown syntax highlighting.
 
 **Application font** determines the font used by the interface and editor. When set to system font, the platform's default font is used; when other fonts are selected, the interface and editing area use that font on the next render. Font selection only affects display and does not rewrite document content.
 
 **Theme mode** has three states: Follow System, Light, and Dark. When set to Follow System, the application switches based on the current OS theme; Light and Dark override the system theme. Theme switching only changes colors, backgrounds, and control appearances; it does not change wallpaper files or documents.
+
+**Language** has three states: System, 中文, and English. When set to System, the application follows the operating system language, using English in non-Chinese environments. Language determines the interface text; prompts for AI requests such as Smart Generation, daily/weekly/monthly note generation, and Memory Book answers are also built in the effective language.
 
 **Font size** is expressed as a percentage, defaulting to 100%, with an adjustable range of 80% to 140%. It affects the font size of the application interface and editor; the layout recalculates with the font size. It does not change text size in Markdown files.
 
@@ -66,11 +68,15 @@ Changing the directory performs a data migration and updates the location used b
 
 ## Prompts
 
-The Prompts card contains home column and daily note organization prompts.
+The Prompts card contains home column, daily note, weekly note, and Global Sign organization prompts.
 
 Home columns allow editing the titles and AI descriptions of the three columns. Titles are used for home page display; AI descriptions tell the AI what each column should focus on. When an AI description is empty, the corresponding title is used as the description. After saving, these affect future organization and do not reprocess existing home page overviews.
 
 The daily note organization prompt controls how the AI merges the existing daily note with new input into the day's Markdown. The prompt can use built-in information such as the current date, existing daily note, new records, and industry. Modifications only affect future daily note organization and do not change already-saved daily notes.
+
+The weekly note organization prompt controls how the AI organizes the week's daily note content into a weekly note. The prompt can use built-in information such as the weekly period label, the week's daily note content, and industry. Modifications only affect future weekly note generation and do not change already-saved weekly notes.
+
+The Global Sign organization prompt controls how AI maintains the Global Sign list during Smart Generation on the home page. The prompt can use built-in information such as the current date, the day's daily note content, the current Global Sign JSON, new quick records, and industry. Modifications only affect future Global Sign organization and do not change the saved Global Sign content.
 
 ## Memory Book Retrieval
 

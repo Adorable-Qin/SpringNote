@@ -32,7 +32,7 @@ The Memory Book page has no inline render limit — maps render in full from the
 
 ## Conversation Navigation
 
-When the conversation has three or more rounds and the window is wide enough, a vertical rail of small dashes appears at the right edge of the chat area — one dash per round (one question).
+When the conversation has three or more rounds and the window is wide enough, a vertical rail of small dashes appears at the right edge of the chat area — one dash per round (one question); inactive dashes alternate between thick and thin by round number, making adjacent rounds easier to tell apart.
 
 - **Current position**: the dash for the current round is longer and darker; the highlight moves as you scroll the conversation.
 - **Click to jump**: clicking a dash scrolls straight to that question and highlights the dash right away.
