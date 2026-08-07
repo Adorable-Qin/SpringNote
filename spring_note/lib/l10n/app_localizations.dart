@@ -3130,6 +3130,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'供应商 API Key 为空。'**
   String get settingsProviderApiKeyEmpty;
+
+  /// No description provided for @settingsWeeklyReportPrompt.
+  ///
+  /// In zh, this message translates to:
+  /// **'周报整理'**
+  String get settingsWeeklyReportPrompt;
+
+  /// No description provided for @settingsEditWeeklyReportPromptTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑周报整理提示词'**
+  String get settingsEditWeeklyReportPromptTitle;
+
+  /// No description provided for @settingsWeeklyReportPromptHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入周报整理 Prompt...'**
+  String get settingsWeeklyReportPromptHint;
+
+  /// No description provided for @settingsVariablePeriodLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'周报周期'**
+  String get settingsVariablePeriodLabel;
+
+  /// No description provided for @settingsVariableSourceMarkdown.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周日报内容'**
+  String get settingsVariableSourceMarkdown;
 }
 
 class _AppLocalizationsDelegate

@@ -106,6 +106,51 @@ String defaultGlobalSignPromptFor(String language) {
   return language == 'en' ? defaultGlobalSignPromptEn : defaultGlobalSignPrompt;
 }
 
+const defaultWeeklyReportPrompt = '''你是 SpringNote 的周报整理助手。请基于一周日报 Markdown 生成一篇自然、有重点、可直接编辑的周报。
+
+已知信息：
+- 周期：{period_label}
+- 用户所在行业：{industry}
+- 本周日报内容：
+{source_markdown}
+
+写作原则：
+1. 综合利用所有已提供的信息进行整理，空变量自动忽略。
+2. 保留来源中的事实，不编造没有依据的成果、风险或计划。
+3. 不需要固定套用“主要工作 / 关键进展 / 问题 / 下周计划”等模板，可以根据材料自由组织结构。
+4. Markdown 要层次清楚、阅读舒服；可以使用标题、段落、列表、重点小结，但避免机械堆栏目。
+5. 优先呈现这一周真正发生了什么、推进到了哪里、遇到什么卡点、接下来怎么走。
+6. 语气自然，像一个认真复盘工作的人的周报，不要像 AI 模板。
+7. 可以结合所在行业调整专业术语和表达习惯，但不得补充任何事实。
+8. 全文第一行必须是一级标题，格式固定为 `# XXXX-WXX 周报`（ISO 周，取自上述周期信息，例如 `# 2026-W30 周报`），不得自拟、追加或省略。
+9. 只输出最终 Markdown，不要解释。''';
+
+const defaultWeeklyReportPromptEn = '''You are SpringNote's weekly-report editor. Write a natural, focused, editable weekly report from a week of daily Markdown notes.
+
+Known information:
+- Period: {period_label}
+- User's industry: {industry}
+- Daily notes of the week:
+{source_markdown}
+
+Principles:
+1. Use all provided information; ignore empty variables.
+2. Preserve the facts from the source; do not invent outcomes, risks, or plans.
+3. Do not force a fixed template such as "Main work / Key progress / Issues / Next week"; organize freely around the material.
+4. Use clear, comfortable Markdown: headings, paragraphs, lists, and brief highlights are welcome; avoid mechanical section stacking.
+5. Focus on what actually happened this week, how far things moved, what is blocked, and what comes next.
+6. Sound natural, like someone carefully reviewing their own week — not an AI template.
+7. You may adapt terminology and phrasing to the user's industry, but do not add facts.
+8. The first line must be a level-1 heading in the exact form `# XXXX-WXX Weekly Report` (ISO week, taken from the period above, e.g. `# 2026-W30 Weekly Report`); do not invent, append, or omit anything.
+9. Output only the final Markdown, no explanations.''';
+
+/// 按生效语言返回周报整理默认提示词（[language] 为 'zh' 或 'en'）。
+String defaultWeeklyReportPromptFor(String language) {
+  return language == 'en'
+      ? defaultWeeklyReportPromptEn
+      : defaultWeeklyReportPrompt;
+}
+
 class AppConfig {
   const AppConfig({
     required this.wallpaperSettings,
@@ -136,6 +181,7 @@ class AppConfig {
     required this.structuredNoteSections,
     required this.dailyMergePrompt,
     required this.globalSignPrompt,
+    required this.weeklyReportPrompt,
     required this.apiLogEnabled,
     required this.cloudSync,
     required this.providers,
@@ -175,6 +221,7 @@ class AppConfig {
   final List<StructuredNoteSectionConfig> structuredNoteSections;
   final String dailyMergePrompt;
   final String globalSignPrompt;
+  final String weeklyReportPrompt;
   final bool apiLogEnabled;
   final CloudSyncConfig cloudSync;
   final List<ProviderConfig> providers;
@@ -227,6 +274,7 @@ class AppConfig {
       structuredNoteSections: StructuredNoteSectionConfig.defaultsFor(language),
       dailyMergePrompt: defaultDailyMergePromptFor(language),
       globalSignPrompt: defaultGlobalSignPromptFor(language),
+      weeklyReportPrompt: defaultWeeklyReportPromptFor(language),
       apiLogEnabled: false,
       cloudSync: CloudSyncConfig.defaultsValue,
       providers: [],
@@ -312,6 +360,10 @@ class AppConfig {
         json['globalSignPrompt'],
         defaultGlobalSignPromptFor(language),
       ),
+      weeklyReportPrompt: _readString(
+        json['weeklyReportPrompt'],
+        defaultWeeklyReportPromptFor(language),
+      ),
       apiLogEnabled: json['apiLogEnabled'] as bool? ?? false,
       cloudSync: CloudSyncConfig.fromJson(json['cloudSync']),
       providers: _readProviders(json['providers']),
@@ -356,6 +408,7 @@ class AppConfig {
           .toList(),
       'dailyMergePrompt': dailyMergePrompt,
       'globalSignPrompt': globalSignPrompt,
+      'weeklyReportPrompt': weeklyReportPrompt,
       'apiLogEnabled': apiLogEnabled,
       'cloudSync': cloudSync.toJson(),
       'providers': providers.map((provider) => provider.toJson()).toList(),
@@ -394,6 +447,7 @@ class AppConfig {
     List<StructuredNoteSectionConfig>? structuredNoteSections,
     String? dailyMergePrompt,
     String? globalSignPrompt,
+    String? weeklyReportPrompt,
     bool? apiLogEnabled,
     CloudSyncConfig? cloudSync,
     List<ProviderConfig>? providers,
@@ -447,6 +501,7 @@ class AppConfig {
           : StructuredNoteSectionConfig.normalize(structuredNoteSections),
       dailyMergePrompt: dailyMergePrompt ?? this.dailyMergePrompt,
       globalSignPrompt: globalSignPrompt ?? this.globalSignPrompt,
+      weeklyReportPrompt: weeklyReportPrompt ?? this.weeklyReportPrompt,
       apiLogEnabled: apiLogEnabled ?? this.apiLogEnabled,
       cloudSync: cloudSync ?? this.cloudSync,
       providers: providers ?? this.providers,

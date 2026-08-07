@@ -526,6 +526,7 @@ class ReportRequest {
   final String sourceMarkdown;
   final String periodLabel;
   final String industry;
+  final String reportPrompt;
   final String language;
   final bool apiLogEnabled;
 
@@ -536,6 +537,7 @@ class ReportRequest {
     required this.sourceMarkdown,
     required this.periodLabel,
     required this.industry,
+    required this.reportPrompt,
     required this.language,
     required this.apiLogEnabled,
   });
@@ -548,6 +550,7 @@ class ReportRequest {
       sourceMarkdown.hashCode ^
       periodLabel.hashCode ^
       industry.hashCode ^
+      reportPrompt.hashCode ^
       language.hashCode ^
       apiLogEnabled.hashCode;
 
@@ -562,6 +565,7 @@ class ReportRequest {
           sourceMarkdown == other.sourceMarkdown &&
           periodLabel == other.periodLabel &&
           industry == other.industry &&
+          reportPrompt == other.reportPrompt &&
           language == other.language &&
           apiLogEnabled == other.apiLogEnabled;
 }

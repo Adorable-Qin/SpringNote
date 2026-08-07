@@ -457,12 +457,20 @@ class AiClientService {
     required String sourceMarkdown,
     required String periodLabel,
   }) {
+    final language = resolveAppLanguage(config.language);
     return _generateReport(
       appDataDir: appDataDir,
       config: config,
       sourceMarkdown: sourceMarkdown,
       periodLabel: periodLabel,
       monthly: false,
+      reportPrompt: _renderWeeklyReportPrompt(
+        config.weeklyReportPrompt,
+        language: language,
+        periodLabel: periodLabel,
+        sourceMarkdown: sourceMarkdown,
+        industry: config.industry,
+      ),
     );
   }
 
@@ -478,6 +486,7 @@ class AiClientService {
       sourceMarkdown: sourceMarkdown,
       periodLabel: periodLabel,
       monthly: true,
+      reportPrompt: '',
     );
   }
 
@@ -513,6 +522,9 @@ class AiClientService {
         dailyMergePrompt: config.dailyMergePrompt.trim().isEmpty
             ? defaultDailyMergePromptFor(resolveAppLanguage(config.language))
             : config.dailyMergePrompt,
+        weeklyReportPrompt: config.weeklyReportPrompt.trim().isEmpty
+            ? defaultWeeklyReportPromptFor(resolveAppLanguage(config.language))
+            : config.weeklyReportPrompt,
         language: resolveAppLanguage(config.language),
         apiLogEnabled: config.apiLogEnabled,
       ),
@@ -531,6 +543,7 @@ class AiClientService {
     required String sourceMarkdown,
     required String periodLabel,
     required bool monthly,
+    required String reportPrompt,
   }) async {
     final selection = _selectModel(config, 'intelligentGenerationModel');
     if (selection == null) {
@@ -544,6 +557,7 @@ class AiClientService {
       sourceMarkdown: sourceMarkdown,
       periodLabel: periodLabel,
       industry: config.industry,
+      reportPrompt: reportPrompt,
       language: resolveAppLanguage(config.language),
       apiLogEnabled: config.apiLogEnabled,
     );
@@ -843,6 +857,32 @@ class AiClientService {
     };
     var rendered = template.trim().isEmpty
         ? defaultGlobalSignPromptFor(language)
+        : template;
+    for (final entry in replacements.entries) {
+      rendered = rendered.replaceAll(entry.key, entry.value);
+    }
+    return rendered;
+  }
+
+  String _renderWeeklyReportPrompt(
+    String template, {
+    required String language,
+    required String periodLabel,
+    required String sourceMarkdown,
+    required String industry,
+  }) {
+    final emptyText = language == 'en' ? '(empty)' : '（空）';
+    final replacements = <String, String>{
+      '{period_label}': periodLabel.trim(),
+      '{source_markdown}': sourceMarkdown.trim().isEmpty
+          ? emptyText
+          : sourceMarkdown.trim(),
+      '{industry}': industry.trim().isEmpty
+          ? (language == 'en' ? 'Not set' : '未设置')
+          : industry.trim(),
+    };
+    var rendered = template.trim().isEmpty
+        ? defaultWeeklyReportPromptFor(language)
         : template;
     for (final entry in replacements.entries) {
       rendered = rendered.replaceAll(entry.key, entry.value);

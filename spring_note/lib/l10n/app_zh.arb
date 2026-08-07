@@ -503,5 +503,10 @@
   "settingsMigrationErrorMacAccess": "无法保存 macOS 文件夹访问授权，请重新选择保存目录。",
   "settingsImageUnsupportedFormat": "不支持的图片格式: {extension}",
   "settingsImageSourceMissing": "源图片不存在",
-  "settingsProviderApiKeyEmpty": "供应商 API Key 为空。"
+  "settingsProviderApiKeyEmpty": "供应商 API Key 为空。",
+  "settingsWeeklyReportPrompt": "周报整理",
+  "settingsEditWeeklyReportPromptTitle": "编辑周报整理提示词",
+  "settingsWeeklyReportPromptHint": "输入周报整理 Prompt...",
+  "settingsVariablePeriodLabel": "周报周期",
+  "settingsVariableSourceMarkdown": "本周日报内容"
 }

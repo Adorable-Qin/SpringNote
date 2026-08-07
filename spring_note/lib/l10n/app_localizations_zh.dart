@@ -1631,4 +1631,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsProviderApiKeyEmpty => '供应商 API Key 为空。';
+
+  @override
+  String get settingsWeeklyReportPrompt => '周报整理';
+
+  @override
+  String get settingsEditWeeklyReportPromptTitle => '编辑周报整理提示词';
+
+  @override
+  String get settingsWeeklyReportPromptHint => '输入周报整理 Prompt...';
+
+  @override
+  String get settingsVariablePeriodLabel => '周报周期';
+
+  @override
+  String get settingsVariableSourceMarkdown => '本周日报内容';
 }

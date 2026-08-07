@@ -1914,6 +1914,7 @@ impl SseDecode for crate::report_regeneration::RegenerateReportRequest {
         let mut var_weeklyNotesDirectory = <String>::sse_decode(deserializer);
         let mut var_industry = <String>::sse_decode(deserializer);
         let mut var_dailyMergePrompt = <String>::sse_decode(deserializer);
+        let mut var_weeklyReportPrompt = <String>::sse_decode(deserializer);
         let mut var_language = <String>::sse_decode(deserializer);
         let mut var_apiLogEnabled = <bool>::sse_decode(deserializer);
         return crate::report_regeneration::RegenerateReportRequest {
@@ -1926,6 +1927,7 @@ impl SseDecode for crate::report_regeneration::RegenerateReportRequest {
             weekly_notes_directory: var_weeklyNotesDirectory,
             industry: var_industry,
             daily_merge_prompt: var_dailyMergePrompt,
+            weekly_report_prompt: var_weeklyReportPrompt,
             language: var_language,
             api_log_enabled: var_apiLogEnabled,
         };
@@ -1957,6 +1959,7 @@ impl SseDecode for crate::ai::ReportRequest {
         let mut var_sourceMarkdown = <String>::sse_decode(deserializer);
         let mut var_periodLabel = <String>::sse_decode(deserializer);
         let mut var_industry = <String>::sse_decode(deserializer);
+        let mut var_reportPrompt = <String>::sse_decode(deserializer);
         let mut var_language = <String>::sse_decode(deserializer);
         let mut var_apiLogEnabled = <bool>::sse_decode(deserializer);
         return crate::ai::ReportRequest {
@@ -1966,6 +1969,7 @@ impl SseDecode for crate::ai::ReportRequest {
             source_markdown: var_sourceMarkdown,
             period_label: var_periodLabel,
             industry: var_industry,
+            report_prompt: var_reportPrompt,
             language: var_language,
             api_log_enabled: var_apiLogEnabled,
         };
@@ -2943,6 +2947,7 @@ impl flutter_rust_bridge::IntoDart for crate::report_regeneration::RegenerateRep
             self.weekly_notes_directory.into_into_dart().into_dart(),
             self.industry.into_into_dart().into_dart(),
             self.daily_merge_prompt.into_into_dart().into_dart(),
+            self.weekly_report_prompt.into_into_dart().into_dart(),
             self.language.into_into_dart().into_dart(),
             self.api_log_enabled.into_into_dart().into_dart(),
         ]
@@ -2993,6 +2998,7 @@ impl flutter_rust_bridge::IntoDart for crate::ai::ReportRequest {
             self.source_markdown.into_into_dart().into_dart(),
             self.period_label.into_into_dart().into_dart(),
             self.industry.into_into_dart().into_dart(),
+            self.report_prompt.into_into_dart().into_dart(),
             self.language.into_into_dart().into_dart(),
             self.api_log_enabled.into_into_dart().into_dart(),
         ]
@@ -3704,6 +3710,7 @@ impl SseEncode for crate::report_regeneration::RegenerateReportRequest {
         <String>::sse_encode(self.weekly_notes_directory, serializer);
         <String>::sse_encode(self.industry, serializer);
         <String>::sse_encode(self.daily_merge_prompt, serializer);
+        <String>::sse_encode(self.weekly_report_prompt, serializer);
         <String>::sse_encode(self.language, serializer);
         <bool>::sse_encode(self.api_log_enabled, serializer);
     }
@@ -3728,6 +3735,7 @@ impl SseEncode for crate::ai::ReportRequest {
         <String>::sse_encode(self.source_markdown, serializer);
         <String>::sse_encode(self.period_label, serializer);
         <String>::sse_encode(self.industry, serializer);
+        <String>::sse_encode(self.report_prompt, serializer);
         <String>::sse_encode(self.language, serializer);
         <bool>::sse_encode(self.api_log_enabled, serializer);
     }

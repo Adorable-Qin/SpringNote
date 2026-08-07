@@ -147,6 +147,7 @@ pub struct ReportRequest {
     pub source_markdown: String,
     pub period_label: String,
     pub industry: String,
+    pub report_prompt: String,
     pub language: String,
     pub api_log_enabled: bool,
 }
@@ -415,19 +416,7 @@ pub async fn merge_daily_note(request: DailyMergeRequest) -> AiTextResult {
 }
 
 pub async fn generate_weekly_report(request: ReportRequest) -> AiTextResult {
-    let user_prompt = report_user_prompt(
-        &request.period_label,
-        &request.source_markdown,
-        &request.language,
-    );
-    let system_prompt = with_markdown_attachment_preservation_instruction(
-        with_industry_context(
-            weekly_report_system_prompt(&request.language),
-            &request.industry,
-            &request.language,
-        ),
-        &request.language,
-    );
+    let (system_prompt, user_prompt) = weekly_report_prompts(&request);
     chat(AiChatRequest {
         app_data_dir: request.app_data_dir,
         provider: request.provider,
@@ -739,6 +728,37 @@ fn weekly_report_system_prompt(language: &str) -> &'static str {
     } else {
         WEEKLY_REPORT_SYSTEM_PROMPT
     }
+}
+
+/// 组装周报生成的 system/user 提示词。自定义提示词（已渲染变量）非空时
+/// 整体作为 system prompt，user prompt 置空；否则走内置默认提示词。
+fn weekly_report_prompts(request: &ReportRequest) -> (String, String) {
+    let custom_prompt = request.report_prompt.trim();
+    if !custom_prompt.is_empty() {
+        return (
+            with_markdown_attachment_preservation_instruction(
+                custom_prompt.to_string(),
+                &request.language,
+            ),
+            String::new(),
+        );
+    }
+
+    (
+        with_markdown_attachment_preservation_instruction(
+            with_industry_context(
+                weekly_report_system_prompt(&request.language),
+                &request.industry,
+                &request.language,
+            ),
+            &request.language,
+        ),
+        report_user_prompt(
+            &request.period_label,
+            &request.source_markdown,
+            &request.language,
+        ),
+    )
 }
 
 fn monthly_report_system_prompt(language: &str) -> &'static str {
@@ -1430,6 +1450,47 @@ mod tests {
         assert!(prompt.starts_with("custom system prompt\n"));
         assert!(prompt.ends_with(MARKDOWN_ATTACHMENT_PRESERVATION_INSTRUCTION));
         assert_eq!(daily_merge_user_prompt(&request), "");
+    }
+
+    #[test]
+    fn custom_weekly_report_prompt_replaces_default_prompts() {
+        let request = ReportRequest {
+            app_data_dir: ".".to_string(),
+            provider: request().provider,
+            model: request().model,
+            source_markdown: "source".to_string(),
+            period_label: "2026-W30".to_string(),
+            industry: "互联网".to_string(),
+            report_prompt: "custom weekly prompt".to_string(),
+            language: "zh".to_string(),
+            api_log_enabled: false,
+        };
+
+        let (system_prompt, user_prompt) = weekly_report_prompts(&request);
+        assert!(system_prompt.starts_with("custom weekly prompt\n"));
+        assert!(system_prompt.ends_with(MARKDOWN_ATTACHMENT_PRESERVATION_INSTRUCTION));
+        assert_eq!(user_prompt, "");
+    }
+
+    #[test]
+    fn default_weekly_report_prompts_keep_builtin_system_and_user_prompt() {
+        let request = ReportRequest {
+            app_data_dir: ".".to_string(),
+            provider: request().provider,
+            model: request().model,
+            source_markdown: "source".to_string(),
+            period_label: "2026-W30".to_string(),
+            industry: "互联网".to_string(),
+            report_prompt: String::new(),
+            language: "zh".to_string(),
+            api_log_enabled: false,
+        };
+
+        let (system_prompt, user_prompt) = weekly_report_prompts(&request);
+        assert!(system_prompt.contains("周报整理助手"));
+        assert!(system_prompt.ends_with(MARKDOWN_ATTACHMENT_PRESERVATION_INSTRUCTION));
+        assert!(user_prompt.contains("2026-W30"));
+        assert!(user_prompt.contains("source"));
     }
 
     #[test]

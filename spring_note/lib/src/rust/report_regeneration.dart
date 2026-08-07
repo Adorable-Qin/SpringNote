@@ -17,6 +17,7 @@ class RegenerateReportRequest {
   final String weeklyNotesDirectory;
   final String industry;
   final String dailyMergePrompt;
+  final String weeklyReportPrompt;
   final String language;
   final bool apiLogEnabled;
 
@@ -30,6 +31,7 @@ class RegenerateReportRequest {
     required this.weeklyNotesDirectory,
     required this.industry,
     required this.dailyMergePrompt,
+    required this.weeklyReportPrompt,
     required this.language,
     required this.apiLogEnabled,
   });
@@ -45,6 +47,7 @@ class RegenerateReportRequest {
       weeklyNotesDirectory.hashCode ^
       industry.hashCode ^
       dailyMergePrompt.hashCode ^
+      weeklyReportPrompt.hashCode ^
       language.hashCode ^
       apiLogEnabled.hashCode;
 
@@ -62,6 +65,7 @@ class RegenerateReportRequest {
           weeklyNotesDirectory == other.weeklyNotesDirectory &&
           industry == other.industry &&
           dailyMergePrompt == other.dailyMergePrompt &&
+          weeklyReportPrompt == other.weeklyReportPrompt &&
           language == other.language &&
           apiLogEnabled == other.apiLogEnabled;
 }

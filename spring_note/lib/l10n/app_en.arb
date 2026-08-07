@@ -503,5 +503,10 @@
   "settingsMigrationErrorMacAccess": "Failed to save the macOS folder access permission. Please choose the save directory again.",
   "settingsImageUnsupportedFormat": "Unsupported image format: {extension}",
   "settingsImageSourceMissing": "The source image no longer exists.",
-  "settingsProviderApiKeyEmpty": "The provider API key is empty."
+  "settingsProviderApiKeyEmpty": "The provider API key is empty.",
+  "settingsWeeklyReportPrompt": "Weekly report",
+  "settingsEditWeeklyReportPromptTitle": "Edit weekly report prompt",
+  "settingsWeeklyReportPromptHint": "Enter weekly report Prompt...",
+  "settingsVariablePeriodLabel": "Report period",
+  "settingsVariableSourceMarkdown": "Daily notes of the week"
 }

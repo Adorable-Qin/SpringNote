@@ -16,6 +16,7 @@ pub struct RegenerateReportRequest {
     pub weekly_notes_directory: String,
     pub industry: String,
     pub daily_merge_prompt: String,
+    pub weekly_report_prompt: String,
     pub language: String,
     pub api_log_enabled: bool,
 }
@@ -169,6 +170,13 @@ async fn regenerate_weekly(
             format_date(week_end)
         )
     };
+    let report_prompt = render_weekly_report_template(
+        &request.weekly_report_prompt,
+        &period_label,
+        &source,
+        &request.industry,
+        &request.language,
+    );
     let response = ai::generate_weekly_report(ReportRequest {
         app_data_dir: request.app_data_dir.clone(),
         provider: request.provider.clone(),
@@ -176,6 +184,7 @@ async fn regenerate_weekly(
         source_markdown: source,
         period_label,
         industry: request.industry.clone(),
+        report_prompt,
         language: request.language.clone(),
         api_log_enabled: request.api_log_enabled,
     })
@@ -213,6 +222,7 @@ async fn regenerate_monthly(
         source_markdown: source,
         period_label,
         industry: request.industry.clone(),
+        report_prompt: String::new(),
         language: request.language.clone(),
         api_log_enabled: request.api_log_enabled,
     })
@@ -403,6 +413,39 @@ fn render_daily_merge_template(
         .replace("{industry}", industry)
 }
 
+/// 渲染周报整理自定义提示词模板；模板为空时返回空串，由生成逻辑回退到内置提示词。
+fn render_weekly_report_template(
+    template: &str,
+    period_label: &str,
+    source_markdown: &str,
+    industry: &str,
+    language: &str,
+) -> String {
+    if template.trim().is_empty() {
+        return String::new();
+    }
+    let english = language.trim().eq_ignore_ascii_case("en");
+    let (empty_text, no_industry) = if english {
+        ("(empty)", "Not set")
+    } else {
+        ("（空）", "未设置")
+    };
+    let source = if source_markdown.trim().is_empty() {
+        empty_text
+    } else {
+        source_markdown.trim()
+    };
+    let industry = if industry.trim().is_empty() {
+        no_industry
+    } else {
+        industry.trim()
+    };
+    template
+        .replace("{period_label}", period_label.trim())
+        .replace("{source_markdown}", source)
+        .replace("{industry}", industry)
+}
+
 fn week_start(date: NaiveDate) -> NaiveDate {
     date - Duration::days(date.weekday().num_days_from_monday() as i64)
 }
@@ -583,6 +626,24 @@ mod tests {
             rendered,
             "日期:2026-07-22 已有:已有内容。 新增: 完成:（空） 问题:（空） 计划:（空） 行业:未设置"
         );
+    }
+
+    #[test]
+    fn render_weekly_report_template_replaces_all_placeholders() {
+        let rendered = render_weekly_report_template(
+            "周期:{period_label} 内容:{source_markdown} 行业:{industry}",
+            "2026-W30（2026-07-20 至 2026-07-26）",
+            "  日报内容。  ",
+            "",
+            "zh",
+        );
+        assert_eq!(
+            rendered,
+            "周期:2026-W30（2026-07-20 至 2026-07-26） 内容:日报内容。 行业:未设置"
+        );
+
+        let empty = render_weekly_report_template("  ", "p", "s", "", "zh");
+        assert_eq!(empty, "");
     }
 
     #[test]

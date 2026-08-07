@@ -1696,4 +1696,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsProviderApiKeyEmpty => 'The provider API key is empty.';
+
+  @override
+  String get settingsWeeklyReportPrompt => 'Weekly report';
+
+  @override
+  String get settingsEditWeeklyReportPromptTitle => 'Edit weekly report prompt';
+
+  @override
+  String get settingsWeeklyReportPromptHint => 'Enter weekly report Prompt...';
+
+  @override
+  String get settingsVariablePeriodLabel => 'Report period';
+
+  @override
+  String get settingsVariableSourceMarkdown => 'Daily notes of the week';
 }
