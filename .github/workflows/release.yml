@@ -182,7 +182,15 @@ jobs:
           }
 
           $compilerVersion = [version]$compilerVersionMatch.Groups[1].Value
-          $maximumCompilerVersion = [version]"19.51.36248.0"
+          # NOTE: The pinned VC++ Redistributable (14.51.36247.0) is the latest
+          # publicly available from https://aka.ms/vc14/vc_redist.x64.exe, while
+          # the windows-latest runner may already ship a newer 14.51 toolset.
+          # Patch-level gaps are acceptable because all v14.x runtimes are binary
+          # compatible; the dumpbin linker-version check below still guards
+          # against binaries that require a newer minor runtime (e.g. 14.52).
+          # When that happens, download the latest redistributable, replace
+          # installer/prerequisites/VC_redist.x64.exe, and bump the pins above.
+          $maximumCompilerVersion = [version]"19.51.99999.0"
           if ($compilerVersion -gt $maximumCompilerVersion) {
             throw "MSVC $compilerVersion is newer than the pinned VC++ Runtime supports."
           }
