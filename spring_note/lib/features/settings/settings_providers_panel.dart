@@ -168,7 +168,9 @@ class _ProvidersSidebarState extends State<_ProvidersSidebar> {
       width: 320,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        border: Border(right: BorderSide(color: colors.divider)),
+        border: Border(
+          right: BorderSide(color: colors.divider.withValues(alpha: 0.5)),
+        ),
       ),
       child: Column(
         children: [
