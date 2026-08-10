@@ -21,156 +21,155 @@ Instead of static records, we model a living system:
 <img src="https://img.shields.io/badge/Rust-2024-e8dfd8?style=flat-square&labelColor=263a36&logo=rust">
 <img src="https://img.shields.io/badge/License-AGPL--3.0-f2e8e5?style=flat-square&labelColor=5b403a">
 </div>
+<p>English / <a href="./README.zh-CN.md">简体中文</a></p>
 </div>
 
-## 为什么选择SpringNote
+## Why SpringNote
 
-记录一件事很简单，但把多条记录整理到一起很花时间，也让很多人难以坚持用文字记录下自己。
+Writing down one thing is easy — but organizing many scattered notes together takes time, and it's why many people struggle to keep a consistent journaling habit.
 
-SpringNote 想省掉整理这一步：你可以随时记录想法和日常，AI 会帮你把这些内容整理成日报、周报和月报，让零散的记录自动汇总成一份完整的内容。
+SpringNote removes the organizing step: record your thoughts and daily moments anytime, and AI organizes them into daily, weekly, and monthly reports — turning scattered fragments into a complete whole automatically.
 
-通过「回忆书」，你还可以对过去的记录进行搜索和对话，随时找回曾经记下的信息。
+With "Memories", you can also search and chat with your past notes, bringing back anything you once wrote down.
 
-SpringNote 希望通过 AI 让记录这件事更容易长期坚持。
-
-
-## 核心功能
-
-- **首页工作台**：牛马等级、收益、活跃热力图、快速输入框和今日摘要卡片。
-
-  ![SpringNote 首页](./snapshots/index.png)
-
-- **AI 智能生成**：在首页快速输入想法，由 AI 自动整理为结构化内容。
-
-- **便签编辑**：支持日报、周报、月报等记录类型，提供 Markdown 编辑、预览、代码块高亮和 AI 补全预测。
-
-  ![SpringNote 便签](./snapshots/note.png)
-
-- **回忆书对话**：以对话方式检索和整理记忆内容，支持思考过程、工具调用展示与 Markdown 渲染。
-
-  ![SpringNote 回忆书](./snapshots/memories.png)
-
-- **自动报告生成**：启动时可按日期补齐缺失的周报/月报，基于已有日报或周报生成总结。
-
-- **统计面板**：查看记录、活跃度、模型调用和时间范围内的数据概览。
-
-  ![SpringNote 统计面板](./snapshots/setting.png)
-
-- **牛马时钟**：支持自定义日薪和工作时长,自动计算时薪并作为组件展示在页面上。
-
-  ![SpringNote 组件](./snapshots/components.png)
-
-- **桌面端极致体验**：支持自定义 Windows 标题栏、托盘、开机自启动、全局快捷键、桌面状态组件和系统字体切换。
-
-## 快速开始
-
-### 下载安装
-
-#### 通过 GitHub 下载
-
-请前往 [Release 页](https://github.com/Radiant303/SpringNote/releases/latest) 下载SpringNote
-
-### 第一步：确认数据位置
-
-首次使用时先确认数据保存目录。日报、周报、月报、图片和相关配置都会围绕这个目录保存；
-
-![数据目录](./snapshots/datadir.png)
+SpringNote aims to make recording your life easier to stick with, with the help of AI.
 
 
-### 第二步：配置 AI
+## Core Features
+
+- **Home Dashboard**: Workhorse level, earnings, activity heatmap, quick input box, and today's summary card.
+
+  ![SpringNote Home](./snapshots/index.png)
+
+- **AI-Powered Generation**: Quickly jot down ideas on the home page, and AI automatically organizes them into structured content.
+
+- **Note Editor**: Supports daily, weekly, and monthly notes, with Markdown editing, preview, code block highlighting, and AI completion suggestions.
+
+  ![SpringNote Note](./snapshots/note.png)
+
+- **Memories Chat**: Retrieve and organize your memories through conversation, with visible thinking process, tool call display, and Markdown rendering.
+
+  ![SpringNote Memories](./snapshots/memories.png)
+
+- **Automatic Report Generation**: On startup, fills in missing weekly/monthly reports based on existing daily or weekly notes.
+
+- **Statistics Panel**: View records, activity, model calls, and data overviews across time ranges.
+
+  ![SpringNote Statistics](./snapshots/setting.png)
+
+- **Workhorse Clock**: Set a custom daily salary and work hours; your hourly rate is calculated automatically and shown as a desktop widget.
+
+  ![SpringNote Components](./snapshots/components.png)
+
+- **Polished Desktop Experience**: Custom Windows title bar, system tray, launch on boot, global shortcuts, desktop status widget, and system font switching.
+
+## Quick Start
+
+### Download & Install
+
+#### Download from GitHub
+
+Go to the [Releases page](https://github.com/Radiant303/SpringNote/releases/latest) to download SpringNote.
+
+### Step 1: Confirm the Data Directory
+
+Before first use, confirm where your data will be stored. Daily, weekly, and monthly notes, images, and related configs are all saved around this directory.
+
+![Data Directory](./snapshots/datadir.png)
 
 
-以 **DeepSeek** 为例进行配置说明：
+### Step 2: Configure AI
 
-#### ① 添加供应商 BaseURL请填写 https://api.deepseek.com/beta
+We use **DeepSeek** as an example:
 
+#### ① Add a provider — set the BaseURL to https://api.deepseek.com/beta
 
 >
-> 此处填写`beta`原因是Deepseek的[FIM接口要求](https://api-docs.deepseek.com/zh-cn/guides/fim_completion)
+> The `beta` path is used here because of DeepSeek's [FIM API requirements](https://api-docs.deepseek.com/guides/fim_completion).
 >
->其他的OpenAI兼容接口请依据实际情况填写
->
-
-![第一步](./snapshots/configone.png)
-
-#### ② 手动添加模型 deepseek-v4-flash
-
->
->因为Deepseek的`beta`接口不支持模型列表查询，所以需要手动添加模型
+> For other OpenAI-compatible APIs, fill in the BaseURL according to your provider's documentation.
 >
 
-![第二步](./snapshots/configtwo.png)
+![Step 1](./snapshots/configone.png)
 
-#### ③ 编辑模型
-
->
->请手动勾选补全类型
->
-
-![第三步](./snapshots/configthree.png)
-
-#### ④ 选择默认模型
+#### ② Manually add the model `deepseek-v4-flash`
 
 >
->如果你的模型不支持补全类型，则在编辑补全模型列表中不会出现该模型
+> DeepSeek's `beta` endpoint does not support listing models, so the model must be added manually.
 >
 
-![第四步](./snapshots/configfour.png)
+![Step 2](./snapshots/configtwo.png)
 
-### 第三步：完成第一次记录
+#### ③ Edit the model
 
-![首页](./snapshots/index.png)
-
-
-### 第四步：在笔记本中查看和编辑
-
-![笔记本](./snapshots/note.png)
-
-笔记本搜索只搜索当前选择的日报、周报或月报类型。搜索至少输入两个字符，点击结果后可以打开对应的完整正文。
-
-### 第五步：使用回忆书
-
-![回忆书](./snapshots/memories.png)
-
-进入“回忆书”后，可以直接询问已经保存的工作记录。
-
-### 第六步：使用牛马时钟
-
-![牛马时钟](./snapshots/components.png)
-
-组件用于查看当前计时、当天工作时长和收益，并在主窗口之外控制计时。
-
-- 左键单击组件：开始或暂停计时；
-- 右键单击组件：打开主窗口并进入首页；
-- 左键拖动组件：移动窗口位置；
-
-### 继续探索
-
-完成基本记录后，可以在设置中继续配置。更多使用说明请查看 [文档](https://radiant303.github.io/SpringNote/)
-
-## 🌍 社区
-
-无论你是在使用过程中遇到问题，还是有新的想法与建议，都欢迎与我们交流。
-
-我们会认真聆听每一条反馈，持续优化 SpringNote，让它变得更好。
-
-**加入 [SpringNote 官方交流群](https://qm.qq.com/q/c6QiowtYSA)，一起交流使用体验、分享想法。**
-
->QQ群号：**463423961**
-
->[!TIP]
->反馈问题时，请同时提供：
->- 当前版本号
->- 操作步骤
->- 是否能够稳定复现
->- 相关截图或错误信息
 >
->这些信息可以帮助快速定位问题。
+> Manually check the completion capability option.
+>
+
+![Step 3](./snapshots/configthree.png)
+
+#### ④ Select the default model
+
+>
+> If a model doesn't support completion, it won't appear in the completion model list.
+>
+
+![Step 4](./snapshots/configfour.png)
+
+### Step 3: Create Your First Note
+
+![Home](./snapshots/index.png)
+
+
+### Step 4: View and Edit in the Notebook
+
+![Notebook](./snapshots/note.png)
+
+Notebook search only searches within the currently selected note type (daily, weekly, or monthly). Enter at least two characters to search; click a result to open its full content.
+
+### Step 5: Use Memories
+
+![Memories](./snapshots/memories.png)
+
+In "Memories", you can directly ask questions about your saved work records.
+
+### Step 6: Use the Workhorse Clock
+
+![Workhorse Clock](./snapshots/components.png)
+
+The widget shows the current timer, today's work duration, and earnings, and lets you control the timer outside the main window.
+
+- Left-click the widget: start or pause the timer;
+- Right-click the widget: open the main window and go to the home page;
+- Left-drag the widget: move the window;
+
+### Keep Exploring
+
+After finishing the basics, you can continue configuring in Settings. For more usage instructions, see the [documentation](https://radiant303.github.io/SpringNote/).
+
+## 🌍 Community
+
+Whether you've run into an issue while using SpringNote, or you have new ideas and suggestions, you're welcome to talk with us.
+
+We read every piece of feedback carefully and keep improving SpringNote to make it better.
+
+**Join the [SpringNote official community group](https://qm.qq.com/q/c6QiowtYSA) to share your experience and ideas.**
+
+> QQ Group: **463423961**
+
+> [!TIP]
+> When reporting an issue, please also provide:
+> - Your current version number
+> - Steps to reproduce
+> - Whether it can be reproduced consistently
+> - Relevant screenshots or error messages
+>
+> This information helps us locate the problem quickly.
 
 
 ## ❤️ Special Thanks
 
-特别感谢所有 Contributors和社区成员对 SpringNote 的支持 ❤️
+Special thanks to all Contributors and community members for supporting SpringNote ❤️
 
 <a href="https://github.com/Radiant303/SpringNote/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Radiant303/SpringNote&max=300&columns=15" />
@@ -179,7 +178,7 @@ SpringNote 希望通过 AI 让记录这件事更容易长期坚持。
 ## ⭐ Star History
 
 > [!TIP]
-> 如果本项目对您的生活 / 工作产生了帮助，或者您关注本项目的未来发展，请给项目 Star，这是我们维护这个开源项目的动力 <3
+> If this project has helped your life or work, or if you're following its future development, please give it a Star — that's what keeps us maintaining this open-source project <3
 
 <p align="center">
   <img src="https://count.getloli.com/@SpringNote?name=SpringNote&theme=miku&padding=7&offset=0&align=center&scale=0.3&pixelated=1&darkmode=auto" alt="visitor count" />
