@@ -21,7 +21,7 @@ Instead of static records, we model a living system:
 <img src="https://img.shields.io/badge/Rust-2024-e8dfd8?style=flat-square&labelColor=263a36&logo=rust">
 <img src="https://img.shields.io/badge/License-AGPL--3.0-f2e8e5?style=flat-square&labelColor=5b403a">
 </div>
-<p>English / <a href="./README.zh-CN.md">简体中文</a></p>
+<p><a href="./README.md">English</a> | <a href="./README.zh-CN.md">简体中文</a></p>
 </div>
 
 ## Why SpringNote
