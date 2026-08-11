@@ -2526,6 +2526,8 @@ class _ToolAttachmentChip extends StatelessWidget {
       'read_month_weekly_notes' => strings.memoryToolLabelReadMonthWeeklyNotes,
       'read_month_report' => strings.memoryToolLabelReadMonthReport,
       'resolve_iso_week' => strings.memoryToolLabelResolveIsoWeek,
+      'run_tool_sequence' => strings.memoryToolLabelRunToolSequence,
+      'run_tool_batch' => strings.memoryToolLabelRunToolBatch,
       _ => name,
     };
   }

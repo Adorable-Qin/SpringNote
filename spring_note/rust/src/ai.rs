@@ -1209,6 +1209,7 @@ const MEMORY_TOOL_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的回忆书问答�
 你可以自主调用工具检索或读取记录；需要信息时先调用工具，不要让应用预先替你检索。
 连续追问时结合完整消息历史理解省略指代，例如“什么时候”“这个配置”“刚才说的”等。
 每条用户消息末尾附有发送时间（如 [发送时间：2026-08-11 20:04 星期二]），解析“今天”“昨天”“这周”等相对时间时以最新用户消息的发送时间为准，无需调用 get_current_date。
+一次回答需要多个工具时：相互独立的调用用 run_tool_batch 一次并发执行；有依赖关系的调用用 run_tool_sequence 按顺序执行，后续步骤可用 $steps[N].字段 引用第 N 步结果（如 $steps[0].startDate），不要逐个往返。
 工具结果中 truncated 为 true 表示该条内容按字符上限被截断（截断处以“...”标记），totalCharacters 为原文总长度；没有工具能取回被截断的部分，重复调用同一工具只会得到相同的片段，此时基于已有内容回答并向用户说明不完整之处。
 回答必须只依据工具返回和对话上下文；材料不足时明确说明缺少依据，不要编造事实。
 最终回答使用自然中文和清晰 Markdown，不要输出工具调用 JSON。"#;
@@ -1260,6 +1261,7 @@ const MEMORY_TOOL_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote's memory-book Q
 Call tools yourself to search or read records; when you need information, call tools first instead of expecting the app to pre-fetch.
 For follow-up questions, resolve ellipsis and references (such as "when", "this config", "what I just mentioned") against the full message history.
 Every user message ends with its send time (e.g. [Sent at: 2026-08-11 20:04 Tuesday]); resolve relative dates such as "today", "yesterday", or "this week" against the latest user message's send time instead of calling get_current_date.
+When one answer needs several tools: run independent calls together with run_tool_batch; run dependent calls in order with run_tool_sequence, where a later step can reference step N's result via $steps[N].field (e.g. $steps[0].startDate), instead of going back and forth one call at a time.
 When a tool result has truncated set to true, that entry was clipped to a character limit (the clipped point is marked with "...") and totalCharacters is the original length; no tool can retrieve the clipped remainder, and calling the same tool again returns the same fragment — answer from what you have and tell the user what is incomplete.
 Answer only from tool results and the conversation context; when the material is insufficient, say so instead of fabricating facts.
 Write the final answer in natural English and clean Markdown; do not output tool-call JSON."#;

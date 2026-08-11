@@ -27,6 +27,8 @@
   "memoryToolLabelReadWeekDailyNotes": "Read week's daily notes",
   "memoryToolLabelReadWeeklyNote": "Read weekly note",
   "memoryToolLabelResolveIsoWeek": "Resolve ISO week dates",
+  "memoryToolLabelRunToolBatch": "Run tools in batch",
+  "memoryToolLabelRunToolSequence": "Run tools in sequence",
   "memoryToolLabelSearchDailyNotes": "Search daily notes",
   "memoryToolLabelSearchMonthlyNotes": "Search monthly notes",
   "memoryToolLabelSearchWeeklyNotes": "Search weekly notes",

@@ -1714,4 +1714,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryToolLabelResolveIsoWeek => 'Resolve ISO week dates';
+
+  @override
+  String get memoryToolLabelRunToolBatch => 'Run tools in batch';
+
+  @override
+  String get memoryToolLabelRunToolSequence => 'Run tools in sequence';
 }

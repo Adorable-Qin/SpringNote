@@ -479,6 +479,270 @@ void main() {
     expect((await resolve('2026-W54'))['error'], 'invalid_iso_week');
   });
 
+  test('tool sequence chains results into later arguments', () async {
+    final temp = await Directory.systemTemp.createTemp(
+      'spring_note_memory_sequence_',
+    );
+    addTearDown(() async {
+      if (await temp.exists()) {
+        await temp.delete(recursive: true);
+      }
+    });
+    final daily = Directory('${temp.path}${Platform.pathSeparator}daily');
+    await daily.create(recursive: true);
+    await File(
+      '${daily.path}${Platform.pathSeparator}2026-07-06.md',
+    ).writeAsString('# 日报\n\n周一部署了回忆书编排工具。');
+    await File(
+      '${daily.path}${Platform.pathSeparator}2026-07-08.md',
+    ).writeAsString('# 日报\n\n周三补充了顺序链测试。');
+    final state = LocalDataState(
+      dataDirectory: temp.path,
+      configPath: '${temp.path}${Platform.pathSeparator}config.json',
+      dailyNotesDirectory: daily.path,
+      weeklyNotesDirectory: '${temp.path}${Platform.pathSeparator}weekly',
+      monthlyNotesDirectory: '${temp.path}${Platform.pathSeparator}monthly',
+      config: AppConfig.defaults(),
+    );
+
+    final execution = await const MemorySearchService().executeTool(
+      localDataState: state,
+      toolName: 'run_tool_sequence',
+      arguments: const {
+        'steps': [
+          {
+            'tool': 'resolve_iso_week',
+            'arguments': {'week': '2026-W28'},
+          },
+          {
+            'tool': 'read_week_daily_notes',
+            'arguments': {
+              'startDate': r'$steps[0].startDate',
+              'endDate': r'$steps[0].endDate',
+            },
+          },
+        ],
+      },
+      limit: 10,
+    );
+
+    final content = jsonDecode(execution.content) as Map<String, dynamic>;
+    final steps = content['steps'] as List;
+    expect(steps, hasLength(2));
+    expect(content, isNot(contains('stoppedEarly')));
+
+    final first = steps[0] as Map<String, dynamic>;
+    expect(first['result']['startDate'], '2026-07-06');
+
+    // 第二步的参数已被第一步结果替换，回显的是解析后的值。
+    final second = steps[1] as Map<String, dynamic>;
+    expect(second['arguments'], {
+      'startDate': '2026-07-06',
+      'endDate': '2026-07-12',
+    });
+    final results = second['result']['results'] as List;
+    expect(results, hasLength(2));
+    expect(
+      results.map((item) => item['title']),
+      containsAll(['日报 2026-07-06', '日报 2026-07-08']),
+    );
+
+    // 子工具的 sources 聚合去重后作为编排工具的 sources。
+    expect(
+      execution.sources.map((source) => source.title),
+      containsAll(['日报 2026-07-06', '日报 2026-07-08']),
+    );
+  });
+
+  test('tool sequence stops at the first failing step', () async {
+    final state = LocalDataState(
+      dataDirectory: '',
+      configPath: '',
+      dailyNotesDirectory: '',
+      weeklyNotesDirectory: '',
+      monthlyNotesDirectory: '',
+      config: AppConfig.defaults(),
+    );
+
+    final failing = await const MemorySearchService().executeTool(
+      localDataState: state,
+      toolName: 'run_tool_sequence',
+      arguments: const {
+        'steps': [
+          {
+            'tool': 'resolve_iso_week',
+            'arguments': {'week': '2027-W53'},
+          },
+          {
+            'tool': 'read_daily_note',
+            'arguments': {'date': r'$steps[0].startDate'},
+          },
+        ],
+      },
+      limit: 10,
+    );
+    final failingContent = jsonDecode(failing.content) as Map<String, dynamic>;
+    expect(failingContent['stoppedEarly'], isTrue);
+    final failingSteps = failingContent['steps'] as List;
+    // 第二步未执行，输出只保留失败的第一步。
+    expect(failingSteps, hasLength(1));
+    expect(
+      (failingSteps.single as Map<String, dynamic>)['error'],
+      'iso_week_not_exists',
+    );
+
+    // 占位符路径不存在同样中止，且已完成步骤的结果保留。
+    final badPlaceholder = await const MemorySearchService().executeTool(
+      localDataState: state,
+      toolName: 'run_tool_sequence',
+      arguments: const {
+        'steps': [
+          {
+            'tool': 'resolve_iso_week',
+            'arguments': {'week': '2026-W28'},
+          },
+          {
+            'tool': 'read_daily_note',
+            'arguments': {'date': r'$steps[0].missing'},
+          },
+        ],
+      },
+      limit: 10,
+    );
+    final badContent =
+        jsonDecode(badPlaceholder.content) as Map<String, dynamic>;
+    expect(badContent['stoppedEarly'], isTrue);
+    final badSteps = badContent['steps'] as List;
+    expect(badSteps, hasLength(2));
+    expect((badSteps[0] as Map<String, dynamic>)['result'], isNotNull);
+    expect(
+      (badSteps[1] as Map<String, dynamic>)['error'],
+      contains('placeholder_path_not_found'),
+    );
+  });
+
+  test('tool sequence rejects nested orchestration calls', () async {
+    final execution = await const MemorySearchService().executeTool(
+      localDataState: LocalDataState(
+        dataDirectory: '',
+        configPath: '',
+        dailyNotesDirectory: '',
+        weeklyNotesDirectory: '',
+        monthlyNotesDirectory: '',
+        config: AppConfig.defaults(),
+      ),
+      toolName: 'run_tool_sequence',
+      arguments: const {
+        'steps': [
+          {
+            'tool': 'run_tool_batch',
+            'arguments': {
+              'calls': [
+                {'tool': 'get_current_date', 'arguments': <String, Object?>{}},
+              ],
+            },
+          },
+        ],
+      },
+      limit: 10,
+    );
+
+    final content = jsonDecode(execution.content) as Map<String, dynamic>;
+    expect(content['stoppedEarly'], isTrue);
+    expect(
+      ((content['steps'] as List).single as Map<String, dynamic>)['error'],
+      'nested_orchestration_not_supported',
+    );
+  });
+
+  test('tool batch runs calls independently with per-call errors', () async {
+    final execution = await const MemorySearchService().executeTool(
+      localDataState: LocalDataState(
+        dataDirectory: '',
+        configPath: '',
+        dailyNotesDirectory: '',
+        weeklyNotesDirectory: '',
+        monthlyNotesDirectory: '',
+        config: AppConfig.defaults(),
+      ),
+      toolName: 'run_tool_batch',
+      arguments: const {
+        'calls': [
+          {
+            'tool': 'resolve_iso_week',
+            'arguments': {'week': '2026-W01'},
+          },
+          {
+            'tool': 'resolve_iso_week',
+            'arguments': {'week': '2027-W53'},
+          },
+          {
+            'tool': 'run_tool_sequence',
+            'arguments': {'steps': <Object?>[]},
+          },
+        ],
+      },
+      limit: 10,
+    );
+
+    final content = jsonDecode(execution.content) as Map<String, dynamic>;
+    final results = content['results'] as List;
+    expect(results, hasLength(3));
+
+    final first = results[0] as Map<String, dynamic>;
+    expect(first['result']['startDate'], '2025-12-29');
+    expect(first['result']['endDate'], '2026-01-04');
+
+    // 单个调用失败不影响其他调用，各自带 error 字段。
+    expect(
+      (results[1] as Map<String, dynamic>)['error'],
+      'iso_week_not_exists',
+    );
+    expect(
+      (results[2] as Map<String, dynamic>)['error'],
+      'nested_orchestration_not_supported',
+    );
+  });
+
+  test('orchestration tools reject malformed call lists', () async {
+    const service = MemorySearchService();
+    final state = LocalDataState(
+      dataDirectory: '',
+      configPath: '',
+      dailyNotesDirectory: '',
+      weeklyNotesDirectory: '',
+      monthlyNotesDirectory: '',
+      config: AppConfig.defaults(),
+    );
+
+    final empty = await service.executeTool(
+      localDataState: state,
+      toolName: 'run_tool_batch',
+      arguments: const {'calls': <Object?>[]},
+      limit: 10,
+    );
+    expect(
+      (jsonDecode(empty.content) as Map<String, dynamic>)['error'],
+      'invalid_calls',
+    );
+
+    final overLimit = await service.executeTool(
+      localDataState: state,
+      toolName: 'run_tool_sequence',
+      arguments: {
+        'steps': List.generate(
+          9,
+          (_) => {'tool': 'get_current_date', 'arguments': <String, Object?>{}},
+        ),
+      },
+      limit: 10,
+    );
+    expect(
+      (jsonDecode(overLimit.content) as Map<String, dynamic>)['error'],
+      'invalid_steps',
+    );
+  });
+
   test(
     'read month weekly notes includes only ISO weeks overlapping month',
     () async {

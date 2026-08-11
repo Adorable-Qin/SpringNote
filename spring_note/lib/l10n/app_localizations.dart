@@ -3166,6 +3166,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'获取周起止日期'**
   String get memoryToolLabelResolveIsoWeek;
+
+  /// No description provided for @memoryToolLabelRunToolBatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'批量执行工具'**
+  String get memoryToolLabelRunToolBatch;
+
+  /// No description provided for @memoryToolLabelRunToolSequence.
+  ///
+  /// In zh, this message translates to:
+  /// **'顺序执行工具'**
+  String get memoryToolLabelRunToolSequence;
 }
 
 class _AppLocalizationsDelegate

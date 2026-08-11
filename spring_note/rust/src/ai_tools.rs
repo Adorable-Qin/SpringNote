@@ -170,7 +170,58 @@ pub fn memory_tools() -> Vec<AiToolDefinition> {
             }),
             strict: true,
         },
+        AiToolDefinition {
+            name: "run_tool_sequence",
+            description: "Run several dependent tools in order as one call. A later step can reference an earlier step's result with placeholders inside its string arguments: $steps[N].field reads that field from step N's result (N is the zero-based step index), array elements use $steps[N].field[0], and a placeholder filling the whole string keeps the referenced value's original JSON type. Example: step 1 resolve_iso_week with {week: \"2026-W28\"}, step 2 read_week_daily_notes with {startDate: \"$steps[0].startDate\", endDate: \"$steps[0].endDate\"}. Execution stops at the first failing step. For independent calls use run_tool_batch instead. Cannot call run_tool_sequence or run_tool_batch.",
+            parameters: orchestration_parameters(
+                "steps",
+                "The tools to run in order, each reusing earlier results via placeholders."
+            ),
+            strict: false,
+        },
+        AiToolDefinition {
+            name: "run_tool_batch",
+            description: "Run several independent tools concurrently as one call. Every entry runs with its own arguments and returns its own result or error; no data flows between entries. For dependent calls use run_tool_sequence instead. Cannot call run_tool_sequence or run_tool_batch.",
+            parameters: orchestration_parameters(
+                "calls",
+                "The tools to run concurrently; entries must not depend on each other."
+            ),
+            strict: false,
+        },
     ]
+}
+
+/// 编排类工具（run_tool_sequence / run_tool_batch）的参数 Schema：
+/// 一组 {tool, arguments} 调用；arguments 是开放 JSON 对象，与各工具自身的
+/// 参数 Schema 对应，因此这类工具不满足 OpenAI strict 约束（strict=false）。
+fn orchestration_parameters(entry_name: &str, entry_description: &str) -> Value {
+    json!({
+        "type": "object",
+        "properties": {
+            entry_name: {
+                "type": "array",
+                "description": entry_description,
+                "minItems": 1,
+                "maxItems": 8,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "tool": {
+                            "type": "string",
+                            "description": "The name of the tool to call, for example read_daily_note."
+                        },
+                        "arguments": {
+                            "type": "object",
+                            "description": "The arguments for that tool as a JSON object, matching the tool's own parameter schema. Use {} for tools without parameters."
+                        }
+                    },
+                    "required": ["tool", "arguments"]
+                }
+            }
+        },
+        "required": [entry_name],
+        "additionalProperties": false
+    })
 }
 
 /// 关键词搜索工具的参数 Schema；scope 用于区分全局与各类型记录的描述文案。
@@ -202,7 +253,7 @@ mod tests {
     #[test]
     fn memory_tools_have_unique_names_and_object_parameters() {
         let tools = memory_tools();
-        assert_eq!(tools.len(), 11);
+        assert_eq!(tools.len(), 13);
         let mut names = std::collections::HashSet::new();
         for tool in &tools {
             assert!(
@@ -212,7 +263,12 @@ mod tests {
             );
             assert!(!tool.description.is_empty());
             assert!(tool.parameters.is_object());
-            assert!(tool.strict);
+            if tool.name == "run_tool_sequence" || tool.name == "run_tool_batch" {
+                // 编排类工具的 arguments 是开放对象，不满足 OpenAI strict 约束。
+                assert!(!tool.strict);
+            } else {
+                assert!(tool.strict);
+            }
         }
     }
 
@@ -236,6 +292,8 @@ mod tests {
                 "read_month_weekly_notes",
                 "read_month_report",
                 "resolve_iso_week",
+                "run_tool_sequence",
+                "run_tool_batch",
             ]
         );
     }
@@ -279,5 +337,30 @@ mod tests {
             tools[10].parameters["properties"]["week"]["pattern"],
             WEEK_PATTERN
         );
+    }
+
+    #[test]
+    fn orchestration_tools_accept_open_argument_objects() {
+        let tools = memory_tools();
+        let sequence = &tools[11];
+        let batch = &tools[12];
+        assert_eq!(sequence.name, "run_tool_sequence");
+        assert_eq!(batch.name, "run_tool_batch");
+
+        for (tool, entry) in [(sequence, "steps"), (batch, "calls")] {
+            let entries = &tool.parameters["properties"][entry];
+            assert_eq!(entries["type"], "array");
+            assert_eq!(entries["minItems"], 1);
+            assert_eq!(entries["maxItems"], 8);
+            let item = &entries["items"];
+            assert_eq!(item["required"], json!(["tool", "arguments"]));
+            // arguments 必须是开放对象：仅声明 type，不限制 properties。
+            assert_eq!(item["properties"]["arguments"]["type"], "object");
+            assert!(item["properties"]["arguments"].get("properties").is_none());
+            // 描述必须教模型占位符/并发语义，防递归限制也要写明。
+            assert!(tool.description.contains("Cannot call run_tool_sequence"));
+        }
+        assert!(sequence.description.contains("$steps[N].field"));
+        assert!(sequence.description.contains("$steps[0].startDate"));
     }
 }

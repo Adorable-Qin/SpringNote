@@ -1649,4 +1649,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get memoryToolLabelResolveIsoWeek => '获取周起止日期';
+
+  @override
+  String get memoryToolLabelRunToolBatch => '批量执行工具';
+
+  @override
+  String get memoryToolLabelRunToolSequence => '顺序执行工具';
 }

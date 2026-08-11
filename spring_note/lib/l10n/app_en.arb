@@ -509,5 +509,7 @@
   "settingsWeeklyReportPromptHint": "Enter weekly report Prompt...",
   "settingsVariablePeriodLabel": "Report period",
   "settingsVariableSourceMarkdown": "Daily notes of the week",
-  "memoryToolLabelResolveIsoWeek": "Resolve ISO week dates"
+  "memoryToolLabelResolveIsoWeek": "Resolve ISO week dates",
+  "memoryToolLabelRunToolBatch": "Run tools in batch",
+  "memoryToolLabelRunToolSequence": "Run tools in sequence"
 }

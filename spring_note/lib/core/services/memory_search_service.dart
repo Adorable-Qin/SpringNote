@@ -32,12 +32,29 @@ class MemorySearchService {
   final MemoryIndexedNoteSearch indexedNoteSearch;
   final MemoryIndexedNoteKindSearch indexedNoteKindSearch;
 
+  /// 编排类工具（顺序链 / 批量）单次允许携带的最大子调用数；与
+  /// ai_tools.rs 中 Schema 的 maxItems 一致，执行层再拦一次防模型违规。
+  static const _maxOrchestrationCalls = 8;
+
+  static const _orchestrationToolNames = {
+    'run_tool_sequence',
+    'run_tool_batch',
+  };
+
   Future<MemoryToolExecution> executeTool({
     required LocalDataState localDataState,
     required String toolName,
     required Map<String, Object?> arguments,
     required int limit,
   }) async {
+    // 编排类工具自带完整执行流程（含子调用错误处理），不走下方单工具路径。
+    if (toolName == 'run_tool_sequence') {
+      return _executeToolSequence(localDataState, arguments, limit);
+    }
+    if (toolName == 'run_tool_batch') {
+      return _executeToolBatch(localDataState, arguments, limit);
+    }
+
     List<MemorySource> sources;
     try {
       sources = switch (toolName) {
@@ -455,6 +472,263 @@ class MemorySearchService {
       'startDate': _formatDate(start),
       'endDate': _formatDate(start.add(const Duration(days: 6))),
     });
+  }
+
+  /// 顺序执行一组有依赖关系的工具调用。后续步骤的字符串参数可用
+  /// `$steps[N].字段`（数组元素 `$steps[N].字段[0]`）引用第 N 步结果；
+  /// 某一步失败即中止，返回已完成步骤的结果与失败原因。
+  Future<MemoryToolExecution> _executeToolSequence(
+    LocalDataState localDataState,
+    Map<String, Object?> arguments,
+    int limit,
+  ) async {
+    final steps = _readOrchestrationCalls(arguments['steps']);
+    if (steps == null) {
+      return _orchestrationError(
+        'run_tool_sequence',
+        arguments,
+        'invalid_steps',
+      );
+    }
+
+    final stepResults = <Object?>[];
+    final outputSteps = <Map<String, Object?>>[];
+    final sources = <MemorySource>[];
+    String? stopError;
+
+    for (final step in steps) {
+      final entry = <String, Object?>{'tool': step.tool};
+      outputSteps.add(entry);
+      if (_orchestrationToolNames.contains(step.tool)) {
+        stopError = entry['error'] = 'nested_orchestration_not_supported';
+        break;
+      }
+      Map<String, Object?> resolvedArguments;
+      try {
+        resolvedArguments = _resolvePlaceholderMap(step.arguments, stepResults);
+      } on FormatException catch (error) {
+        entry['arguments'] = step.arguments;
+        stopError = entry['error'] = error.message;
+        break;
+      }
+      entry['arguments'] = resolvedArguments;
+
+      final execution = await executeTool(
+        localDataState: localDataState,
+        toolName: step.tool,
+        arguments: resolvedArguments,
+        limit: limit,
+      );
+      sources.addAll(execution.sources);
+      final parsed = _tryParseJson(execution.content);
+      final stepError = _toolContentError(parsed);
+      if (stepError != null) {
+        stopError = entry['error'] = stepError;
+        break;
+      }
+      entry['result'] = parsed ?? execution.content;
+      stepResults.add(parsed ?? execution.content);
+    }
+
+    return MemoryToolExecution(
+      toolName: 'run_tool_sequence',
+      arguments: arguments,
+      content: jsonEncode({
+        'steps': outputSteps,
+        if (stopError != null) 'stoppedEarly': true,
+      }),
+      sources: _dedupe(sources),
+    );
+  }
+
+  /// 并发执行一组相互独立的工具调用；每个条目各自返回结果或错误，
+  /// 条目之间没有数据流动，失败互不影响。
+  Future<MemoryToolExecution> _executeToolBatch(
+    LocalDataState localDataState,
+    Map<String, Object?> arguments,
+    int limit,
+  ) async {
+    final calls = _readOrchestrationCalls(arguments['calls']);
+    if (calls == null) {
+      return _orchestrationError('run_tool_batch', arguments, 'invalid_calls');
+    }
+
+    final executions = await Future.wait(
+      calls.map((call) async {
+        if (_orchestrationToolNames.contains(call.tool)) {
+          return (
+            entry: <String, Object?>{
+              'tool': call.tool,
+              'error': 'nested_orchestration_not_supported',
+            },
+            sources: const <MemorySource>[],
+          );
+        }
+        final execution = await executeTool(
+          localDataState: localDataState,
+          toolName: call.tool,
+          arguments: call.arguments,
+          limit: limit,
+        );
+        final parsed = _tryParseJson(execution.content);
+        final stepError = _toolContentError(parsed);
+        return (
+          entry: <String, Object?>{
+            'tool': call.tool,
+            'arguments': call.arguments,
+            if (stepError != null)
+              'error': stepError
+            else
+              'result': parsed ?? execution.content,
+          },
+          sources: execution.sources,
+        );
+      }),
+    );
+
+    return MemoryToolExecution(
+      toolName: 'run_tool_batch',
+      arguments: arguments,
+      content: jsonEncode({
+        'results': executions.map((item) => item.entry).toList(),
+      }),
+      sources: _dedupe([for (final item in executions) ...item.sources]),
+    );
+  }
+
+  /// 读取编排参数中的调用列表；结构非法（非数组、空、超限、条目缺工具名）
+  /// 时返回 null，由调用方转为 invalid_* 错误。
+  List<({String tool, Map<String, Object?> arguments})>?
+  _readOrchestrationCalls(Object? value) {
+    if (value is! List ||
+        value.isEmpty ||
+        value.length > _maxOrchestrationCalls) {
+      return null;
+    }
+    final calls = <({String tool, Map<String, Object?> arguments})>[];
+    for (final item in value) {
+      if (item is! Map) {
+        return null;
+      }
+      final tool = item['tool']?.toString().trim() ?? '';
+      if (tool.isEmpty) {
+        return null;
+      }
+      final rawArguments = item['arguments'];
+      calls.add((
+        tool: tool,
+        arguments: rawArguments is Map
+            ? rawArguments.map((key, value) => MapEntry(key.toString(), value))
+            : const <String, Object?>{},
+      ));
+    }
+    return calls;
+  }
+
+  MemoryToolExecution _orchestrationError(
+    String toolName,
+    Map<String, Object?> arguments,
+    String error,
+  ) {
+    return MemoryToolExecution(
+      toolName: toolName,
+      arguments: arguments,
+      content: jsonEncode({'error': error}),
+      sources: const [],
+    );
+  }
+
+  Object? _tryParseJson(String content) {
+    try {
+      return jsonDecode(content);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// 子工具约定以 content 中的 error 字段表达失败（如 iso_week_not_exists）；
+  /// 返回错误码，无错误时返回 null。
+  String? _toolContentError(Object? parsedContent) {
+    if (parsedContent is Map && parsedContent.containsKey('error')) {
+      return parsedContent['error']?.toString() ?? 'unknown_error';
+    }
+    return null;
+  }
+
+  /// `$steps[N].字段` 占位符：N 为已完成步骤的序号（从 0 起），
+  /// 字段路径支持 `.field` 与 `[index]` 段。
+  static final _stepPlaceholderPattern = RegExp(
+    r'\$steps\[(\d+)\]((?:\.[A-Za-z_]\w*|\[\d+\])*)',
+  );
+  static final _stepPlaceholderSegmentPattern = RegExp(
+    r'\.([A-Za-z_]\w*)|\[(\d+)\]',
+  );
+
+  Map<String, Object?> _resolvePlaceholderMap(
+    Map<String, Object?> arguments,
+    List<Object?> stepResults,
+  ) {
+    final resolved = _resolvePlaceholders(arguments, stepResults);
+    return resolved is Map<String, Object?>
+        ? resolved
+        : const <String, Object?>{};
+  }
+
+  /// 递归替换参数中的占位符：整个字符串恰为单个占位符时保留被引用值的
+  /// 原始 JSON 类型（数字、布尔、数组等），嵌在文本中时替换为字符串。
+  Object? _resolvePlaceholders(Object? value, List<Object?> stepResults) {
+    if (value is String) {
+      final matches = _stepPlaceholderPattern.allMatches(value).toList();
+      if (matches.isEmpty) {
+        return value;
+      }
+      if (matches.length == 1 && matches.single.group(0) == value) {
+        return _lookupStepPlaceholder(matches.single, stepResults);
+      }
+      return value.replaceAllMapped(_stepPlaceholderPattern, (match) {
+        final resolved = _lookupStepPlaceholder(match, stepResults);
+        return resolved is String ? resolved : jsonEncode(resolved);
+      });
+    }
+    if (value is List) {
+      return value
+          .map((item) => _resolvePlaceholders(item, stepResults))
+          .toList();
+    }
+    if (value is Map) {
+      return value.map(
+        (key, item) =>
+            MapEntry(key.toString(), _resolvePlaceholders(item, stepResults)),
+      );
+    }
+    return value;
+  }
+
+  Object? _lookupStepPlaceholder(Match match, List<Object?> stepResults) {
+    final placeholder = match.group(0) ?? '';
+    final stepIndex = int.parse(match.group(1)!);
+    if (stepIndex >= stepResults.length) {
+      throw FormatException('unknown_step_reference: $placeholder');
+    }
+    var current = stepResults[stepIndex];
+    for (final segment in _stepPlaceholderSegmentPattern.allMatches(
+      match.group(2)!,
+    )) {
+      final field = segment.group(1);
+      if (field != null) {
+        if (current is! Map || !current.containsKey(field)) {
+          throw FormatException('placeholder_path_not_found: $placeholder');
+        }
+        current = current[field];
+      } else {
+        final index = int.parse(segment.group(2)!);
+        if (current is! List || index >= current.length) {
+          throw FormatException('placeholder_path_not_found: $placeholder');
+        }
+        current = current[index];
+      }
+    }
+    return current;
   }
 
   String buildContextMarkdown(List<MemorySource> sources) {
