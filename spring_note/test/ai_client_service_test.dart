@@ -215,6 +215,59 @@ void main() {
     expect(sanitized.first.content, contains('call-2'));
   });
 
+  test('memory sanitizer appends send time to every user message', () {
+    final messages = [
+      MemoryMessage(
+        role: 'user',
+        content: '今天做了什么？',
+        createdAt: DateTime(2026, 7, 10, 9, 30),
+      ),
+      MemoryMessage(
+        role: 'ai',
+        content: '你完成了日报整理。',
+        createdAt: DateTime(2026, 7, 10, 9, 31),
+      ),
+      MemoryMessage(
+        role: 'user',
+        content: '这周怎么样？',
+        createdAt: DateTime(2026, 7, 10, 9, 32),
+      ),
+    ];
+
+    final sanitized = sanitizeMemoryMessagesForModel(messages);
+
+    expect(sanitized[0].content, '今天做了什么？\n\n[发送时间：2026-07-10 09:30 星期五]');
+    expect(sanitized[1].content, isNot(contains('发送时间')));
+    expect(sanitized[2].content, '这周怎么样？\n\n[发送时间：2026-07-10 09:32 星期五]');
+  });
+
+  test('memory sanitizer localizes user message send time', () {
+    final sanitized = sanitizeMemoryMessagesForModel([
+      MemoryMessage(
+        role: 'user',
+        content: 'What did I do today?',
+        createdAt: DateTime(2026, 7, 10, 9, 30),
+      ),
+    ], language: 'en');
+
+    expect(
+      sanitized.single.content,
+      'What did I do today?\n\n[Sent at: 2026-07-10 09:30 Friday]',
+    );
+  });
+
+  test('memory sanitizer skips send time for messages without timestamp', () {
+    final sanitized = sanitizeMemoryMessagesForModel([
+      MemoryMessage(
+        role: 'user',
+        content: '旧消息',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      ),
+    ]);
+
+    expect(sanitized.single.content, '旧消息');
+  });
+
   test('multimodal image support follows selected model input modes', () {
     final config = _duplicateModelConfig().copyWith(
       providers: [
@@ -417,7 +470,7 @@ void main() {
     final result = await service.testProviderConnectionStream(
       appDataDir: '.',
       apiLogEnabled: false,
-        language: 'zh',
+      language: 'zh',
       provider: ProviderConfig(
         id: 'google',
         enabled: true,
@@ -450,7 +503,7 @@ void main() {
     final result = await service.testProviderConnectionStream(
       appDataDir: '.',
       apiLogEnabled: false,
-        language: 'zh',
+      language: 'zh',
       provider: ProviderConfig(
         id: 'google',
         enabled: true,
@@ -514,7 +567,7 @@ void main() {
     final result = await service.testProviderConnectionStream(
       appDataDir: '.',
       apiLogEnabled: false,
-        language: 'zh',
+      language: 'zh',
       provider: ProviderConfig.template('Claude').copyWith(apiKey: 'key'),
       model: const ModelConfig(
         modelId: 'claude-sonnet-4',

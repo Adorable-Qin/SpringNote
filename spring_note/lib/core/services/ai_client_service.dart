@@ -39,13 +39,17 @@ const _localMemoryContextHeaderEn =
     '[Local retrieval context provided by the app, not user input]';
 
 String _localMemoryContextHeaderFor(String language) {
-  return language == 'en' ? _localMemoryContextHeaderEn : _localMemoryContextHeader;
+  return language == 'en'
+      ? _localMemoryContextHeaderEn
+      : _localMemoryContextHeader;
 }
 
 List<MemoryMessage> sanitizeMemoryMessagesForModel(
   Iterable<MemoryMessage> messages, {
   String language = 'zh',
 }) {
+  // 返回前统一为每条用户消息追加发送时间，让模型无需调用时间工具即可
+  // 感知当前时间与对话时间线；存储与 UI 中的原始内容不受影响。
   final input = messages.toList(growable: false);
   final output = <MemoryMessage>[];
   final contextParts = <String>[];
@@ -139,7 +143,20 @@ List<MemoryMessage> sanitizeMemoryMessagesForModel(
     index += 1;
   }
   flushContext();
-  return output;
+  return output
+      .map(
+        (message) => message.role == 'user'
+            ? _copyMemoryMessage(
+                message,
+                content: _appendUserMessageSendTime(
+                  message.content,
+                  message.createdAt,
+                  language,
+                ),
+              )
+            : message,
+      )
+      .toList(growable: false);
 }
 
 bool _isCompleteToolExchange(
@@ -185,21 +202,19 @@ String _brokenToolExchangeContext(
     for (final toolCall in assistant.toolCalls) {
       buffer
         ..write('\n- ${toolCall.name}')
+        ..write(english ? ', call ID: ${toolCall.id}' : '，调用 ID：${toolCall.id}')
         ..write(
           english
-              ? ', call ID: ${toolCall.id}'
-              : '，调用 ID：${toolCall.id}',
-        )
-        ..write(english ? ', arguments: ${toolCall.arguments}' : '，参数：${toolCall.arguments}');
+              ? ', arguments: ${toolCall.arguments}'
+              : '，参数：${toolCall.arguments}',
+        );
     }
   }
   if (toolResults.isNotEmpty) {
     buffer.write(english ? '\nExisting tool results:' : '\n已有工具结果：');
     for (final result in toolResults) {
       buffer
-        ..write(
-          '\n- ${result.toolName ?? (english ? 'unknown tool' : '未知工具')}',
-        )
+        ..write('\n- ${result.toolName ?? (english ? 'unknown tool' : '未知工具')}')
         ..write(
           english
               ? ', call ID: ${result.toolCallId ?? 'missing'}'
@@ -239,6 +254,52 @@ String _standaloneToolContext(MemoryMessage message, String language) {
       ..write(message.content.trim());
   }
   return buffer.toString();
+}
+
+const _memorySendTimeWeekdaysZh = [
+  '星期一',
+  '星期二',
+  '星期三',
+  '星期四',
+  '星期五',
+  '星期六',
+  '星期日',
+];
+const _memorySendTimeWeekdaysEn = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+/// 在用户消息末尾追加发送时间（如 `[发送时间：2026-08-11 20:04 星期二]`），
+/// 让模型直接感知每条消息的发出时刻。缺失时间戳的旧消息（epoch 0 占位）
+/// 不追加，避免输出无意义的 1970 时间。
+String _appendUserMessageSendTime(
+  String content,
+  DateTime createdAt,
+  String language,
+) {
+  if (createdAt.millisecondsSinceEpoch == 0) {
+    return content;
+  }
+  final time = createdAt.toLocal();
+  String two(int value) => value.toString().padLeft(2, '0');
+  final date =
+      '${time.year.toString().padLeft(4, '0')}-${two(time.month)}-${two(time.day)}';
+  final clock = '${two(time.hour)}:${two(time.minute)}';
+  final english = language == 'en';
+  final weekday = (english
+      ? _memorySendTimeWeekdaysEn
+      : _memorySendTimeWeekdaysZh)[time.weekday - 1];
+  final stamp = english
+      ? '[Sent at: $date $clock $weekday]'
+      : '[发送时间：$date $clock $weekday]';
+  final body = content.trimRight();
+  return body.isEmpty ? stamp : '$body\n\n$stamp';
 }
 
 MemoryMessage _copyMemoryMessage(
