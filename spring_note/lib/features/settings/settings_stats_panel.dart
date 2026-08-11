@@ -595,88 +595,99 @@ class _YearHeatmapState extends State<_YearHeatmap> {
       }
     }
 
-    return SingleChildScrollView(
-      controller: _controller,
-      scrollDirection: Axis.horizontal,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const SizedBox(width: 30),
-                for (final label in monthLabels)
-                  Padding(
-                    padding: const EdgeInsets.only(right: _YearHeatmap._gap),
-                    child: SizedBox(
-                      width: _YearHeatmap._cellSize,
-                      height: 20,
-                      child: OverflowBox(
-                        alignment: Alignment.centerLeft,
-                        maxWidth: 42,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            label,
-                            softWrap: false,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: colors.textSubtle,
-                                  fontSize: 13,
-                                  height: 1,
+    final contentWidth = totalWeeks * _pitch;
+    return LayoutBuilder(
+      builder: (context, viewportConstraints) {
+        return SingleChildScrollView(
+          controller: _controller,
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: viewportConstraints.maxWidth > contentWidth
+                ? viewportConstraints.maxWidth
+                : contentWidth,
+            child: Center(
+              heightFactor: 1,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final label in monthLabels)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              right: _YearHeatmap._gap,
+                            ),
+                            child: SizedBox(
+                              width: _YearHeatmap._cellSize,
+                              height: 20,
+                              child: OverflowBox(
+                                alignment: Alignment.centerLeft,
+                                maxWidth: 42,
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    label,
+                                    softWrap: false,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: colors.textSubtle,
+                                          fontSize: 13,
+                                          height: 1,
+                                        ),
+                                  ),
                                 ),
+                              ),
+                            ),
                           ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    MouseRegion(
+                      cursor: _hoveredSlotIndex == null
+                          ? SystemMouseCursors.basic
+                          : SystemMouseCursors.click,
+                      onHover: (event) => _updateHoveredSlotIndex(
+                        event.localPosition,
+                        totalWeeks,
+                        slots,
+                      ),
+                      onExit: (_) => _clearHoveredSlotIndex(),
+                      child: SizedBox(
+                        key: _gridKey,
+                        width: gridWidth,
+                        height: _gridHeight,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            for (var week = 0; week < totalWeeks; week++)
+                              for (var row = 0; row < 7; row++)
+                                Positioned(
+                                  left: week * _pitch,
+                                  top: row * _pitch,
+                                  child: _HeatmapCell(
+                                    date: slots[week * 7 + row],
+                                    countByDate: activityByDate,
+                                    colors: heatmapColors,
+                                    hovered:
+                                        _hoveredSlotIndex == week * 7 + row,
+                                  ),
+                                ),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _HeatmapWeekdayLabels(textStyle: Theme.of(context).textTheme),
-                const SizedBox(width: 8),
-                MouseRegion(
-                  cursor: _hoveredSlotIndex == null
-                      ? SystemMouseCursors.basic
-                      : SystemMouseCursors.click,
-                  onHover: (event) => _updateHoveredSlotIndex(
-                    event.localPosition,
-                    totalWeeks,
-                    slots,
-                  ),
-                  onExit: (_) => _clearHoveredSlotIndex(),
-                  child: SizedBox(
-                    key: _gridKey,
-                    width: gridWidth,
-                    height: _gridHeight,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        for (var week = 0; week < totalWeeks; week++)
-                          for (var row = 0; row < 7; row++)
-                            Positioned(
-                              left: week * _pitch,
-                              top: row * _pitch,
-                              child: _HeatmapCell(
-                                date: slots[week * 7 + row],
-                                countByDate: activityByDate,
-                                colors: heatmapColors,
-                                hovered: _hoveredSlotIndex == week * 7 + row,
-                              ),
-                            ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -818,50 +829,6 @@ class _YearHeatmapState extends State<_YearHeatmap> {
       }
       _controller.jumpTo(maxScrollExtent);
     });
-  }
-}
-
-class _HeatmapWeekdayLabels extends StatelessWidget {
-  const _HeatmapWeekdayLabels({required this.textStyle});
-
-  final TextTheme textStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppTheme.colors(context);
-    final strings = l10n(context);
-    return SizedBox(
-      width: 22,
-      child: Column(
-        children: [
-          for (var index = 0; index < 7; index++)
-            Padding(
-              padding: EdgeInsets.only(
-                bottom: index == 6 ? 0 : _YearHeatmap._gap,
-              ),
-              child: SizedBox(
-                height: _YearHeatmap._cellSize,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    switch (index) {
-                      1 => strings.settingsStatsWeekdayMon,
-                      3 => strings.settingsStatsWeekdayWed,
-                      5 => strings.settingsStatsWeekdayFri,
-                      _ => '',
-                    },
-                    style: textStyle.bodySmall?.copyWith(
-                      color: colors.textSubtle,
-                      fontSize: 13,
-                      height: 1,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 }
 
