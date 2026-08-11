@@ -42,6 +42,7 @@ class MemorySearchService {
     try {
       sources = switch (toolName) {
         'get_current_date' => <MemorySource>[],
+        'resolve_iso_week' => <MemorySource>[],
         'keyword_search' => await search(
           localDataState: localDataState,
           keywords: _readStringList(arguments['keywords']),
@@ -100,9 +101,13 @@ class MemorySearchService {
       );
     }
 
-    final content = toolName == 'get_current_date'
-        ? _currentDateToolContent()
-        : _sourcesToJson(sources);
+    final content = switch (toolName) {
+      'get_current_date' => _currentDateToolContent(),
+      'resolve_iso_week' => _isoWeekRangeToolContent(
+        arguments['week']?.toString() ?? '',
+      ),
+      _ => _sourcesToJson(sources),
+    };
     return MemoryToolExecution(
       toolName: toolName,
       arguments: arguments,
@@ -426,6 +431,29 @@ class MemorySearchService {
       'date': _formatDate(now),
       'isoWeek': isoWeek,
       'weekNumber': int.parse(isoWeek.substring(6)),
+    });
+  }
+
+  String _isoWeekRangeToolContent(String rawWeek) {
+    final week = rawWeek.trim().toUpperCase();
+    final match = RegExp(
+      r'^(20\d{2})-W(0[1-9]|[1-4]\d|5[0-3])$',
+    ).firstMatch(week);
+    if (match == null) {
+      return jsonEncode({'week': week, 'error': 'invalid_iso_week'});
+    }
+    final start = _dateFromIsoWeek(
+      int.parse(match.group(1)!),
+      int.parse(match.group(2)!),
+    );
+    // 回校验：如 2027-W53 这类该 ISO 年不存在的周，换算结果会落进相邻 ISO 年。
+    if (_formatIsoWeek(start) != week) {
+      return jsonEncode({'week': week, 'error': 'iso_week_not_exists'});
+    }
+    return jsonEncode({
+      'week': week,
+      'startDate': _formatDate(start),
+      'endDate': _formatDate(start.add(const Duration(days: 6))),
     });
   }
 

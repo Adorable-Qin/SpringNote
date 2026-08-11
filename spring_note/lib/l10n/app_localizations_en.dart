@@ -1711,4 +1711,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsVariableSourceMarkdown => 'Daily notes of the week';
+
+  @override
+  String get memoryToolLabelResolveIsoWeek => 'Resolve ISO week dates';
 }

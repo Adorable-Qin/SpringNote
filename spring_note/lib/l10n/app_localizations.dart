@@ -3160,6 +3160,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'本周日报内容'**
   String get settingsVariableSourceMarkdown;
+
+  /// No description provided for @memoryToolLabelResolveIsoWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'获取周起止日期'**
+  String get memoryToolLabelResolveIsoWeek;
 }
 
 class _AppLocalizationsDelegate

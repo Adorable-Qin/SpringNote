@@ -753,10 +753,10 @@ class _MemoryPageState extends State<MemoryPage> {
         .join('\n');
     final sourceList = recall.sources
         .take(3)
-        .map((source) => strings.memoryMockAnswerSourceItem(
-              source.snippet,
-              source.title,
-            ))
+        .map(
+          (source) =>
+              strings.memoryMockAnswerSourceItem(source.snippet, source.title),
+        )
         .join('\n');
     return strings.memoryMockAnswerWithSources(toolList, sourceList, question);
   }
@@ -833,17 +833,26 @@ class _MemoryPageState extends State<MemoryPage> {
                   _QuickPromptChip(
                     icon: Icons.history_rounded,
                     label: l10n(context).memoryQuickPromptTodayDaily,
-                    onTap: () => _send(l10n(context).memoryQuickPromptTodayDaily, tagSource: _entryController),
+                    onTap: () => _send(
+                      l10n(context).memoryQuickPromptTodayDaily,
+                      tagSource: _entryController,
+                    ),
                   ),
                   _QuickPromptChip(
                     icon: Icons.auto_awesome_rounded,
                     label: l10n(context).memoryQuickPromptWeekDaily,
-                    onTap: () => _send(l10n(context).memoryQuickPromptWeekDaily, tagSource: _entryController),
+                    onTap: () => _send(
+                      l10n(context).memoryQuickPromptWeekDaily,
+                      tagSource: _entryController,
+                    ),
                   ),
                   _QuickPromptChip(
                     icon: Icons.calendar_month_rounded,
                     label: l10n(context).memoryQuickPromptMonthReport,
-                    onTap: () => _send(l10n(context).memoryQuickPromptMonthReport, tagSource: _entryController),
+                    onTap: () => _send(
+                      l10n(context).memoryQuickPromptMonthReport,
+                      tagSource: _entryController,
+                    ),
                   ),
                 ],
               ),
@@ -2516,6 +2525,7 @@ class _ToolAttachmentChip extends StatelessWidget {
       'read_weekly_note' => strings.memoryToolLabelReadWeeklyNote,
       'read_month_weekly_notes' => strings.memoryToolLabelReadMonthWeeklyNotes,
       'read_month_report' => strings.memoryToolLabelReadMonthReport,
+      'resolve_iso_week' => strings.memoryToolLabelResolveIsoWeek,
       _ => name,
     };
   }

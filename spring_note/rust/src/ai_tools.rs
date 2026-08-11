@@ -153,6 +153,23 @@ pub fn memory_tools() -> Vec<AiToolDefinition> {
             }),
             strict: true,
         },
+        AiToolDefinition {
+            name: "resolve_iso_week",
+            description: "Convert an ISO week label (YYYY-Www) to its exact date range, Monday to Sunday. Use this whenever you need to know which calendar dates an ISO week covers instead of computing them yourself.",
+            parameters: json!({
+                "type": "object",
+                "properties": {
+                    "week": {
+                        "type": "string",
+                        "description": "The ISO week in YYYY-Www format, for example 2026-W28.",
+                        "pattern": WEEK_PATTERN
+                    }
+                },
+                "required": ["week"],
+                "additionalProperties": false
+            }),
+            strict: true,
+        },
     ]
 }
 
@@ -185,7 +202,7 @@ mod tests {
     #[test]
     fn memory_tools_have_unique_names_and_object_parameters() {
         let tools = memory_tools();
-        assert_eq!(tools.len(), 10);
+        assert_eq!(tools.len(), 11);
         let mut names = std::collections::HashSet::new();
         for tool in &tools {
             assert!(
@@ -218,6 +235,7 @@ mod tests {
                 "read_weekly_note",
                 "read_month_weekly_notes",
                 "read_month_report",
+                "resolve_iso_week",
             ]
         );
     }
@@ -256,6 +274,10 @@ mod tests {
         assert_eq!(
             tools[8].parameters["properties"]["month"]["pattern"],
             MONTH_PATTERN
+        );
+        assert_eq!(
+            tools[10].parameters["properties"]["week"]["pattern"],
+            WEEK_PATTERN
         );
     }
 }

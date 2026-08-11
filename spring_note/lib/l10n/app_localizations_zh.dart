@@ -1646,4 +1646,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsVariableSourceMarkdown => '本周日报内容';
+
+  @override
+  String get memoryToolLabelResolveIsoWeek => '获取周起止日期';
 }

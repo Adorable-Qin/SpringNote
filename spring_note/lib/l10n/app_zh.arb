@@ -508,5 +508,6 @@
   "settingsEditWeeklyReportPromptTitle": "编辑周报整理提示词",
   "settingsWeeklyReportPromptHint": "输入周报整理 Prompt...",
   "settingsVariablePeriodLabel": "周报周期",
-  "settingsVariableSourceMarkdown": "本周日报内容"
+  "settingsVariableSourceMarkdown": "本周日报内容",
+  "memoryToolLabelResolveIsoWeek": "获取周起止日期"
 }

@@ -438,6 +438,47 @@ void main() {
     );
   });
 
+  test('resolve ISO week tool returns Monday to Sunday date range', () async {
+    Future<Map<String, dynamic>> resolve(String week) async {
+      final execution = await const MemorySearchService().executeTool(
+        localDataState: LocalDataState(
+          dataDirectory: '',
+          configPath: '',
+          dailyNotesDirectory: '',
+          weeklyNotesDirectory: '',
+          monthlyNotesDirectory: '',
+          config: AppConfig.defaults(),
+        ),
+        toolName: 'resolve_iso_week',
+        arguments: {'week': week},
+        limit: 10,
+      );
+      expect(execution.sources, isEmpty);
+      return jsonDecode(execution.content) as Map<String, dynamic>;
+    }
+
+    final firstWeek = await resolve('2026-W01');
+    expect(firstWeek['startDate'], '2025-12-29');
+    expect(firstWeek['endDate'], '2026-01-04');
+
+    final midWeek = await resolve('2026-W28');
+    expect(midWeek['startDate'], '2026-07-06');
+    expect(midWeek['endDate'], '2026-07-12');
+
+    // 2026 与 2020 都是 53 周的 ISO 年，周数跨年仍要落在正确日期。
+    final week53 = await resolve('2026-W53');
+    expect(week53['startDate'], '2026-12-28');
+    expect(week53['endDate'], '2027-01-03');
+
+    final leapWeek53 = await resolve('2020-W53');
+    expect(leapWeek53['startDate'], '2020-12-28');
+    expect(leapWeek53['endDate'], '2021-01-03');
+
+    // 2027 年只有 52 个 ISO 周，W53 不存在；W54 超出格式约束。
+    expect((await resolve('2027-W53'))['error'], 'iso_week_not_exists');
+    expect((await resolve('2026-W54'))['error'], 'invalid_iso_week');
+  });
+
   test(
     'read month weekly notes includes only ISO weeks overlapping month',
     () async {

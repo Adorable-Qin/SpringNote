@@ -508,5 +508,6 @@
   "settingsEditWeeklyReportPromptTitle": "Edit weekly report prompt",
   "settingsWeeklyReportPromptHint": "Enter weekly report Prompt...",
   "settingsVariablePeriodLabel": "Report period",
-  "settingsVariableSourceMarkdown": "Daily notes of the week"
+  "settingsVariableSourceMarkdown": "Daily notes of the week",
+  "memoryToolLabelResolveIsoWeek": "Resolve ISO week dates"
 }
