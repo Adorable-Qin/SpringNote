@@ -1639,7 +1639,7 @@ class _ActivityPreview extends StatelessWidget {
           today: today,
           activityByDate: activityByDate,
           colors: AppTheme.activityHeatmapColors(context),
-          activityLevel: _activityLevel,
+          activityLevel: AppTheme.activityHeatmapLevel,
         ),
         const SizedBox(height: 16),
         Align(
@@ -1684,22 +1684,6 @@ class _ActivityPreview extends StatelessWidget {
       ),
       child: content,
     );
-  }
-
-  int _activityLevel(int count) {
-    if (count >= 8) {
-      return 4;
-    }
-    if (count >= 5) {
-      return 3;
-    }
-    if (count >= 3) {
-      return 2;
-    }
-    if (count >= 1) {
-      return 1;
-    }
-    return 0;
   }
 
   int _calculateStreak(DateTime today, Map<String, int> activityByDate) {

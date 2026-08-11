@@ -532,8 +532,8 @@ class _YearHeatmap extends StatefulWidget {
 
   final List<rust_stats.DailyActivity> activity;
 
-  static const double _cellSize = 12;
-  static const double _gap = 5;
+  static const double _cellSize = 13;
+  static const double _gap = 3;
 
   @override
   State<_YearHeatmap> createState() => _YearHeatmapState();
@@ -894,7 +894,7 @@ class _HeatmapCell extends StatelessWidget {
       curve: Curves.easeOut,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colors[_level(count)],
+          color: colors[AppTheme.activityHeatmapLevel(count)],
           borderRadius: BorderRadius.circular(3),
         ),
         child: const SizedBox(
@@ -903,22 +903,6 @@ class _HeatmapCell extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  int _level(int count) {
-    if (count >= 8) {
-      return 4;
-    }
-    if (count >= 5) {
-      return 3;
-    }
-    if (count >= 3) {
-      return 2;
-    }
-    if (count >= 1) {
-      return 1;
-    }
-    return 0;
   }
 }
 

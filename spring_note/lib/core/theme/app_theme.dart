@@ -150,18 +150,36 @@ class AppTheme {
   static const Color textSubtle = Color(0xFF666666);
   static const List<Color> lightActivityHeatmapColors = [
     Color(0xFFEDEDED),
+    Color(0xFFF0FDF4),
     Color(0xFFDCFCE7),
     Color(0xFFBBF7D0),
+    Color(0xFFA0F3BE),
     Color(0xFF86EFAC),
+    Color(0xFF68E696),
     Color(0xFF4ADE80),
   ];
   static const List<Color> darkActivityHeatmapColors = [
     Color(0xFF2A2A2A),
+    Color(0xFF1C2C22),
     Color(0xFF0F2F1B),
+    Color(0xFF114124),
     Color(0xFF14532D),
+    Color(0xFF157B3B),
     Color(0xFF16A34A),
     Color(0xFF4ADE80),
   ];
+
+  /// 按当天消息数计算热力图等级（0-7，与配色列表一一对应）。
+  static int activityHeatmapLevel(int count) {
+    if (count >= 8) return 7;
+    if (count >= 6) return 6;
+    if (count >= 5) return 5;
+    if (count >= 4) return 4;
+    if (count >= 3) return 3;
+    if (count >= 2) return 2;
+    if (count >= 1) return 1;
+    return 0;
+  }
 
   static SpringThemeColors colors(BuildContext context) {
     return Theme.of(context).extension<SpringThemeColors>() ??
