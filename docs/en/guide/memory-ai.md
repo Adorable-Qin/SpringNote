@@ -15,15 +15,25 @@ When a question contains an explicit date or time period, the Memory Book can re
 - Read a daily note by calendar date;
 - Read a weekly note by ISO year and week number;
 - Read a monthly note by calendar year and month;
-- Read a collection of weekly notes overlapping a specified month's date range.
+- Read a collection of weekly notes overlapping a specified month's date range;
+- Convert an ISO week label into its exact date range (Monday through Sunday).
 
 Reading returns the full Markdown content of the target records. Weekly notes within a month are determined by date range; a week with any day falling in the target month may be included in the results, so a cross-month week may appear in queries for two adjacent calendar months.
+
+When working with a specific week, the ISO week conversion provides that week's exact start and end dates directly — for example, 2026-W28 becomes 2026-07-06 through 2026-07-12 — so reading that week's daily notes requires no day-by-day calculation.
 
 ## AI Answer
 
 The Memory Book typically first determines whether the question contains clear date, week, or month clues, then decides whether to directly read records or perform keyword search. After obtaining relevant documents, the system passes the search results or complete records as answer context to the selected model, which then summarizes, compares, extracts, and explains.
 
 AI answers only use locally retrieved or read content as factual basis. When no relevant historical Markdown is found, the answer cannot obtain corresponding local facts; the model can still organize language, but a new historical record is not created due to the absence of local records.
+
+## Tool Orchestration
+
+When an answer requires several tools, the Memory Book can combine multiple tool calls to reduce back-and-forth waiting:
+
+- Independent calls (such as searching daily and weekly notes at the same time) run together in one batch; each returns its own result, and a single failure does not affect the others;
+- Dependent calls run in sequence, where a later step can directly reuse an earlier step's result — for example, converting an ISO week into its date range first, then reading every daily note of that week with the resulting dates.
 
 ## Data Boundaries
 

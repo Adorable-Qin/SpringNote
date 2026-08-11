@@ -2,6 +2,10 @@
 
 Starting a new conversation clears the current Memory Book session and starts from an empty message context. The new conversation does not carry over questions, answers, thinking content, or read records from the previous conversation.
 
+## Sending Messages
+
+Every message you send carries its send time. The AI can perceive when each question was asked and how the conversation is spaced, and resolves relative times such as "today", "yesterday", or "this week" against the latest message's send time, without an extra lookup.
+
 ## Input Modes
 
 Input modes appear as tags in the input box. The "Mind Map" mode is currently supported.
