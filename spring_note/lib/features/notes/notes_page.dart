@@ -1096,7 +1096,7 @@ class _NotesPageState extends State<NotesPage> {
 
   Future<Uint8List?> _readClipboardImage() async {
     try {
-      return widget.clipboardImageService.readPngImage();
+      return await widget.clipboardImageService.readPngImage();
     } catch (_) {
       return null;
     }
