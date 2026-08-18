@@ -199,9 +199,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageTitle => '首页';
 
   @override
-  String get homeEarningsTotalPrefix => '累计总收益 ';
-
-  @override
   String get homeActivityRecent => '最近活跃';
 
   @override
@@ -365,11 +362,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get homeGlobalSignDeleteConfirmMessage =>
       '删除后不会写入日报，也不会经过 AI 整理，且无法恢复。';
-
-  @override
-  String homeDesktopLevelTitle(Object level, Object percent) {
-    return 'Lv.$level 实习生 ($percent%)';
-  }
 
   @override
   String homeActivityCountTimes(Object count) {
@@ -1204,21 +1196,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get settingsPersonalInfoTitle => '个人信息';
-
-  @override
-  String get settingsDailyWorkHours => '每日工作时长';
-
-  @override
-  String get settingsHoursSuffix => '小时';
-
-  @override
-  String get settingsDailySalary => '日薪';
-
-  @override
-  String get settingsIndustry => '所在行业';
-
-  @override
   String get settingsFontDisplayTitle => '字体与显示';
 
   @override
@@ -1309,21 +1286,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsDataSaveTitle => '数据保存';
 
   @override
-  String get settingsComponentTitle => '组件设置';
-
-  @override
-  String get settingsShowDesktopWidget => '显示桌面组件';
-
-  @override
-  String get settingsOrbMode => '桌面组件圆球模式';
-
-  @override
-  String get settingsWidgetWallpaperTitle => '组件壁纸';
-
-  @override
-  String get settingsWidgetWallpaperModeDefaultWhite => '默认白色';
-
-  @override
   String get settingsPromptTitle => '提示词';
 
   @override
@@ -1355,9 +1317,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsVariableRawInput => '新增随手记录';
-
-  @override
-  String get settingsVariableIndustry => '用户所在行业';
 
   @override
   String get settingsVariableDailyContent => '当日日报内容';
@@ -1569,13 +1528,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsCheckForUpdates => '检查更新';
 
   @override
-  String get settingsWebsite => '官网';
-
-  @override
   String get settingsLicense => '许可证';
-
-  @override
-  String get settingsJoinQQGroup => '加入QQ群';
 
   @override
   String get settingsCheckingForUpdates => '正在检查更新...';

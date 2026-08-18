@@ -61,6 +61,7 @@ OutputDir={#SetupOutputDir}
 OutputBaseFilename=SpringNote-{#MyAppVersion}-windows-x64-setup
 SolidCompression=yes
 WizardStyle=modern
+LicenseFile=..\LICENSE
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -69,6 +70,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BuildOutputDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#VCRedistSource}"; DestDir: "{tmp}"; DestName: "{#VCRedistFileName}"; Flags: deleteafterinstall; Check: NeedsVCRuntime; AfterInstall: InstallVCRuntime
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files

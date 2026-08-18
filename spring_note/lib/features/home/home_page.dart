@@ -16,11 +16,9 @@ import '../../core/models/structured_note_section_config.dart';
 import '../../core/models/structured_work_note.dart';
 import '../../core/services/ai_client_service.dart';
 import '../../core/services/daily_note_service.dart';
-import '../../core/services/desktop_widget_controller.dart';
 import '../../core/services/global_sign_service.dart';
 import '../../core/services/home_overview_service.dart';
 import '../../core/services/image_file_types.dart';
-import '../../core/services/level_progress_controller.dart';
 import '../../core/services/mock_ai_service.dart';
 import '../../core/services/pending_image_clipboard_service.dart';
 import '../../core/services/pending_image_service.dart';
@@ -78,8 +76,6 @@ class HomePage extends StatefulWidget {
     this.pendingImageService = const PendingImageService(),
     this.attachmentManager,
     this.statsService = const StatsService(),
-    this.desktopWidgetController,
-    this.levelProgressController,
     this.updateCheckResult = UpdateCheckResult.idle,
     this.updateCheckService,
     this.imageAttachmentPicker,
@@ -98,8 +94,6 @@ class HomePage extends StatefulWidget {
   final PendingImageService pendingImageService;
   final AttachmentManager? attachmentManager;
   final StatsService statsService;
-  final DesktopWidgetController? desktopWidgetController;
-  final LevelProgressController? levelProgressController;
   final UpdateCheckResult updateCheckResult;
   final UpdateCheckService? updateCheckService;
   final HomeImagePicker? imageAttachmentPicker;
@@ -115,8 +109,6 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   late final AttachmentManager _attachmentManager;
-  DesktopWidgetController? _ownedDesktopWidgetController;
-  LevelProgressController? _ownedLevelProgressController;
   List<HomeAttachment> _attachments = const [];
 
   StructuredWorkNote _overview = StructuredWorkNote.empty;
@@ -127,17 +119,10 @@ class _HomePageState extends State<HomePage> {
   String? _attachmentError;
   rust_stats.StatsSnapshot _activityStats = StatsService.emptySnapshot;
 
-  DesktopWidgetController get _desktopWidgetController =>
-      widget.desktopWidgetController ?? _ownedDesktopWidgetController!;
-  LevelProgressController get _levelProgressController =>
-      widget.levelProgressController ?? _ownedLevelProgressController!;
-
   @override
   void initState() {
     super.initState();
     _attachmentManager = widget.attachmentManager ?? AttachmentManager();
-    _ensureDesktopWidgetController();
-    _ensureLevelProgressController();
     _loadTodayOverview();
     _loadHomeStats();
   }
@@ -145,20 +130,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.desktopWidgetController != oldWidget.desktopWidgetController) {
-      _ensureDesktopWidgetController();
-    }
-    if (widget.levelProgressController != oldWidget.levelProgressController) {
-      _ensureLevelProgressController();
-    }
     if (widget.localDataState.dataDirectory !=
         oldWidget.localDataState.dataDirectory) {
-      if (widget.desktopWidgetController == null) {
-        _ownedDesktopWidgetController?.attach(widget.localDataState);
-      }
-      if (widget.levelProgressController == null) {
-        _ownedLevelProgressController?.attach(widget.localDataState);
-      }
       _loadTodayOverview();
       _loadHomeStats();
     }
@@ -166,32 +139,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _ownedDesktopWidgetController?.dispose();
-    _ownedLevelProgressController?.dispose();
     _attachmentManager.clear();
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
-  }
-
-  void _ensureDesktopWidgetController() {
-    if (widget.desktopWidgetController != null) {
-      _ownedDesktopWidgetController?.dispose();
-      _ownedDesktopWidgetController = null;
-      return;
-    }
-    _ownedDesktopWidgetController ??= DesktopWidgetController()
-      ..attach(widget.localDataState);
-  }
-
-  void _ensureLevelProgressController() {
-    if (widget.levelProgressController != null) {
-      _ownedLevelProgressController?.dispose();
-      _ownedLevelProgressController = null;
-      return;
-    }
-    _ownedLevelProgressController ??= LevelProgressController()
-      ..attach(widget.localDataState);
   }
 
   Future<void> _loadTodayOverview() async {
@@ -374,7 +325,6 @@ class _HomePageState extends State<HomePage> {
           _aiNotice = l10n(context).homeAiNoticeGlobalSignFailed;
         });
       }
-      await _levelProgressController.recordValidSubmission();
       await _loadHomeStats();
       _focusNode.requestFocus();
     } finally {
@@ -1191,11 +1141,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               const SizedBox(height: 32),
-              _TodayHeroCard(
-                activityStats: _activityStats,
-                desktopWidgetController: _desktopWidgetController,
-                levelProgressController: _levelProgressController,
-              ),
+              _TodayHeroCard(activityStats: _activityStats),
               const SizedBox(height: 32),
               _QuickCaptureCard(
                 controller: _controller,
@@ -1249,15 +1195,9 @@ class _HomePageState extends State<HomePage> {
 }
 
 class _TodayHeroCard extends StatelessWidget {
-  const _TodayHeroCard({
-    required this.activityStats,
-    required this.desktopWidgetController,
-    required this.levelProgressController,
-  });
+  const _TodayHeroCard({required this.activityStats});
 
   final rust_stats.StatsSnapshot activityStats;
-  final DesktopWidgetController desktopWidgetController;
-  final LevelProgressController levelProgressController;
 
   @override
   Widget build(BuildContext context) {
@@ -1280,314 +1220,8 @@ class _TodayHeroCard extends StatelessWidget {
                 offset: Offset(0, 1),
               ),
             ],
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final narrow = constraints.maxWidth < 860;
-
-          if (narrow) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _LiveIncomeSummary(
-                  desktopWidgetController: desktopWidgetController,
-                  levelProgressController: levelProgressController,
-                  totalCoins: activityStats.summary.coins,
-                ),
-                const SizedBox(height: 28),
-                _ActivityPreview(stats: activityStats, withDivider: false),
-              ],
-            );
-          }
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: _LiveIncomeSummary(
-                  desktopWidgetController: desktopWidgetController,
-                  levelProgressController: levelProgressController,
-                  totalCoins: activityStats.summary.coins,
-                ),
-              ),
-              const SizedBox(width: 48),
-              _ActivityPreview(stats: activityStats),
-            ],
-          );
-        },
-      ),
+      child: _ActivityPreview(stats: activityStats, withDivider: false),
     );
-  }
-}
-
-class _LiveIncomeSummary extends StatelessWidget {
-  const _LiveIncomeSummary({
-    required this.desktopWidgetController,
-    required this.levelProgressController,
-    required this.totalCoins,
-  });
-
-  final DesktopWidgetController desktopWidgetController;
-  final LevelProgressController levelProgressController;
-  final double totalCoins;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: desktopWidgetController,
-      builder: (context, _) {
-        return AnimatedBuilder(
-          animation: levelProgressController,
-          builder: (context, _) {
-            return _IncomeSummary(
-              desktopWidgetState: desktopWidgetController.state,
-              coinRatePerSecond: desktopWidgetController.coinRatePerSecond,
-              levelProgressState: levelProgressController.state,
-              totalCoins: totalCoins,
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _IncomeSummary extends StatelessWidget {
-  const _IncomeSummary({
-    required this.desktopWidgetState,
-    required this.coinRatePerSecond,
-    required this.levelProgressState,
-    required this.totalCoins,
-  });
-
-  final DesktopWidgetState desktopWidgetState;
-  final double coinRatePerSecond;
-  final LevelProgressState levelProgressState;
-  final double totalCoins;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppTheme.colors(context);
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final progress = (levelProgressState.experiencePercent / 100).clamp(
-      0.0,
-      1.0,
-    );
-    final progressLabel = '${levelProgressState.experiencePercent}%';
-    final coins = desktopWidgetState.coins;
-    final rate = desktopWidgetState.running ? coinRatePerSecond : 0.0;
-    final visibleTotalCoins = totalCoins > coins ? totalCoins : coins;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'LEVEL ${levelProgressState.level.toString().padLeft(2, '0')}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colors.textSubtle,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: 64,
-              height: 64,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CustomPaint(
-                    size: const Size.square(64),
-                    painter: _LevelRingPainter(
-                      progress: progress,
-                      backgroundColor: colors.surfaceMuted,
-                      progressColor: colors.textSubtle,
-                    ),
-                  ),
-                  Text(
-                    progressLabel,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: colors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 48),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'EARNINGS TODAY',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.textSubtle,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Flexible(
-                    child: Text(
-                      coins.round().toString(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(
-                            fontSize: 56,
-                            fontWeight: FontWeight.w700,
-                            color: colors.text,
-                            letterSpacing: -3.2,
-                            height: 1,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: dark
-                          ? const Color(0xFF0B3024)
-                          : const Color(0xFFECFDF5),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.trending_up_rounded,
-                          size: 12,
-                          color: dark
-                              ? const Color(0xFF34D399)
-                              : const Color(0xFF059669),
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          '+${_formatRate(rate)} c/s',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: dark
-                                    ? const Color(0xFF34D399)
-                                    : const Color(0xFF059669),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text.rich(
-                TextSpan(
-                  text: l10n(context).homeEarningsTotalPrefix,
-                  children: [
-                    TextSpan(
-                      text: _formatCoinAmount(visibleTotalCoins),
-                      style: TextStyle(
-                        color: colors.textSubtle,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const TextSpan(text: ' coins'),
-                  ],
-                ),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.textSubtle,
-                  fontSize: 12,
-                  letterSpacing: 0.1,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatRate(double value) {
-    return value.abs() < 1
-        ? value.toStringAsFixed(2)
-        : value.toStringAsFixed(3);
-  }
-
-  String _formatCoinAmount(double value) {
-    final text = value.round().toString();
-    final buffer = StringBuffer();
-    for (var index = 0; index < text.length; index++) {
-      if (index > 0 && (text.length - index) % 3 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(text[index]);
-    }
-    return buffer.toString();
-  }
-}
-
-class _LevelRingPainter extends CustomPainter {
-  const _LevelRingPainter({
-    required this.progress,
-    required this.backgroundColor,
-    required this.progressColor,
-  });
-
-  final double progress;
-  final Color backgroundColor;
-  final Color progressColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final backgroundPaint = Paint()
-      ..color = backgroundColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.5
-      ..strokeCap = StrokeCap.round;
-    final progressPaint = Paint()
-      ..color = progressColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.5
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(
-      rect.deflate(4),
-      0,
-      6.283185307179586,
-      false,
-      backgroundPaint,
-    );
-    canvas.drawArc(
-      rect.deflate(4),
-      -1.5707963267948966,
-      6.283185307179586 * progress,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _LevelRingPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.backgroundColor != backgroundColor ||
-        oldDelegate.progressColor != progressColor;
   }
 }
 

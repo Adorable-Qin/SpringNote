@@ -9,7 +9,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/models/app_config.dart';
 import '../../core/models/cloud_sync_config.dart';
-import '../../core/models/desktop_widget_wallpaper_settings.dart';
 import '../../core/models/local_data_state.dart';
 import '../../core/models/model_config.dart';
 import '../../core/models/model_reference.dart';

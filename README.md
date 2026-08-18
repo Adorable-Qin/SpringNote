@@ -37,7 +37,7 @@ SpringNote aims to make recording your life easier to stick with, with the help 
 
 ## Core Features
 
-- **Home Dashboard**: Workhorse level, earnings, activity heatmap, quick input box, and today's summary card.
+- **Home Dashboard**: Activity heatmap, quick input box, and today's summary card.
 
   ![SpringNote Home](./snapshots/index.png)
 
@@ -46,6 +46,8 @@ SpringNote aims to make recording your life easier to stick with, with the help 
 - **Note Editor**: Supports daily, weekly, and monthly notes, with Markdown editing, preview, code block highlighting, and AI completion suggestions.
 
   ![SpringNote Note](./snapshots/note.png)
+
+- **Project Calendar**: Detects deadlines written in notes and displays them in a calendar with overdue, due-today, and upcoming reminders. Supported examples: `Due: 2026-08-30`, `Deadline: 2026/08/30`.
 
 - **Memories Chat**: Retrieve and organize your memories through conversation, with visible thinking process, tool call display, and Markdown rendering.
 
@@ -57,11 +59,8 @@ SpringNote aims to make recording your life easier to stick with, with the help 
 
   ![SpringNote Statistics](./snapshots/setting.png)
 
-- **Workhorse Clock**: Set a custom daily salary and work hours; your hourly rate is calculated automatically and shown as a desktop widget.
 
-  ![SpringNote Components](./snapshots/components.png)
-
-- **Polished Desktop Experience**: Custom Windows title bar, system tray, launch on boot, global shortcuts, desktop status widget, and system font switching.
+- **Polished Desktop Experience**: Custom Windows title bar, system tray, launch on boot, global shortcuts, and system font switching.
 
 ## Quick Start
 
@@ -133,15 +132,16 @@ Notebook search only searches within the currently selected note type (daily, we
 
 In "Memories", you can directly ask questions about your saved work records.
 
-### Step 6: Use the Workhorse Clock
+### Step 6: Manage Deadlines in the Project Calendar
 
-![Workhorse Clock](./snapshots/components.png)
+Write a deadline in any daily, weekly, or monthly note, for example:
 
-The widget shows the current timer, today's work duration, and earnings, and lets you control the timer outside the main window.
+```markdown
+- Prepare the release notes — Due: 2026-08-30
+- Submit the proposal — Deadline: 2026/09/05
+```
 
-- Left-click the widget: start or pause the timer;
-- Right-click the widget: open the main window and go to the home page;
-- Left-drag the widget: move the window;
+Open **Project Calendar** from the sidebar to see overdue, due-today, and upcoming items. Completed Markdown tasks such as `- [x] ...` are ignored.
 
 ### Keep Exploring
 
@@ -166,6 +166,10 @@ We read every piece of feedback carefully and keep improving SpringNote to make 
 >
 > This information helps us locate the problem quickly.
 
+
+## License
+
+SpringNote and the modifications in this repository are distributed under **GNU Affero General Public License v3.0 only (AGPL-3.0-only)**. If you distribute a modified version or make it available for users to interact with over a network, provide the corresponding source code as required by the license. See [LICENSE](./LICENSE).
 
 ## ❤️ Special Thanks
 

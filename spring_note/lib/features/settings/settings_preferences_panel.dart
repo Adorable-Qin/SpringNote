@@ -58,84 +58,15 @@ class _PreferencesPanel extends StatelessWidget {
       if (file == null) {
         return;
       }
-
-      final widgetWallpaperPath = WallpaperService.resolveAbsolutePath(
-        settings: WallpaperSettings(
-          mode: WallpaperMode.image,
-          imagePath: config.desktopWidgetWallpaperSettings.imagePath,
-          fillMode: WallpaperFillMode.cover,
-          opacity: 1.0,
-          blur: 0.0,
-          maskOpacity: 0.0,
-          solidColorArgb: 0xFFFFFFFF,
-        ),
-        dataDirectory: dataDirectory,
-      );
       final next = await WallpaperService.adoptImage(
         sourceFile: File(file.path),
         current: config.wallpaperSettings,
         dataDirectory: dataDirectory,
-        alsoKeepPath: widgetWallpaperPath,
       );
       if (!context.mounted) {
         return;
       }
       onChanged(config.copyWith(wallpaperSettings: next));
-    } catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_imagePickErrorText(context, error))),
-      );
-    }
-  }
-
-  Future<void> _pickWidgetWallpaperImage({
-    required BuildContext context,
-    required AppConfig config,
-    required ValueChanged<AppConfig> onChanged,
-  }) async {
-    try {
-      final imageType = XTypeGroup(
-        label: l10n(context).settingsImageFileType,
-        extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'],
-      );
-      final file = await openFile(acceptedTypeGroups: [imageType]);
-      if (file == null) {
-        return;
-      }
-
-      final mainWallpaperPath = WallpaperService.resolveAbsolutePath(
-        settings: config.wallpaperSettings,
-        dataDirectory: dataDirectory,
-      );
-      final current = config.desktopWidgetWallpaperSettings;
-      final next = await WallpaperService.adoptImage(
-        sourceFile: File(file.path),
-        current: WallpaperSettings(
-          mode: WallpaperMode.image,
-          imagePath: current.imagePath,
-          fillMode: WallpaperFillMode.cover,
-          opacity: 1.0,
-          blur: 0.0,
-          maskOpacity: 0.0,
-          solidColorArgb: 0xFFFFFFFF,
-        ),
-        dataDirectory: dataDirectory,
-        alsoKeepPath: mainWallpaperPath,
-      );
-      if (!context.mounted) {
-        return;
-      }
-      onChanged(
-        config.copyWith(
-          desktopWidgetWallpaperSettings: current.copyWith(
-            mode: DesktopWidgetWallpaperMode.image,
-            imagePath: next.imagePath,
-          ),
-        ),
-      );
     } catch (error) {
       if (!context.mounted) {
         return;
@@ -156,30 +87,6 @@ class _PreferencesPanel extends StatelessWidget {
     return _SettingsScrollFrame(
       maxWidth: 1080,
       children: [
-        _SettingsCard(
-          title: strings.settingsPersonalInfoTitle,
-          children: [
-            _NumberSettingRow(
-              label: strings.settingsDailyWorkHours,
-              value: config.dailyWorkHours,
-              suffix: strings.settingsHoursSuffix,
-              onChanged: (value) =>
-                  onChanged(config.copyWith(dailyWorkHours: value)),
-            ),
-            _NumberSettingRow(
-              label: strings.settingsDailySalary,
-              value: config.dailySalary,
-              suffix: '¥',
-              onChanged: (value) =>
-                  onChanged(config.copyWith(dailySalary: value)),
-            ),
-            _TextSettingRow(
-              label: strings.settingsIndustry,
-              value: config.industry,
-              onChanged: (value) => onChanged(config.copyWith(industry: value)),
-            ),
-          ],
-        ),
         _SettingsCard(
           title: strings.settingsFontDisplayTitle,
           children: [
@@ -447,126 +354,6 @@ class _PreferencesPanel extends StatelessWidget {
           ],
         ),
         _SettingsCard(
-          title: strings.settingsComponentTitle,
-          children: [
-            _SwitchSettingRow(
-              label: strings.settingsShowDesktopWidget,
-              value:
-                  PlatformFeatureSupport.supportsDesktopWidget &&
-                  config.showDesktopWidget,
-              enabled: PlatformFeatureSupport.supportsDesktopWidget,
-              description: PlatformFeatureSupport.supportsDesktopWidget
-                  ? null
-                  : windowsOnlyLabel,
-              onChanged: PlatformFeatureSupport.supportsDesktopWidget
-                  ? (value) =>
-                        onChanged(config.copyWith(showDesktopWidget: value))
-                  : null,
-            ),
-            _SwitchSettingRow(
-              label: strings.settingsOrbMode,
-              value:
-                  PlatformFeatureSupport.supportsDesktopWidget &&
-                  config.showDesktopWidget &&
-                  config.desktopWidgetOrbMode,
-              enabled:
-                  PlatformFeatureSupport.supportsDesktopWidget &&
-                  config.showDesktopWidget,
-              description: PlatformFeatureSupport.supportsDesktopWidget
-                  ? null
-                  : windowsOnlyLabel,
-              onChanged:
-                  PlatformFeatureSupport.supportsDesktopWidget &&
-                      config.showDesktopWidget
-                  ? (value) =>
-                        onChanged(config.copyWith(desktopWidgetOrbMode: value))
-                  : null,
-            ),
-          ],
-        ),
-        if (PlatformFeatureSupport.supportsDesktopWidget &&
-            config.showDesktopWidget)
-          _SettingsCard(
-            title: strings.settingsWidgetWallpaperTitle,
-            children: [
-              _ChoiceSettingRow<DesktopWidgetWallpaperMode>(
-                label: strings.settingsWallpaperMode,
-                value: config.desktopWidgetWallpaperSettings.mode,
-                options: DesktopWidgetWallpaperMode.values,
-                labels: [
-                  strings.settingsWidgetWallpaperModeDefaultWhite,
-                  strings.settingsWallpaperModeSolid,
-                  strings.settingsWallpaperModeImage,
-                ],
-                onChanged: (mode) => onChanged(
-                  config.copyWith(
-                    desktopWidgetWallpaperSettings: config
-                        .desktopWidgetWallpaperSettings
-                        .copyWith(
-                          mode: mode,
-                          clearImagePath:
-                              mode != DesktopWidgetWallpaperMode.image,
-                        ),
-                  ),
-                ),
-              ),
-              if (config.desktopWidgetWallpaperSettings.mode ==
-                  DesktopWidgetWallpaperMode.solid)
-                _ColorSettingRow(
-                  label: strings.settingsBackgroundColor,
-                  color: Color(
-                    config.desktopWidgetWallpaperSettings.solidColorArgb,
-                  ),
-                  onChanged: (color) => onChanged(
-                    config.copyWith(
-                      desktopWidgetWallpaperSettings: config
-                          .desktopWidgetWallpaperSettings
-                          .copyWith(
-                            solidColorArgb: WallpaperService.colorToArgb(color),
-                          ),
-                    ),
-                  ),
-                ),
-              if (config.desktopWidgetWallpaperSettings.mode ==
-                  DesktopWidgetWallpaperMode.image)
-                _ActionSettingRow(
-                  label: strings.settingsSelectImage,
-                  value: _wallpaperImageSummary(
-                    config.desktopWidgetWallpaperSettings.imagePath,
-                    strings.settingsImageNotSelected,
-                  ),
-                  onTap: () => _pickWidgetWallpaperImage(
-                    context: context,
-                    config: config,
-                    onChanged: onChanged,
-                  ),
-                ),
-              if (config.desktopWidgetWallpaperSettings.mode !=
-                  DesktopWidgetWallpaperMode.defaultWhite)
-                _SliderSettingRow(
-                  label: strings.settingsOpacity,
-                  value: config.desktopWidgetWallpaperSettings.opacity,
-                  onChanged: (value) => onChanged(
-                    config.copyWith(
-                      desktopWidgetWallpaperSettings: config
-                          .desktopWidgetWallpaperSettings
-                          .copyWith(opacity: value),
-                    ),
-                  ),
-                ),
-              _ActionSettingRow(
-                label: strings.actionRestore,
-                value: '',
-                onTap: () => onChanged(
-                  config.copyWith(
-                    desktopWidgetWallpaperSettings:
-                        DesktopWidgetWallpaperSettings.defaults,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        _SettingsCard(
           title: strings.settingsPromptTitle,
           children: [
             _ActionSettingRow(
@@ -616,11 +403,6 @@ class _PreferencesPanel extends StatelessWidget {
                         '{raw_input}',
                         strings.settingsVariableRawInput,
                       ),
-                      (
-                        Icons.business_center_outlined,
-                        '{industry}',
-                        strings.settingsVariableIndustry,
-                      ),
                     ],
                   ),
                 );
@@ -654,11 +436,6 @@ class _PreferencesPanel extends StatelessWidget {
                         Icons.article_outlined,
                         '{source_markdown}',
                         strings.settingsVariableSourceMarkdown,
-                      ),
-                      (
-                        Icons.business_center_outlined,
-                        '{industry}',
-                        strings.settingsVariableIndustry,
                       ),
                     ],
                   ),
@@ -703,11 +480,6 @@ class _PreferencesPanel extends StatelessWidget {
                         Icons.edit_note_rounded,
                         '{raw_input}',
                         strings.settingsVariableRawInput,
-                      ),
-                      (
-                        Icons.business_center_outlined,
-                        '{industry}',
-                        strings.settingsVariableIndustry,
                       ),
                     ],
                   ),

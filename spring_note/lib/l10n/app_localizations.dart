@@ -458,12 +458,6 @@ abstract class AppLocalizations {
   /// **'首页'**
   String get homePageTitle;
 
-  /// No description provided for @homeEarningsTotalPrefix.
-  ///
-  /// In zh, this message translates to:
-  /// **'累计总收益 '**
-  String get homeEarningsTotalPrefix;
-
   /// No description provided for @homeActivityRecent.
   ///
   /// In zh, this message translates to:
@@ -751,12 +745,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'删除后不会写入日报，也不会经过 AI 整理，且无法恢复。'**
   String get homeGlobalSignDeleteConfirmMessage;
-
-  /// No description provided for @homeDesktopLevelTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'Lv.{level} 实习生 ({percent}%)'**
-  String homeDesktopLevelTitle(Object level, Object percent);
 
   /// No description provided for @homeActivityCountTimes.
   ///
@@ -2297,36 +2285,6 @@ abstract class AppLocalizations {
   /// **'选择图片失败: {error}'**
   String settingsImagePickFailed(Object error);
 
-  /// No description provided for @settingsPersonalInfoTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'个人信息'**
-  String get settingsPersonalInfoTitle;
-
-  /// No description provided for @settingsDailyWorkHours.
-  ///
-  /// In zh, this message translates to:
-  /// **'每日工作时长'**
-  String get settingsDailyWorkHours;
-
-  /// No description provided for @settingsHoursSuffix.
-  ///
-  /// In zh, this message translates to:
-  /// **'小时'**
-  String get settingsHoursSuffix;
-
-  /// No description provided for @settingsDailySalary.
-  ///
-  /// In zh, this message translates to:
-  /// **'日薪'**
-  String get settingsDailySalary;
-
-  /// No description provided for @settingsIndustry.
-  ///
-  /// In zh, this message translates to:
-  /// **'所在行业'**
-  String get settingsIndustry;
-
   /// No description provided for @settingsFontDisplayTitle.
   ///
   /// In zh, this message translates to:
@@ -2507,36 +2465,6 @@ abstract class AppLocalizations {
   /// **'数据保存'**
   String get settingsDataSaveTitle;
 
-  /// No description provided for @settingsComponentTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'组件设置'**
-  String get settingsComponentTitle;
-
-  /// No description provided for @settingsShowDesktopWidget.
-  ///
-  /// In zh, this message translates to:
-  /// **'显示桌面组件'**
-  String get settingsShowDesktopWidget;
-
-  /// No description provided for @settingsOrbMode.
-  ///
-  /// In zh, this message translates to:
-  /// **'桌面组件圆球模式'**
-  String get settingsOrbMode;
-
-  /// No description provided for @settingsWidgetWallpaperTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'组件壁纸'**
-  String get settingsWidgetWallpaperTitle;
-
-  /// No description provided for @settingsWidgetWallpaperModeDefaultWhite.
-  ///
-  /// In zh, this message translates to:
-  /// **'默认白色'**
-  String get settingsWidgetWallpaperModeDefaultWhite;
-
   /// No description provided for @settingsPromptTitle.
   ///
   /// In zh, this message translates to:
@@ -2602,12 +2530,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'新增随手记录'**
   String get settingsVariableRawInput;
-
-  /// No description provided for @settingsVariableIndustry.
-  ///
-  /// In zh, this message translates to:
-  /// **'用户所在行业'**
-  String get settingsVariableIndustry;
 
   /// No description provided for @settingsVariableDailyContent.
   ///
@@ -3011,23 +2933,11 @@ abstract class AppLocalizations {
   /// **'检查更新'**
   String get settingsCheckForUpdates;
 
-  /// No description provided for @settingsWebsite.
-  ///
-  /// In zh, this message translates to:
-  /// **'官网'**
-  String get settingsWebsite;
-
   /// No description provided for @settingsLicense.
   ///
   /// In zh, this message translates to:
   /// **'许可证'**
   String get settingsLicense;
-
-  /// No description provided for @settingsJoinQQGroup.
-  ///
-  /// In zh, this message translates to:
-  /// **'加入QQ群'**
-  String get settingsJoinQQGroup;
 
   /// No description provided for @settingsCheckingForUpdates.
   ///

@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 
 import 'app_language.dart';
 import 'cloud_sync_config.dart';
-import 'desktop_widget_position.dart';
-import 'desktop_widget_wallpaper_settings.dart';
 import 'provider_config.dart';
 import 'structured_note_section_config.dart';
 import 'wallpaper_settings.dart';
@@ -17,7 +15,6 @@ const defaultDailyMergePrompt = '''你是 SpringNote 的日报整理助手。
 - 日期：{date}
 - 已有日报：{existing_markdown}
 - 新增随手记录：{raw_input}
-- 用户所在行业：{industry}
 
 整理要求：
 1. 综合利用所有已提供的信息进行整理，空变量自动忽略。
@@ -28,10 +25,9 @@ const defaultDailyMergePrompt = '''你是 SpringNote 的日报整理助手。
 6. 将零散记录整理成连贯的工作记录，使全文具有连续阅读体验，读起来像用户亲自整理后的日报，而不是 AI 自动汇总的结果。
 7. 内容较少时保持简洁，避免为了丰富内容而重复表达；内容较多时可自然分段或按主题组织，但不要为了分组而分组。
 8. 表达应符合真实开发者或职场人士日常记录工作的习惯，语言自然、克制、顺畅，避免机械、模板化或过于正式的总结语气。
-9. 可以结合所在行业调整专业术语和表达习惯，但不得补充任何事实。
-10. 如果已有日报与新增记录存在重复，应保留表达更完整、更自然的一份，避免重复描述。
-11. 保留已有日报的整体结构和可继续编辑性，不随意改变已有内容的组织方式。
-12. 不输出变量名称，不解释整理过程，不添加任何说明，仅输出最终日报内容。''';
+9. 如果已有日报与新增记录存在重复，应保留表达更完整、更自然的一份，避免重复描述。
+10. 保留已有日报的整体结构和可继续编辑性，不随意改变已有内容的组织方式。
+11. 不输出变量名称，不解释整理过程，不添加任何说明，仅输出最终日报内容。''';
 
 const defaultDailyMergePromptEn = '''You are SpringNote's daily-note editor.
 Your job is to merge the existing daily note and the new quick capture into a natural, truthful daily note that stays easy to keep editing.
@@ -40,7 +36,6 @@ Known information:
 - Date: {date}
 - Existing daily note: {existing_markdown}
 - New quick capture: {raw_input}
-- User's industry: {industry}
 
 Rules:
 1. Use all provided information; ignore empty variables.
@@ -51,10 +46,9 @@ Rules:
 6. Turn scattered notes into a coherent work log that reads like the user wrote it, not like an AI summary.
 7. Keep it brief when there is little content; when there is more, use natural paragraphs or topics, but do not group for grouping's sake.
 8. Write like a real developer or professional recording their day: natural, restrained, fluent; avoid mechanical, templated, or overly formal summary language.
-9. You may adapt terminology and phrasing to the user's industry, but do not add facts.
-10. If the existing note and the new capture overlap, keep the more complete, more natural version; avoid duplication.
-11. Preserve the existing note's overall structure and editability; do not reorganize arbitrarily.
-12. Do not output variable names, explanations, or any commentary; output only the final daily note content.''';
+9. If the existing note and the new capture overlap, keep the more complete, more natural version; avoid duplication.
+10. Preserve the existing note's overall structure and editability; do not reorganize arbitrarily.
+11. Do not output variable names, explanations, or any commentary; output only the final daily note content.''';
 
 /// 按生效语言返回日报整理默认提示词（[language] 为 'zh' 或 'en'）。
 String defaultDailyMergePromptFor(String language) {
@@ -68,7 +62,6 @@ const defaultGlobalSignPrompt = '''你是 SpringNote 的全局签整理助手。
 - 当日日报：{daily_markdown}
 - 当前全局签 JSON：{global_sign}
 - 新增随手记录：{raw_input}
-- 用户所在行业：{industry}
 
 整理要求：
 1. 结合当日日报与新增随手记录，判断是否需要向全局签新增、更新或移除待办事项；没有需要变更的内容时，原样返回当前全局签列表。
@@ -88,7 +81,6 @@ Known information:
 - Today's daily note: {daily_markdown}
 - Current global sign JSON: {global_sign}
 - New quick capture: {raw_input}
-- User's industry: {industry}
 
 Rules:
 1. Based on today's daily note and the new capture, decide whether to add, update, or remove todo items; when nothing needs to change, return the current list unchanged.
@@ -99,7 +91,7 @@ Rules:
 6. New items use an empty string as id; the system assigns ids.
 7. Strictly preserve facts; never invent tasks, times, people, or progress; keep each item concise — one clear sentence saying what to do.
 8. Do not expand, extrapolate, or replace what the input states; an item's object, action, and scope must match the input exactly.
-9. Output only JSON in the form {"items": [{"id": "...", "content": "..."}]}, with no explanation or commentary.''';
+8. Output only JSON in the form {"items": [{"id": "...", "content": "..."}]}, with no explanation or commentary.''';
 
 /// 按生效语言返回全局签默认提示词（[language] 为 'zh' 或 'en'）。
 String defaultGlobalSignPromptFor(String language) {
@@ -110,7 +102,6 @@ const defaultWeeklyReportPrompt = '''你是 SpringNote 的周报整理助手。�
 
 已知信息：
 - 周期：{period_label}
-- 用户所在行业：{industry}
 - 本周日报内容：
 {source_markdown}
 
@@ -121,7 +112,6 @@ const defaultWeeklyReportPrompt = '''你是 SpringNote 的周报整理助手。�
 4. Markdown 要层次清楚、阅读舒服；可以使用标题、段落、列表、重点小结，但避免机械堆栏目。
 5. 优先呈现这一周真正发生了什么、推进到了哪里、遇到什么卡点、接下来怎么走。
 6. 语气自然，像一个认真复盘工作的人的周报，不要像 AI 模板。
-7. 可以结合所在行业调整专业术语和表达习惯，但不得补充任何事实。
 8. 全文第一行必须是一级标题，格式固定为 `# XXXX-WXX 周报`（ISO 周，取自上述周期信息，例如 `# 2026-W30 周报`），不得自拟、追加或省略。
 9. 只输出最终 Markdown，不要解释。''';
 
@@ -129,7 +119,6 @@ const defaultWeeklyReportPromptEn = '''You are SpringNote's weekly-report editor
 
 Known information:
 - Period: {period_label}
-- User's industry: {industry}
 - Daily notes of the week:
 {source_markdown}
 
@@ -140,8 +129,7 @@ Principles:
 4. Use clear, comfortable Markdown: headings, paragraphs, lists, and brief highlights are welcome; avoid mechanical section stacking.
 5. Focus on what actually happened this week, how far things moved, what is blocked, and what comes next.
 6. Sound natural, like someone carefully reviewing their own week — not an AI template.
-7. You may adapt terminology and phrasing to the user's industry, but do not add facts.
-8. The first line must be a level-1 heading in the exact form `# XXXX-WXX Weekly Report` (ISO week, taken from the period above, e.g. `# 2026-W30 Weekly Report`); do not invent, append, or omit anything.
+7. The first line must be a level-1 heading in the exact form `# XXXX-WXX Weekly Report` (ISO week, taken from the period above, e.g. `# 2026-W30 Weekly Report`); do not invent, append, or omit anything.
 9. Output only the final Markdown, no explanations.''';
 
 /// 按生效语言返回周报整理默认提示词（[language] 为 'zh' 或 'en'）。
@@ -154,9 +142,6 @@ String defaultWeeklyReportPromptFor(String language) {
 class AppConfig {
   const AppConfig({
     required this.wallpaperSettings,
-    required this.dailyWorkHours,
-    required this.dailySalary,
-    required this.industry,
     required this.appFont,
     required this.fontScale,
     required this.language,
@@ -166,10 +151,6 @@ class AppConfig {
     required this.customDataDirectory,
     required this.autoStart,
     required this.showUpdates,
-    required this.showDesktopWidget,
-    required this.desktopWidgetPosition,
-    required this.desktopWidgetOrbMode,
-    required this.desktopWidgetWallpaperSettings,
     required this.showTrayIcon,
     required this.closeToTray,
     required this.memorySearchLimit,
@@ -192,9 +173,6 @@ class AppConfig {
 
   final WallpaperSettings wallpaperSettings;
 
-  final double dailyWorkHours;
-  final double dailySalary;
-  final String industry;
   final String appFont;
   final double fontScale;
 
@@ -206,10 +184,6 @@ class AppConfig {
   final String? customDataDirectory;
   final bool autoStart;
   final bool showUpdates;
-  final bool showDesktopWidget;
-  final DesktopWidgetPosition? desktopWidgetPosition;
-  final bool desktopWidgetOrbMode;
-  final DesktopWidgetWallpaperSettings desktopWidgetWallpaperSettings;
   final bool showTrayIcon;
   final bool closeToTray;
   final double memorySearchLimit;
@@ -247,9 +221,6 @@ class AppConfig {
     final language = resolveAppLanguage('system');
     return AppConfig(
       wallpaperSettings: WallpaperSettings.defaults,
-      dailyWorkHours: 8,
-      dailySalary: 200,
-      industry: '互联网',
       appFont: 'system',
       fontScale: 100,
       language: 'system',
@@ -259,10 +230,6 @@ class AppConfig {
       customDataDirectory: null,
       autoStart: false,
       showUpdates: true,
-      showDesktopWidget: true,
-      desktopWidgetPosition: null,
-      desktopWidgetOrbMode: false,
-      desktopWidgetWallpaperSettings: DesktopWidgetWallpaperSettings.defaults,
       showTrayIcon: true,
       closeToTray: true,
       memorySearchLimit: 12,
@@ -296,9 +263,6 @@ class AppConfig {
               (json['wallpaperSettings'] as Map).cast<String, dynamic>(),
             )
           : WallpaperSettings.defaults,
-      dailyWorkHours: _readDouble(json['dailyWorkHours'], 8),
-      dailySalary: _readDouble(json['dailySalary'], 200),
-      industry: json['industry'] as String? ?? '互联网',
       appFont: json['appFont'] as String? ?? 'system',
       fontScale: _readDouble(json['fontScale'], 100),
       language: _readLanguage(json['language']),
@@ -311,18 +275,6 @@ class AppConfig {
       customDataDirectory: _readOptionalString(json['customDataDirectory']),
       autoStart: json['autoStart'] as bool? ?? false,
       showUpdates: json['showUpdates'] as bool? ?? true,
-      showDesktopWidget: json['showDesktopWidget'] as bool? ?? true,
-      desktopWidgetPosition: DesktopWidgetPosition.fromJson(
-        json['desktopWidgetPosition'],
-      ),
-      desktopWidgetOrbMode: json['desktopWidgetOrbMode'] as bool? ?? false,
-      desktopWidgetWallpaperSettings:
-          json['desktopWidgetWallpaperSettings'] != null
-          ? DesktopWidgetWallpaperSettings.fromJson(
-              (json['desktopWidgetWallpaperSettings'] as Map)
-                  .cast<String, dynamic>(),
-            )
-          : DesktopWidgetWallpaperSettings.defaults,
       showTrayIcon: json['showTrayIcon'] as bool? ?? true,
       closeToTray:
           (json['showTrayIcon'] as bool? ?? true) &&
@@ -379,9 +331,6 @@ class AppConfig {
   Map<String, Object?> toJson() {
     return {
       'wallpaperSettings': wallpaperSettings.toJson(),
-      'dailyWorkHours': dailyWorkHours,
-      'dailySalary': dailySalary,
-      'industry': industry,
       'appFont': appFont,
       'fontScale': fontScale,
       'language': language,
@@ -391,10 +340,6 @@ class AppConfig {
       'customDataDirectory': customDataDirectory,
       'autoStart': autoStart,
       'showUpdates': showUpdates,
-      'showDesktopWidget': showDesktopWidget,
-      'desktopWidgetPosition': desktopWidgetPosition?.toJson(),
-      'desktopWidgetOrbMode': desktopWidgetOrbMode,
-      'desktopWidgetWallpaperSettings': desktopWidgetWallpaperSettings.toJson(),
       'showTrayIcon': showTrayIcon,
       'closeToTray': closeToTray,
       'memorySearchLimit': memorySearchLimit,
@@ -420,9 +365,6 @@ class AppConfig {
 
   AppConfig copyWith({
     WallpaperSettings? wallpaperSettings,
-    double? dailyWorkHours,
-    double? dailySalary,
-    String? industry,
     String? appFont,
     double? fontScale,
     String? language,
@@ -432,10 +374,6 @@ class AppConfig {
     Object? customDataDirectory = _sentinel,
     bool? autoStart,
     bool? showUpdates,
-    bool? showDesktopWidget,
-    Object? desktopWidgetPosition = _sentinel,
-    bool? desktopWidgetOrbMode,
-    DesktopWidgetWallpaperSettings? desktopWidgetWallpaperSettings,
     bool? showTrayIcon,
     bool? closeToTray,
     double? memorySearchLimit,
@@ -460,9 +398,6 @@ class AppConfig {
         nextShowTrayIcon && (closeToTray ?? this.closeToTray);
     return AppConfig(
       wallpaperSettings: wallpaperSettings ?? this.wallpaperSettings,
-      dailyWorkHours: dailyWorkHours ?? this.dailyWorkHours,
-      dailySalary: dailySalary ?? this.dailySalary,
-      industry: industry ?? this.industry,
       appFont: appFont ?? this.appFont,
       fontScale: fontScale ?? this.fontScale,
       language: language ?? this.language,
@@ -476,13 +411,6 @@ class AppConfig {
           : customDataDirectory as String?,
       autoStart: autoStart ?? this.autoStart,
       showUpdates: showUpdates ?? this.showUpdates,
-      showDesktopWidget: showDesktopWidget ?? this.showDesktopWidget,
-      desktopWidgetPosition: desktopWidgetPosition == _sentinel
-          ? this.desktopWidgetPosition
-          : desktopWidgetPosition as DesktopWidgetPosition?,
-      desktopWidgetOrbMode: desktopWidgetOrbMode ?? this.desktopWidgetOrbMode,
-      desktopWidgetWallpaperSettings:
-          desktopWidgetWallpaperSettings ?? this.desktopWidgetWallpaperSettings,
       showTrayIcon: nextShowTrayIcon,
       closeToTray: nextCloseToTray,
       memorySearchLimit: memorySearchLimit ?? this.memorySearchLimit,

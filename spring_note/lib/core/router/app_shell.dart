@@ -2,24 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../features/calendar/project_calendar_page.dart';
 import '../../features/home/home_page.dart';
 import '../../features/memory/memory_page.dart';
 import '../../features/notes/notes_page.dart';
 import '../../features/settings/settings_page.dart';
-import '../../features/widget/desktop_status_widget.dart';
 import '../models/app_config.dart';
-import '../models/desktop_widget_position.dart';
-import '../models/desktop_widget_wallpaper_settings.dart';
 import '../models/local_data_state.dart';
 import '../models/note_external_update.dart';
 import '../models/note_file.dart';
 import '../models/wallpaper_settings.dart';
 import '../services/auto_start_service.dart';
 import '../services/cloud_sync_service.dart';
-import '../services/desktop_widget_controller.dart';
-import '../services/desktop_widget_window_bridge.dart';
 import '../services/global_hotkey_service.dart';
-import '../services/level_progress_controller.dart';
 import '../services/local_data_service.dart';
 import '../services/note_service.dart';
 import '../services/note_upload_queue.dart';
@@ -31,7 +26,7 @@ import '../theme/app_theme.dart';
 import '../widgets/wallpaper_layer.dart';
 import '../../l10n/l10n.dart';
 
-enum AppSection { home, notes, memory, settings }
+enum AppSection { home, notes, calendar, memory, settings }
 
 enum _StartupCloudSyncFailureKind { offline, temporary, permanent }
 
@@ -77,15 +72,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   AppSection _section = AppSection.home;
   late LocalDataState _localDataState = widget.localDataState;
-  late final DesktopWidgetController _desktopWidgetController =
-      DesktopWidgetController()..attach(_localDataState);
-  late final DesktopWidgetWindowBridge _desktopWidgetWindow =
-      DesktopWidgetWindowBridge();
   final AutoStartService _autoStartService = const AutoStartService();
   final GlobalHotkeyService _globalHotkeyService = const GlobalHotkeyService();
   final TrayService _trayService = const TrayService();
-  late final LevelProgressController _levelProgressController =
-      LevelProgressController()..attach(_localDataState);
   late final ValueNotifier<NoteExternalUpdate?> _noteExternalUpdate =
       ValueNotifier(null);
   late final NoteUploadQueue _noteUploadQueue = NoteUploadQueue(
@@ -93,10 +82,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   )..attach(_localDataState);
   UpdateCheckResult _updateCheckResult = UpdateCheckResult.idle;
   int _noteExternalUpdateRevision = 0;
-  Timer? _desktopWidgetPositionSaveTimer;
   Timer? _startupCloudSyncRetryTimer;
   Timer? _updateCheckRetryTimer;
-  AppConfig? _pendingDesktopWidgetPositionConfig;
   bool _syncingOnStartup = false;
   int _startupCloudSyncRetryAttempt = 0;
   bool _checkingForUpdates = false;
@@ -108,17 +95,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _desktopWidgetController.addListener(_syncDesktopWidgetWindow);
-    _levelProgressController.addListener(_handleLevelProgressChanged);
-    unawaited(
-      _desktopWidgetWindow.initialize(
-        onToggle: _desktopWidgetController.toggle,
-        onOpenHome: _openHomeFromDesktopWidget,
-        onPositionChanged: _handleDesktopWidgetPositionChanged,
-      ),
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncDesktopWidgetWindow();
       _syncAutoStart(_localDataState.config);
       _syncTray(_localDataState.config);
       _syncGlobalHotkey(_localDataState.config);
@@ -135,10 +112,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     if (widget.localDataState != oldWidget.localDataState) {
       _localDataState = widget.localDataState;
       _noteUploadQueue.attach(_localDataState);
-      _desktopWidgetController.attach(_localDataState);
-      _levelProgressController.attach(_localDataState);
-      _syncDesktopWidgetWindow();
-      _syncAutoStart(_localDataState.config);
+        _syncAutoStart(_localDataState.config);
       _syncTray(_localDataState.config);
       _syncGlobalHotkey(_localDataState.config);
       unawaited(_runStartupReportGeneration(_localDataState));
@@ -149,17 +123,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _desktopWidgetController.removeListener(_syncDesktopWidgetWindow);
-    _levelProgressController.removeListener(_handleLevelProgressChanged);
-    _flushDesktopWidgetPositionSave();
     _cancelStartupCloudSyncRetry();
     _cancelUpdateCheckRetry();
     unawaited(_globalHotkeyService.unregisterToggleWindowHotkey());
     unawaited(_trayService.dispose());
-    unawaited(_desktopWidgetWindow.dispose());
     _noteExternalUpdate.dispose();
-    _desktopWidgetController.dispose();
-    _levelProgressController.dispose();
     super.dispose();
   }
 
@@ -171,74 +139,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     _runUpdateCheckAfterResume();
   }
 
-  @override
-  void didChangePlatformBrightness() {
-    _syncDesktopWidgetWindow();
-  }
-
-  void _openHomeFromDesktopWidget() {
-    if (!mounted) {
-      return;
-    }
-    _selectSection(AppSection.home);
-  }
-
-  void _handleDesktopWidgetPositionChanged(DesktopWidgetPosition position) {
-    if (!mounted) {
-      return;
-    }
-    final config = _localDataState.config;
-    if (config.desktopWidgetPosition == position) {
-      return;
-    }
-    final nextConfig = config.copyWith(desktopWidgetPosition: position);
-    setState(() {
-      _localDataState = _localDataState.copyWith(config: nextConfig);
-    });
-    widget.onConfigChanged?.call(nextConfig);
-    _scheduleDesktopWidgetPositionSave(nextConfig);
-  }
-
-  void _scheduleDesktopWidgetPositionSave(AppConfig config) {
-    _pendingDesktopWidgetPositionConfig = config;
-    _desktopWidgetPositionSaveTimer?.cancel();
-    _desktopWidgetPositionSaveTimer = Timer(
-      const Duration(milliseconds: 200),
-      _flushDesktopWidgetPositionSave,
-    );
-  }
-
-  void _flushDesktopWidgetPositionSave() {
-    final config = _pendingDesktopWidgetPositionConfig;
-    if (config == null) {
-      return;
-    }
-    _pendingDesktopWidgetPositionConfig = null;
-    _desktopWidgetPositionSaveTimer?.cancel();
-    _desktopWidgetPositionSaveTimer = null;
-    unawaited(_saveDesktopWidgetPosition(config));
-  }
-
-  Future<void> _saveDesktopWidgetPosition(AppConfig config) async {
-    try {
-      await widget.localDataService.saveConfig(config);
-    } catch (_) {
-      // Position persistence is best-effort and should not interrupt dragging.
-    }
-  }
-
   void _selectSection(AppSection section) {
     if (_section == section) {
       return;
     }
     setState(() => _section = section);
-  }
-
-  void _handleLevelProgressChanged() {
-    if (mounted) {
-      setState(() {});
-    }
-    _syncDesktopWidgetWindow();
   }
 
   void _handleLocalDataStateChanged(LocalDataState state) {
@@ -247,11 +152,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     setState(() {
       _localDataState = state;
       _noteUploadQueue.attach(_localDataState);
-      _desktopWidgetController.attach(_localDataState);
-      _levelProgressController.attach(_localDataState);
     });
     widget.onConfigChanged?.call(state.config);
-    _syncDesktopWidgetWindow();
     _syncAutoStart(state.config);
     _syncTray(state.config);
     _syncGlobalHotkey(state.config);
@@ -557,76 +459,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     _updateCheckRetryTimer = null;
   }
 
-  void _syncDesktopWidgetWindow() {
-    if (!_desktopWidgetWindow.isSupported) {
-      return;
-    }
-    if (!_localDataState.config.showDesktopWidget) {
-      unawaited(_desktopWidgetWindow.hide());
-      return;
-    }
-
-    final state = _desktopWidgetController.state;
-    final config = _localDataState.config;
-    final progress = (_levelProgressController.state.experiencePercent / 100)
-        .clamp(0.0, 1.0);
-    final widgetWallpaper = config.desktopWidgetWallpaperSettings;
-    final widgetWallpaperMode = switch (widgetWallpaper.mode) {
-      DesktopWidgetWallpaperMode.defaultWhite => 0,
-      DesktopWidgetWallpaperMode.solid => 1,
-      DesktopWidgetWallpaperMode.image => 2,
-    };
-    final widgetWallpaperImagePath =
-        widgetWallpaper.mode == DesktopWidgetWallpaperMode.image
-        ? WallpaperService.resolveAbsolutePath(
-            settings: WallpaperSettings(
-              mode: WallpaperMode.image,
-              imagePath: widgetWallpaper.imagePath,
-              fillMode: WallpaperFillMode.cover,
-              opacity: 1.0,
-              blur: 0.0,
-              maskOpacity: 0.0,
-              solidColorArgb: 0xFFFFFFFF,
-            ),
-            dataDirectory: _localDataState.dataDirectory,
-          )
-        : null;
-    unawaited(
-      _desktopWidgetWindow.showOrUpdate(
-        DesktopWidgetWindowSnapshot(
-          running: state.running,
-          workSeconds: state.workSeconds,
-          coins: state.coins,
-          coinRatePerSecond: _desktopWidgetController.coinRatePerSecond,
-          level: _levelProgressController.state.level,
-          experiencePercent: _levelProgressController.state.experiencePercent,
-          progress: progress,
-          appFont: config.appFont,
-          fontScaleFactor: AppTheme.fontScaleFactor(config.fontScale),
-          position: config.desktopWidgetPosition,
-          orbMode: config.desktopWidgetOrbMode,
-          darkMode: _desktopWidgetDarkMode(config),
-          widgetWallpaperMode: widgetWallpaperMode,
-          widgetWallpaperColor: widgetWallpaper.solidColorArgb,
-          widgetWallpaperImagePath: widgetWallpaperImagePath,
-          widgetWallpaperOpacity: widgetWallpaper.opacity,
-        ),
-      ),
-    );
-  }
-
-  bool _desktopWidgetDarkMode(AppConfig config) {
-    switch (config.themeMode) {
-      case AppThemePreference.light:
-        return false;
-      case AppThemePreference.dark:
-        return true;
-      case AppThemePreference.system:
-        return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-            Brightness.dark;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -664,8 +496,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                         children: [
                           HomePage(
                             localDataState: _localDataState,
-                            desktopWidgetController: _desktopWidgetController,
-                            levelProgressController: _levelProgressController,
                             updateCheckResult: _updateCheckResult,
                             updateCheckService: widget.updateCheckService,
                             startupCloudSyncMessage: _startupCloudSyncMessage,
@@ -678,12 +508,18 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                             externalNoteUpdate: _noteExternalUpdate,
                             noteUploadQueue: _noteUploadQueue,
                             localDataService: widget.localDataService,
+                            onNoteSaved: (note) =>
+                                _notifyNoteSaved(note.kind, note.path),
                             onConfigChanged: (config) {
                               final state = _localDataState.copyWith(
                                 config: config,
                               );
                               _handleLocalDataStateChanged(state);
                             },
+                          ),
+                          ProjectCalendarPage(
+                            localDataState: _localDataState,
+                            externalNoteUpdate: _noteExternalUpdate,
                           ),
                           MemoryPage(localDataState: _localDataState),
                           SettingsPage(
@@ -704,17 +540,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                     ),
                   ],
                 ),
-                if (_localDataState.config.showDesktopWidget &&
-                    !_desktopWidgetWindow.isSupported)
-                  Positioned(
-                    right: 26,
-                    bottom: 24,
-                    child: DesktopStatusWidget(
-                      controller: _desktopWidgetController,
-                      levelProgressState: _levelProgressController.state,
-                      onOpenHome: _openHomeFromDesktopWidget,
-                    ),
-                  ),
               ],
             ),
           ),
@@ -804,6 +629,15 @@ class GlobalSidebar extends StatelessWidget {
             semanticLabel: l10n(context).coreSidebarNotesLabel,
             selected: selectedSection == AppSection.notes,
             onPressed: () => onSectionSelected(AppSection.notes),
+          ),
+          const SizedBox(height: 8),
+          _SidebarButton(
+            icon: _SidebarIconType.calendarDays,
+            semanticLabel: currentAppLanguage(context) == 'en'
+                ? 'Project calendar'
+                : '项目日历',
+            selected: selectedSection == AppSection.calendar,
+            onPressed: () => onSectionSelected(AppSection.calendar),
           ),
           const SizedBox(height: 8),
           _SidebarButton(
@@ -920,12 +754,13 @@ IconData _legacyMaterialIcon(_SidebarIconType icon) {
   return switch (icon) {
     _SidebarIconType.layoutDashboard => Icons.dashboard_outlined,
     _SidebarIconType.stickyNote => Icons.sticky_note_2_outlined,
+    _SidebarIconType.calendarDays => Icons.calendar_month_outlined,
     _SidebarIconType.bookOpen => Icons.menu_book_outlined,
     _SidebarIconType.settings => Icons.settings_outlined,
   };
 }
 
-enum _SidebarIconType { layoutDashboard, stickyNote, bookOpen, settings }
+enum _SidebarIconType { layoutDashboard, stickyNote, calendarDays, bookOpen, settings }
 
 class _SidebarLucideIcon extends StatelessWidget {
   const _SidebarLucideIcon({
@@ -1001,6 +836,23 @@ class _SidebarLucidePainter extends CustomPainter {
           ..cubicTo(15 * sx, 8.55 * sy, 15.45 * sx, 9 * sy, 16 * sx, 9 * sy)
           ..lineTo(21 * sx, 9 * sy);
         canvas.drawPath(foldPath, paint);
+        break;
+      case _SidebarIconType.calendarDays:
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(3 * sx, 4 * sy, 18 * sx, 17 * sy),
+            Radius.circular(2 * strokeScale),
+          ),
+          paint,
+        );
+        canvas.drawLine(point(3, 9), point(21, 9), paint);
+        canvas.drawLine(point(8, 2), point(8, 6), paint);
+        canvas.drawLine(point(16, 2), point(16, 6), paint);
+        for (final x in <double>[7, 12, 17]) {
+          for (final y in <double>[13, 17]) {
+            canvas.drawCircle(point(x, y), 0.7 * strokeScale, paint);
+          }
+        }
         break;
       case _SidebarIconType.bookOpen:
         final bookPath = Path()

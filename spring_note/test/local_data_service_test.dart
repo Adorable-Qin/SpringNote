@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spring_note/core/models/app_config.dart';
 import 'package:spring_note/core/models/cloud_sync_config.dart';
-import 'package:spring_note/core/models/desktop_widget_position.dart';
 import 'package:spring_note/core/models/model_config.dart';
 import 'package:spring_note/core/models/provider_config.dart';
 import 'package:spring_note/core/models/structured_note_section_config.dart';
@@ -12,45 +11,6 @@ import 'package:spring_note/core/services/local_data_service.dart';
 import 'package:spring_note/core/services/security_scoped_directory_access.dart';
 
 void main() {
-  test('app config round trips desktop widget position', () {
-    const position = DesktopWidgetPosition(
-      screenId: 'display-1',
-      x: 120.5,
-      y: 240.25,
-    );
-    final config = AppConfig.defaults().copyWith(
-      desktopWidgetPosition: position,
-    );
-
-    final reloaded = AppConfig.fromJson(config.toJson());
-    final cleared = reloaded.copyWith(desktopWidgetPosition: null);
-
-    expect(reloaded.desktopWidgetPosition, position);
-    expect(cleared.desktopWidgetPosition, isNull);
-    expect(AppConfig.fromJson({}).desktopWidgetPosition, isNull);
-    expect(
-      AppConfig.fromJson({
-        'desktopWidgetPosition': {'x': double.nan, 'y': 10},
-      }).desktopWidgetPosition,
-      isNull,
-    );
-    expect(
-      AppConfig.fromJson({
-        'desktopWidgetPosition': {'x': -1000000, 'y': 1000000},
-      }).desktopWidgetPosition,
-      const DesktopWidgetPosition(x: -1000000, y: 1000000),
-    );
-  });
-
-  test('app config round trips desktop widget orb mode', () {
-    final config = AppConfig.defaults().copyWith(desktopWidgetOrbMode: true);
-
-    final reloaded = AppConfig.fromJson(config.toJson());
-
-    expect(reloaded.desktopWidgetOrbMode, isTrue);
-    expect(AppConfig.fromJson({}).desktopWidgetOrbMode, isFalse);
-  });
-
   test('app config round trips theme mode preference', () {
     final config = AppConfig.defaults().copyWith(
       themeMode: AppThemePreference.dark,
@@ -269,7 +229,7 @@ void main() {
     final state = await service.initialize();
     final provider = ProviderConfig.template('OpenAI');
     final config = state.config.copyWith(
-      dailyWorkHours: 9,
+      showUpdates: false,
       apiLogEnabled: true,
       providers: [provider],
       defaultModels: {
@@ -281,7 +241,7 @@ void main() {
     await service.saveConfig(config);
     final reloaded = await service.readConfig();
 
-    expect(reloaded.dailyWorkHours, 9);
+    expect(reloaded.showUpdates, isFalse);
     expect(reloaded.apiLogEnabled, isTrue);
     expect(reloaded.providers, hasLength(1));
     expect(reloaded.providers.first.name, 'OpenAI');
@@ -329,7 +289,7 @@ void main() {
     ).writeAsString('stale derived index');
     final migrated = await service.migrateDataDirectory(
       currentState: state.copyWith(
-        config: state.config.copyWith(dailyWorkHours: 7),
+        config: state.config.copyWith(fontScale: 123),
       ),
       targetDirectory: target.path,
     );
@@ -354,7 +314,7 @@ void main() {
 
     final reinitialized = await service.initialize();
     expect(reinitialized.dataDirectory, target.absolute.path);
-    expect(reinitialized.config.dailyWorkHours, 7);
+    expect(reinitialized.config.fontScale, 123);
   });
 
   test(
@@ -462,7 +422,7 @@ void main() {
       final state = await service.initialize();
       final configFile = File(state.configPath);
       final configJson = jsonDecode(await configFile.readAsString()) as Map;
-      configJson['dailyWorkHours'] = 6;
+      configJson['fontScale'] = 123;
       const encoder = JsonEncoder.withIndent('  ');
       await configFile.writeAsString(
         '${encoder.convert(configJson)}\n  }\n}\n',
@@ -470,7 +430,7 @@ void main() {
 
       final reinitialized = await service.initialize();
 
-      expect(reinitialized.config.dailyWorkHours, 6);
+      expect(reinitialized.config.fontScale, 123);
       expect(
         await configFile.parent.list().any(
           (entity) =>
@@ -548,17 +508,17 @@ void main() {
       await target.create(recursive: true);
       await File(
         '${target.path}${Platform.pathSeparator}config.json',
-      ).writeAsString('{"dailyWorkHours": 6, "showTrayIcon": false}\n');
+      ).writeAsString('{"fontScale": 123, "showTrayIcon": false}\n');
 
       final migrated = await service.migrateDataDirectory(
         currentState: state.copyWith(
-          config: state.config.copyWith(dailyWorkHours: 9),
+          config: state.config.copyWith(fontScale: 110),
         ),
         targetDirectory: target.path,
       );
 
       expect(migrated.dataDirectory, target.absolute.path);
-      expect(migrated.config.dailyWorkHours, 6);
+      expect(migrated.config.fontScale, 123);
       expect(migrated.config.showTrayIcon, isFalse);
       expect(migrated.config.customDataDirectory, target.absolute.path);
       expect(access.savedBookmarks, contains(target.absolute.path));
@@ -566,7 +526,7 @@ void main() {
         await File(
           '${target.path}${Platform.pathSeparator}config.json',
         ).readAsString(),
-        contains('"dailyWorkHours": 6'),
+        contains('"fontScale": 123'),
       );
     },
   );

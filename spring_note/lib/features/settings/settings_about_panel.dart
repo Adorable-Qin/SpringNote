@@ -5,11 +5,9 @@ class _AboutPanel extends StatelessWidget {
 
   final UpdateCheckService updateCheckService;
 
-  static const _websiteUrl = 'https://radiant303.github.io/SpringNote';
   static const _githubUrl = 'https://github.com/Radiant303/SpringNote';
   static const _licenseUrl =
       'https://github.com/Radiant303/SpringNote/blob/main/LICENSE';
-  static const _qqGroupUrl = 'https://qm.qq.com/q/4gWWKvwhP2';
   static const _externalLinkService = ExternalLinkService();
 
   @override
@@ -65,11 +63,6 @@ class _AboutPanel extends StatelessWidget {
               onTap: () => _checkForUpdates(context),
             ),
             _AboutListRow(
-              icon: _AboutRowIconType.globe,
-              label: l10n(context).settingsWebsite,
-              onTap: () => _externalLinkService.open(_websiteUrl),
-            ),
-            _AboutListRow(
               icon: _AboutRowIconType.github,
               label: 'GitHub',
               onTap: () => _externalLinkService.open(_githubUrl),
@@ -78,11 +71,6 @@ class _AboutPanel extends StatelessWidget {
               icon: _AboutRowIconType.license,
               label: l10n(context).settingsLicense,
               onTap: () => _externalLinkService.open(_licenseUrl),
-            ),
-            _AboutListRow(
-              icon: _AboutRowIconType.qq,
-              label: l10n(context).settingsJoinQQGroup,
-              onTap: () => _externalLinkService.open(_qqGroupUrl),
             ),
           ],
         ),
@@ -180,7 +168,7 @@ class _AboutListCard extends StatelessWidget {
   }
 }
 
-enum _AboutRowIconType { code, system, update, globe, github, license, qq }
+enum _AboutRowIconType { code, system, update, github, license }
 
 class _PubspecVersionRow extends StatelessWidget {
   const _PubspecVersionRow();
@@ -439,16 +427,6 @@ class _AboutRowIconPainter extends CustomPainter {
           ..lineTo(4.5 * sx, 19.5 * sy);
         canvas.drawPath(bottomArrow, paint);
         break;
-      case _AboutRowIconType.globe:
-        canvas.drawCircle(p(12, 12), 8 * strokeScale, paint);
-        canvas.drawOval(
-          Rect.fromCenter(center: p(12, 12), width: 8 * sx, height: 16 * sy),
-          paint,
-        );
-        canvas.drawLine(p(4, 12), p(20, 12), paint);
-        canvas.drawLine(p(6.2, 8), p(17.8, 8), paint);
-        canvas.drawLine(p(6.2, 16), p(17.8, 16), paint);
-        break;
       case _AboutRowIconType.github:
         final path = Path()
           ..moveTo(12 * sx, 3.8 * sy)
@@ -552,17 +530,6 @@ class _AboutRowIconPainter extends CustomPainter {
         canvas.drawLine(p(14, 7.5), p(18, 7.5), paint);
         canvas.drawLine(p(9.5, 11.5), p(15.5, 11.5), paint);
         canvas.drawLine(p(9.5, 15), p(14, 15), paint);
-        break;
-      case _AboutRowIconType.qq:
-        canvas.drawRRect(rr(4.5, 5.5, 15, 11.5, 3.4), paint);
-        final tail = Path()
-          ..moveTo(9.2 * sx, 16.8 * sy)
-          ..lineTo(7.4 * sx, 20 * sy)
-          ..lineTo(11.8 * sx, 16.8 * sy);
-        canvas.drawPath(tail, paint);
-        canvas.drawCircle(p(9, 11.2), 0.9 * strokeScale, fillPaint);
-        canvas.drawCircle(p(12, 11.2), 0.9 * strokeScale, fillPaint);
-        canvas.drawCircle(p(15, 11.2), 0.9 * strokeScale, fillPaint);
         break;
     }
   }

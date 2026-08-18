@@ -215,9 +215,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageTitle => 'Home';
 
   @override
-  String get homeEarningsTotalPrefix => 'Total earnings ';
-
-  @override
   String get homeActivityRecent => 'Recently active';
 
   @override
@@ -388,11 +385,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homeGlobalSignDeleteConfirmMessage =>
       'It won\'t be written to the daily note, won\'t be organized by AI, and can\'t be restored.';
-
-  @override
-  String homeDesktopLevelTitle(Object level, Object percent) {
-    return 'Lv.$level Intern ($percent%)';
-  }
 
   @override
   String homeActivityCountTimes(Object count) {
@@ -1251,21 +1243,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsPersonalInfoTitle => 'Personal info';
-
-  @override
-  String get settingsDailyWorkHours => 'Daily work hours';
-
-  @override
-  String get settingsHoursSuffix => 'h';
-
-  @override
-  String get settingsDailySalary => 'Daily salary';
-
-  @override
-  String get settingsIndustry => 'Industry';
-
-  @override
   String get settingsFontDisplayTitle => 'Font & display';
 
   @override
@@ -1356,21 +1333,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDataSaveTitle => 'Data storage';
 
   @override
-  String get settingsComponentTitle => 'Widget settings';
-
-  @override
-  String get settingsShowDesktopWidget => 'Show desktop widget';
-
-  @override
-  String get settingsOrbMode => 'Desktop widget orb mode';
-
-  @override
-  String get settingsWidgetWallpaperTitle => 'Widget wallpaper';
-
-  @override
-  String get settingsWidgetWallpaperModeDefaultWhite => 'Default white';
-
-  @override
   String get settingsPromptTitle => 'Prompts';
 
   @override
@@ -1403,9 +1365,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsVariableRawInput => 'New quick note';
-
-  @override
-  String get settingsVariableIndustry => 'User\'s industry';
 
   @override
   String get settingsVariableDailyContent => 'Today\'s daily note content';
@@ -1629,13 +1588,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCheckForUpdates => 'Check for updates';
 
   @override
-  String get settingsWebsite => 'Website';
-
-  @override
   String get settingsLicense => 'License';
-
-  @override
-  String get settingsJoinQQGroup => 'Join QQ group';
 
   @override
   String get settingsCheckingForUpdates => 'Checking for updates...';

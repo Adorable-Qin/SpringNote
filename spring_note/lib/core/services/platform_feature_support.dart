@@ -10,7 +10,6 @@ class PlatformFeatureSupport {
 
   static bool get supportsTray => Platform.isWindows || Platform.isMacOS;
 
-  static bool get supportsDesktopWidget => Platform.isWindows || Platform.isMacOS;
 
   static bool _isMacOS13OrNewer() {
     final match = RegExp(

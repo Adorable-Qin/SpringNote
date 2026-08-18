@@ -59,6 +59,7 @@ class NotesPage extends StatefulWidget {
     this.imagePicker,
     this.localDataService,
     this.onConfigChanged,
+    this.onNoteSaved,
   });
 
   final LocalDataState localDataState;
@@ -72,6 +73,7 @@ class NotesPage extends StatefulWidget {
   final NoteImagePicker? imagePicker;
   final LocalDataService? localDataService;
   final ValueChanged<AppConfig>? onConfigChanged;
+  final ValueChanged<NoteFile>? onNoteSaved;
 
   @override
   State<NotesPage> createState() => _NotesPageState();
@@ -576,6 +578,7 @@ class _NotesPageState extends State<NotesPage> {
       _saving = false;
       _statusText = l10n(context).notesSaved;
     });
+    widget.onNoteSaved?.call(updatedNote);
     if (_searchController.text.trim().isNotEmpty) {
       _scheduleSearch();
     }

@@ -1,6 +1,5 @@
 {
   "homePageTitle": "Home",
-  "homeEarningsTotalPrefix": "Total earnings ",
   "homeActivityRecent": "Recently active",
   "homeActivityWeeklySummary": "This week",
   "homeActivityStreak": "Streak",
@@ -49,7 +48,6 @@
   "homeGlobalSignTooltipDelete": "Delete",
   "homeGlobalSignDeleteConfirmTitle": "Delete this global sign?",
   "homeGlobalSignDeleteConfirmMessage": "It won't be written to the daily note, won't be organized by AI, and can't be restored.",
-  "homeDesktopLevelTitle": "Lv.{level} Intern ({percent}%)",
   "homeActivityCountTimes": "{count} times",
   "homeActivityCountDays": "{count} days"
 }

@@ -1,6 +1,5 @@
 {
   "homePageTitle": "首页",
-  "homeEarningsTotalPrefix": "累计总收益 ",
   "homeActivityRecent": "最近活跃",
   "homeActivityWeeklySummary": "本周总结",
   "homeActivityStreak": "连续记录",
@@ -49,7 +48,6 @@
   "homeGlobalSignTooltipDelete": "删除",
   "homeGlobalSignDeleteConfirmTitle": "删除这条全局签？",
   "homeGlobalSignDeleteConfirmMessage": "删除后不会写入日报，也不会经过 AI 整理，且无法恢复。",
-  "homeDesktopLevelTitle": "Lv.{level} 实习生 ({percent}%)",
   "homeActivityCountTimes": "{count} 次",
   "homeActivityCountDays": "{count} 天"
 }

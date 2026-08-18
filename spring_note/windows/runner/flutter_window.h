@@ -8,7 +8,6 @@
 
 #include "auto_start_manager.h"
 #include "clipboard_image_manager.h"
-#include "desktop_widget_window.h"
 #include "global_hotkey_manager.h"
 #include "tray_manager.h"
 #include "win32_window.h"
@@ -34,8 +33,6 @@ class FlutterWindow : public Win32Window {
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
 
-  // Native always-on-top desktop widget controlled by Flutter state.
-  std::unique_ptr<DesktopWidgetWindow> desktop_widget_window_;
 
   // Native clipboard bitmap reader used by editor image paste.
   std::unique_ptr<ClipboardImageManager> clipboard_image_manager_;

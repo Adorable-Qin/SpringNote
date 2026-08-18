@@ -401,7 +401,7 @@ class AiClientService {
               aiInstruction: section.aiInstruction,
             ),
         ],
-        industry: config.industry,
+        industry: '',
         language: resolveAppLanguage(config.language),
         apiLogEnabled: config.apiLogEnabled,
       ),
@@ -446,14 +446,13 @@ class AiClientService {
         existingMarkdown: existingMarkdown,
         rawInput: note.rawInput,
         date: _formatDate(date),
-        industry: config.industry,
+        industry: '',
         mergePrompt: _renderDailyMergePrompt(
           config.dailyMergePrompt,
           language: resolveAppLanguage(config.language),
           date: _formatDate(date),
           existingMarkdown: existingMarkdown,
           note: note,
-          industry: config.industry,
         ),
         jsonOutput: false,
         language: resolveAppLanguage(config.language),
@@ -489,7 +488,7 @@ class AiClientService {
         existingMarkdown: dailyMarkdown,
         rawInput: rawInput,
         date: _formatDate(date),
-        industry: config.industry,
+        industry: '',
         mergePrompt: _renderGlobalSignPrompt(
           config.globalSignPrompt,
           language: resolveAppLanguage(config.language),
@@ -497,7 +496,6 @@ class AiClientService {
           dailyMarkdown: dailyMarkdown,
           currentItemsJson: currentItemsJson,
           rawInput: rawInput,
-          industry: config.industry,
         ),
         jsonOutput: true,
         language: resolveAppLanguage(config.language),
@@ -530,7 +528,6 @@ class AiClientService {
         language: language,
         periodLabel: periodLabel,
         sourceMarkdown: sourceMarkdown,
-        industry: config.industry,
       ),
     );
   }
@@ -579,7 +576,7 @@ class AiClientService {
         targetPath: targetPath,
         dailyNotesDirectory: dailyNotesDirectory,
         weeklyNotesDirectory: weeklyNotesDirectory,
-        industry: config.industry,
+        industry: '',
         dailyMergePrompt: config.dailyMergePrompt.trim().isEmpty
             ? defaultDailyMergePromptFor(resolveAppLanguage(config.language))
             : config.dailyMergePrompt,
@@ -617,7 +614,7 @@ class AiClientService {
       model: _toRustModel(selection.model),
       sourceMarkdown: sourceMarkdown,
       periodLabel: periodLabel,
-      industry: config.industry,
+      industry: '',
       reportPrompt: reportPrompt,
       language: resolveAppLanguage(config.language),
       apiLogEnabled: config.apiLogEnabled,
@@ -860,7 +857,6 @@ class AiClientService {
     required String date,
     required String existingMarkdown,
     required StructuredWorkNote note,
-    required String industry,
   }) {
     final emptyText = language == 'en' ? '(empty)' : '（空）';
     final replacements = <String, String>{
@@ -881,9 +877,7 @@ class AiClientService {
         note.itemsFor(StructuredNoteSectionIds.c),
         emptyText,
       ),
-      '{industry}': industry.trim().isEmpty
-          ? (language == 'en' ? 'Not set' : '未设置')
-          : industry.trim(),
+      '{industry}': '',
     };
     var rendered = template.trim().isEmpty
         ? defaultDailyMergePromptFor(language)
@@ -901,7 +895,6 @@ class AiClientService {
     required String dailyMarkdown,
     required String currentItemsJson,
     required String rawInput,
-    required String industry,
   }) {
     final replacements = <String, String>{
       '{date}': date,
@@ -912,9 +905,7 @@ class AiClientService {
           ? '{"items": []}'
           : currentItemsJson.trim(),
       '{raw_input}': rawInput.trim(),
-      '{industry}': industry.trim().isEmpty
-          ? (language == 'en' ? 'Not set' : '未设置')
-          : industry.trim(),
+      '{industry}': '',
     };
     var rendered = template.trim().isEmpty
         ? defaultGlobalSignPromptFor(language)
@@ -930,7 +921,6 @@ class AiClientService {
     required String language,
     required String periodLabel,
     required String sourceMarkdown,
-    required String industry,
   }) {
     final emptyText = language == 'en' ? '(empty)' : '（空）';
     final replacements = <String, String>{
@@ -938,9 +928,7 @@ class AiClientService {
       '{source_markdown}': sourceMarkdown.trim().isEmpty
           ? emptyText
           : sourceMarkdown.trim(),
-      '{industry}': industry.trim().isEmpty
-          ? (language == 'en' ? 'Not set' : '未设置')
-          : industry.trim(),
+      '{industry}': '',
     };
     var rendered = template.trim().isEmpty
         ? defaultWeeklyReportPromptFor(language)

@@ -20,10 +20,6 @@ class MainFlutterWindow: NSWindow {
       appDelegate.clipboardImageController.attach(
         messenger: flutterViewController.engine.binaryMessenger
       )
-      appDelegate.desktopWidgetController.attach(
-        mainWindow: self,
-        messenger: flutterViewController.engine.binaryMessenger
-      )
       appDelegate.globalHotkeyController.attach(
         mainWindow: self,
         messenger: flutterViewController.engine.binaryMessenger
