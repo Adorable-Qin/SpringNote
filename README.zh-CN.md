@@ -185,4 +185,4 @@ SpringNote-Agenda 及本仓库中的修改均以 **GNU Affero General Public Lic
   <img src="https://count.getloli.com/@SpringNote-Agenda?name=SpringNote-Agenda&theme=miku&padding=7&offset=0&align=center&scale=0.3&pixelated=1&darkmode=auto" alt="visitor count" />
 </p>
 
-[![Star History Chart](https://api.star-history.com/chart?repos=Adorable-Qin/SpringNote-Agenda&type=date&legend=top-left)](https://www.star-history.com/?repos=Adorable-Qin%2FSpringNote-Agenda&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/chart?repos=Adorable-Qin/SpringNote-Agenda&type=date&legend=top-left&sealed_token=p-YfymFA7ue3BAyI9sEqvOqSSlmL13MIzu5oQ8qx7kGWbIELXEr_urdk6zSpZXDgx7GQug143WFMEBy_YcagvYmSmdcKDK6ROPm1yOIgCaBT_zHBlPI1LOxCexFQYpCug1-X2jjypHvo2H2jB4zO3YJkP3GDoOzOZb64d5dLrFAIZUxtli5ktiwTroLX)](https://www.star-history.com/?repos=Adorable-Qin%2FSpringNote-Agenda&type=date&legend=top-left)
