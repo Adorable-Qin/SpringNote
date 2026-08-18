@@ -20,11 +20,13 @@ class ProjectCalendarPage extends StatefulWidget {
     required this.localDataState,
     this.deadlineService = const ProjectDeadlineService(),
     this.externalNoteUpdate,
+    this.onNoteSaved,
   });
 
   final LocalDataState localDataState;
   final ProjectDeadlineService deadlineService;
   final ValueListenable<NoteExternalUpdate?>? externalNoteUpdate;
+  final void Function(NoteKind kind, String path)? onNoteSaved;
 
   @override
   State<ProjectCalendarPage> createState() => _ProjectCalendarPageState();
@@ -37,6 +39,7 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
   bool _loading = true;
   String? _error;
   int _loadGeneration = 0;
+  final Set<String> _updatingDeadlines = {};
 
   @override
   void initState() {
@@ -156,12 +159,25 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
                 onPressed: () => _changeMonth(-1),
               ),
               Expanded(
-                child: Text(
-                  strings.monthLabel(_focusedMonth),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      strings.monthLabel(_focusedMonth),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      strings.currentWeek(_isoWeekNumber(DateTime.now())),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colors.textSubtle,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SpringNoteIconButton(
@@ -221,25 +237,30 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
     );
   }
 
-  Widget _buildAgendaCard(
-    _CalendarStrings strings, {
-    bool bounded = true,
-  }) {
+  Widget _buildAgendaCard(_CalendarStrings strings, {bool bounded = true}) {
     final colors = AppTheme.colors(context);
     final selectedDeadlines = _deadlinesFor(_selectedDate);
     final today = _dateOnly(DateTime.now());
     final overdue = _deadlines
-        .where((deadline) => deadline.dueDate.isBefore(today))
+        .where(
+          (deadline) =>
+              !deadline.isCompleted && deadline.dueDate.isBefore(today),
+        )
         .length;
-    final dueToday = _deadlinesFor(today).length;
+    final dueToday = _deadlinesFor(
+      today,
+    ).where((deadline) => !deadline.isCompleted).length;
+    final completed = _deadlines
+        .where((deadline) => deadline.isCompleted)
+        .length;
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           strings.selectedDateLabel(_selectedDate),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 6),
         Text(
@@ -260,6 +281,10 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
             _StatusChip(
               label: strings.dueToday(dueToday),
               color: const Color(0xFFD97706),
+            ),
+            _StatusChip(
+              label: strings.completed(completed),
+              color: const Color(0xFF16A34A),
             ),
           ],
         ),
@@ -287,6 +312,10 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
             _DeadlineCard(
               deadline: selectedDeadlines[index],
               strings: strings,
+              updating: _updatingDeadlines.contains(
+                _deadlineKey(selectedDeadlines[index]),
+              ),
+              onToggle: () => _toggleDeadline(selectedDeadlines[index]),
             ),
             if (index != selectedDeadlines.length - 1)
               const SizedBox(height: 10),
@@ -300,6 +329,46 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
       child: bounded ? SingleChildScrollView(child: content) : content,
     );
   }
+
+  Future<void> _toggleDeadline(ProjectDeadline deadline) async {
+    final key = _deadlineKey(deadline);
+    if (_updatingDeadlines.contains(key)) {
+      return;
+    }
+    setState(() => _updatingDeadlines.add(key));
+    try {
+      await widget.deadlineService.setCompleted(
+        deadline,
+        completed: !deadline.isCompleted,
+      );
+      await _loadDeadlines();
+      widget.onNoteSaved?.call(deadline.noteKind, deadline.notePath);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              !deadline.isCompleted
+                  ? _CalendarStrings.of(context).markedCompleted
+                  : _CalendarStrings.of(context).markedIncomplete,
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _updatingDeadlines.remove(key));
+      }
+    }
+  }
+
+  String _deadlineKey(ProjectDeadline deadline) =>
+      '${deadline.notePath}:${deadline.lineNumber}';
 
   List<ProjectDeadline> _deadlinesFor(DateTime date) =>
       _deadlines.where((deadline) => deadline.isDueOn(date)).toList();
@@ -415,7 +484,9 @@ class _CalendarDayTile extends StatelessWidget {
                         width: 4,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: _deadlineColor(date),
+                          color: deadline.isCompleted
+                              ? const Color(0xFF16A34A)
+                              : _deadlineColor(date),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -425,12 +496,18 @@ class _CalendarDayTile extends StatelessWidget {
                           deadline.summary,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: inFocusedMonth
-                                ? colors.textMuted
-                                : colors.textSubtle.withValues(alpha: 0.5),
-                            fontSize: 9.5,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: deadline.isCompleted
+                                    ? const Color(0xFF16A34A)
+                                    : inFocusedMonth
+                                    ? colors.textMuted
+                                    : colors.textSubtle.withValues(alpha: 0.5),
+                                decoration: deadline.isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                fontSize: 9.5,
+                              ),
                         ),
                       ),
                     ],
@@ -445,15 +522,24 @@ class _CalendarDayTile extends StatelessWidget {
 }
 
 class _DeadlineCard extends StatelessWidget {
-  const _DeadlineCard({required this.deadline, required this.strings});
+  const _DeadlineCard({
+    required this.deadline,
+    required this.strings,
+    required this.onToggle,
+    required this.updating,
+  });
 
   final ProjectDeadline deadline;
   final _CalendarStrings strings;
+  final VoidCallback onToggle;
+  final bool updating;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colors(context);
-    final color = _deadlineColor(deadline.dueDate);
+    final color = deadline.isCompleted
+        ? const Color(0xFF16A34A)
+        : _deadlineColor(deadline.dueDate);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -464,6 +550,16 @@ class _DeadlineCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Tooltip(
+            message: deadline.isCompleted
+                ? strings.markIncomplete
+                : strings.markCompleted,
+            child: Checkbox(
+              value: deadline.isCompleted,
+              onChanged: updating ? null : (_) => onToggle(),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
           Container(
             width: 4,
             height: 42,
@@ -481,6 +577,10 @@ class _DeadlineCard extends StatelessWidget {
                   deadline.summary,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
+                    decoration: deadline.isCompleted
+                        ? TextDecoration.lineThrough
+                        : null,
+                    color: deadline.isCompleted ? colors.textSubtle : null,
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -492,6 +592,16 @@ class _DeadlineCard extends StatelessWidget {
                     context,
                   ).textTheme.bodySmall?.copyWith(color: colors.textSubtle),
                 ),
+                if (deadline.isCompleted) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    strings.completedLabel,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: const Color(0xFF16A34A),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -527,11 +637,7 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _EmptyAgenda extends StatelessWidget {
-  const _EmptyAgenda({
-    required this.icon,
-    required this.message,
-    this.detail,
-  });
+  const _EmptyAgenda({required this.icon, required this.message, this.detail});
 
   final IconData icon;
   final String message;
@@ -568,9 +674,8 @@ class _CalendarStrings {
 
   final bool english;
 
-  static _CalendarStrings of(BuildContext context) => _CalendarStrings(
-    currentAppLanguage(context) == 'en',
-  );
+  static _CalendarStrings of(BuildContext context) =>
+      _CalendarStrings(currentAppLanguage(context) == 'en');
 
   String get title => english ? 'Project Calendar' : '项目日历';
   String get today => english ? 'Today' : '今天';
@@ -582,11 +687,10 @@ class _CalendarStrings {
       english ? 'No reminder on this date' : '这一天没有提醒';
   String get selectAnotherDate =>
       english ? 'Select another date to view its reminders.' : '请选择其他日期查看提醒。';
-  String get loadFailed =>
-      english ? 'Unable to load deadlines' : '截止日期加载失败';
+  String get loadFailed => english ? 'Unable to load deadlines' : '截止日期加载失败';
   String get formatHint => english
-      ? 'Add a line such as “Due: 2026-08-30” or “Deadline: 2026/08/30” to a note.'
-      : '在笔记中写入“截止日期：2026-08-30”或“截止：2026/08/30”即可显示。';
+      ? 'Add “Due: 2026-08-30” or “Due: 8/30”. Plain dates can also be added from the editor prompt.'
+      : '支持“截止：2026-08-30”或“截止：8月30日”；只写日期时，编辑器也会询问是否加入日历。';
 
   List<String> get weekdays => english
       ? const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -596,16 +700,25 @@ class _CalendarStrings {
       ? '${_englishMonths[date.month - 1]} ${date.year}'
       : '${date.year}年${date.month}月';
 
+  String currentWeek(int week) =>
+      english ? 'Current week · W$week' : '当前周 · W$week';
+
   String selectedDateLabel(DateTime date) => english
       ? '${_englishMonths[date.month - 1]} ${date.day}, ${date.year}'
       : '${date.year}年${date.month}月${date.day}日';
 
-  String deadlineCount(int count) => english
-      ? '$count reminder${count == 1 ? '' : 's'}'
-      : '$count 条截止提醒';
+  String deadlineCount(int count) =>
+      english ? '$count reminder${count == 1 ? '' : 's'}' : '$count 条截止提醒';
   String overdue(int count) => english ? '$count overdue' : '$count 条已逾期';
   String dueToday(int count) => english ? '$count due today' : '$count 条今天到期';
-  String line(int lineNumber) => english ? 'line $lineNumber' : '第 $lineNumber 行';
+  String completed(int count) => english ? '$count completed' : '$count 条已完成';
+  String get completedLabel => english ? 'Completed' : '已完成';
+  String get markCompleted => english ? 'Mark as completed' : '标记为已完成';
+  String get markIncomplete => english ? 'Mark as incomplete' : '标记为未完成';
+  String get markedCompleted => english ? 'Marked as completed' : '已标记为完成';
+  String get markedIncomplete => english ? 'Marked as incomplete' : '已取消完成标记';
+  String line(int lineNumber) =>
+      english ? 'line $lineNumber' : '第 $lineNumber 行';
   String kind(NoteKind kind) => switch (kind) {
     NoteKind.daily => english ? 'Daily note' : '日报',
     NoteKind.weekly => english ? 'Weekly note' : '周报',
@@ -636,6 +749,15 @@ List<DateTime> _calendarDays(DateTime month) {
 
 DateTime _monthStart(DateTime date) => DateTime(date.year, date.month);
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+
+int _isoWeekNumber(DateTime date) {
+  final start = _dateOnly(date).subtract(Duration(days: date.weekday - 1));
+  final isoYear = start.add(const Duration(days: 3)).year;
+  final firstWeekStart = _dateOnly(
+    DateTime(isoYear, 1, 4),
+  ).subtract(Duration(days: DateTime(isoYear, 1, 4).weekday - 1));
+  return (start.difference(firstWeekStart).inDays ~/ 7) + 1;
+}
 
 bool _sameDate(DateTime left, DateTime right) =>
     left.year == right.year &&

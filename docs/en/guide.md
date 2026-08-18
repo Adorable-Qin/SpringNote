@@ -1,6 +1,6 @@
-# SpringNote Manual
+# SpringNote-Agenda Manual
 
-This manual is organized around SpringNote's actual usage flow. You can start with "Quick Start", or jump directly to the Home page, Notebook, Memory Book, or Settings.
+This manual is organized around SpringNote-Agenda's actual usage flow. You can start with "Quick Start", or jump directly to the Home page, Notebook, Memory Book, or Settings.
 
 ## Getting Started
 

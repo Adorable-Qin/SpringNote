@@ -364,8 +364,7 @@ pub async fn fetch_provider_models(
 
 pub async fn generate_structured_note(request: StructuredNoteRequest) -> StructuredNoteResult {
     let sections = request.sections.clone();
-    let system_prompt =
-        structured_system_prompt(&request.industry, &sections, &request.language);
+    let system_prompt = structured_system_prompt(&sections, &request.language);
     let result = chat(AiChatRequest {
         app_data_dir: request.app_data_dir,
         provider: request.provider,
@@ -437,11 +436,7 @@ pub async fn generate_monthly_report(request: ReportRequest) -> AiTextResult {
         &request.language,
     );
     let system_prompt = with_markdown_attachment_preservation_instruction(
-        with_industry_context(
-            monthly_report_system_prompt(&request.language),
-            &request.industry,
-            &request.language,
-        ),
+        monthly_report_system_prompt(&request.language).to_string(),
         &request.language,
     );
     chat(AiChatRequest {
@@ -579,21 +574,13 @@ pub async fn memory_tool_chat_stream(
     }
 
     let response = if request.provider.protocol == "gemini" {
-        ai_gemini::memory_tool_chat_stream(request.clone(), system_prompt, sink.clone())
-            .await
+        ai_gemini::memory_tool_chat_stream(request.clone(), system_prompt, sink.clone()).await
     } else if request.provider.protocol == "claude" {
-        ai_claude::memory_tool_chat_stream(request.clone(), system_prompt, sink.clone())
-            .await
+        ai_claude::memory_tool_chat_stream(request.clone(), system_prompt, sink.clone()).await
     } else if ai_openai::is_responses_endpoint(&request.provider) {
-        ai_openai::memory_tool_responses_stream(
-            request.clone(),
-            system_prompt,
-            sink.clone(),
-        )
-        .await
+        ai_openai::memory_tool_responses_stream(request.clone(), system_prompt, sink.clone()).await
     } else {
-        ai_openai::memory_tool_chat_stream(request.clone(), system_prompt, sink.clone())
-            .await
+        ai_openai::memory_tool_chat_stream(request.clone(), system_prompt, sink.clone()).await
     };
 
     if let Err(error) = response {
@@ -746,11 +733,7 @@ fn weekly_report_prompts(request: &ReportRequest) -> (String, String) {
 
     (
         with_markdown_attachment_preservation_instruction(
-            with_industry_context(
-                weekly_report_system_prompt(&request.language),
-                &request.industry,
-                &request.language,
-            ),
+            weekly_report_system_prompt(&request.language).to_string(),
             &request.language,
         ),
         report_user_prompt(
@@ -778,10 +761,10 @@ fn memory_tool_system_prompt(language: &str) -> &'static str {
 }
 
 fn render_daily_merge_prompt(template: &str, request: &DailyMergeRequest) -> String {
-    let (empty_text, no_industry) = if is_english(&request.language) {
-        ("(empty)", "Not set")
+    let empty_text = if is_english(&request.language) {
+        "(empty)"
     } else {
-        ("（空）", "未设置")
+        "（空）"
     };
     template
         .replace("{date}", request.date.trim())
@@ -794,14 +777,7 @@ fn render_daily_merge_prompt(template: &str, request: &DailyMergeRequest) -> Str
             },
         )
         .replace("{raw_input}", request.raw_input.trim())
-        .replace(
-            "{industry}",
-            if request.industry.trim().is_empty() {
-                no_industry
-            } else {
-                request.industry.trim()
-            },
-        )
+        .replace("{industry}", "")
 }
 
 fn daily_merge_user_prompt(_request: &DailyMergeRequest) -> String {
@@ -1080,7 +1056,6 @@ impl MemoryToolChatStreamEvent {
 }
 
 fn structured_system_prompt(
-    industry: &str,
     sections: &[StructuredNoteSectionDefinition],
     language: &str,
 ) -> String {
@@ -1104,30 +1079,29 @@ fn structured_system_prompt(
     });
     let prompt = if is_english(language) {
         format!(
-            "You are SpringNote's daily-note structuring assistant. Turn the user's work records and any work information visible in images into JSON. Do not output Markdown or explanations.\n\nSection definitions:\n{}\n\nThe JSON format must be:\n{}\nReturn the section IDs exactly as given; when a section has no content, return an empty items array.\nYou may summarize facts that are clearly visible in images (UI, text, errors, flows, task states); never invent information not present in the images.",
+            "You are SpringNote-Agenda's daily-note structuring assistant. Turn the user's work records and any work information visible in images into JSON. Do not output Markdown or explanations.\n\nSection definitions:\n{}\n\nThe JSON format must be:\n{}\nReturn the section IDs exactly as given; when a section has no content, return an empty items array.\nYou may summarize facts that are clearly visible in images (UI, text, errors, flows, task states); never invent information not present in the images.",
             descriptions, example
         )
     } else {
         format!(
-            "你是 SpringNote 的日报结构化助手。请把用户的中文工作记录和图片中可见的工作信息整理成 JSON，不要输出 Markdown，不要解释。\n\n栏目定义：\n{}\n\nJSON 格式必须是：\n{}\n必须原样返回以上栏目 ID；如果某一栏目没有内容，items 返回空数组。\n可以根据图片中明确可见的界面、文字、报错、流程或任务状态总结事实；不得编造图片外的信息。",
+            "你是 SpringNote-Agenda 的日报结构化助手。请把用户的中文工作记录和图片中可见的工作信息整理成 JSON，不要输出 Markdown，不要解释。\n\n栏目定义：\n{}\n\nJSON 格式必须是：\n{}\n必须原样返回以上栏目 ID；如果某一栏目没有内容，items 返回空数组。\n可以根据图片中明确可见的界面、文字、报错、流程或任务状态总结事实；不得编造图片外的信息。",
             descriptions, example
         )
     };
-    with_industry_context(&prompt, industry, language)
+    prompt
 }
 
 fn is_english(language: &str) -> bool {
     language.trim().eq_ignore_ascii_case("en")
 }
 
-const DAILY_MERGE_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的日报整理助手。
+const DAILY_MERGE_SYSTEM_PROMPT: &str = r#"你是 SpringNote-Agenda 的日报整理助手。
 你的任务是根据已有日报和新增随手记录，整理生成一篇自然、真实、便于继续编辑的日报。
 
 已知信息：
 - 日期：{date}
 - 已有日报：{existing_markdown}
 - 新增随手记录：{raw_input}
-- 用户所在行业：{industry}
 
 整理要求：
 1. 综合利用所有已提供的信息进行整理，空变量自动忽略。
@@ -1138,32 +1112,11 @@ const DAILY_MERGE_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的日报整理助�
 6. 将零散记录整理成连贯的工作记录，使全文具有连续阅读体验，读起来像用户亲自整理后的日报，而不是 AI 自动汇总的结果。
 7. 内容较少时保持简洁，避免为了丰富内容而重复表达；内容较多时可自然分段或按主题组织，但不要为了分组而分组。
 8. 表达应符合真实开发者或职场人士日常记录工作的习惯，语言自然、克制、顺畅，避免机械、模板化或过于正式的总结语气。
-9. 可以结合所在行业调整专业术语和表达习惯，但不得补充任何事实。
-10. 如果已有日报与新增记录存在重复，应保留表达更完整、更自然的一份，避免重复描述。
-11. 保留已有日报的整体结构和可继续编辑性，不随意改变已有内容的组织方式。
-12. 不输出变量名称，不解释整理过程，不添加任何说明，仅输出最终日报内容。"#;
+9. 如果已有日报与新增记录存在重复，应保留表达更完整、更自然的一份，避免重复描述。
+10. 保留已有日报的整体结构和可继续编辑性，不随意改变已有内容的组织方式。
+11. 不输出变量名称，不解释整理过程，不添加任何说明，仅输出最终日报内容。"#;
 
-fn with_industry_context(base_prompt: &str, industry: &str, language: &str) -> String {
-    let industry = industry.trim();
-    if industry.is_empty() {
-        return base_prompt.to_string();
-    }
-
-    if is_english(language) {
-        format!(
-            "{base_prompt}\nUser preference: the user works in the \"{industry}\" industry. Interpret terms, tasks, and expressions using that industry's common work context, but do not fabricate facts beyond the input."
-        )
-    } else {
-        format!(
-            "{base_prompt}\n用户偏好：用户所在行业是「{industry}」。请结合该行业的常见工作语境理解术语、任务和表达，但不要脱离输入内容编造事实。"
-        )
-    }
-}
-
-fn with_markdown_attachment_preservation_instruction(
-    prompt: String,
-    language: &str,
-) -> String {
+fn with_markdown_attachment_preservation_instruction(prompt: String, language: &str) -> String {
     let trimmed = prompt.trim_end();
     let instruction = markdown_attachment_preservation_instruction(language);
     if trimmed.contains(instruction) {
@@ -1185,7 +1138,7 @@ const MARKDOWN_ATTACHMENT_PRESERVATION_INSTRUCTION: &str = "输出内容时，�
 
 const MARKDOWN_ATTACHMENT_PRESERVATION_INSTRUCTION_EN: &str = "When producing output, include every given Markdown image (`![]()`) and other file link verbatim — never omit, modify, or regenerate them; image paths, file names, and syntax must match the input exactly, and they should blend naturally into the surrounding content.";
 
-const WEEKLY_REPORT_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的周报整理助手。请基于一周日报 Markdown 生成一篇自然、有重点、可直接编辑的周报。
+const WEEKLY_REPORT_SYSTEM_PROMPT: &str = r#"你是 SpringNote-Agenda 的周报整理助手。请基于一周日报 Markdown 生成一篇自然、有重点、可直接编辑的周报。
 写作原则：
 1. 保留来源中的事实，不编造没有依据的成果、风险或计划。
 2. 不需要固定套用“主要工作 / 关键进展 / 问题 / 下周计划”等模板，可以根据材料自由组织结构。
@@ -1195,7 +1148,7 @@ const WEEKLY_REPORT_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的周报整理�
 6. 全文第一行必须是一级标题，格式固定为 `# XXXX-WXX 周报`（ISO 周，取自用户消息中的周期，例如 `# 2026-W30 周报`），不得自拟、追加或省略。
 7. 只输出最终 Markdown，不要解释。"#;
 
-const MONTHLY_REPORT_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的月报整理助手。请基于月度周报 Markdown 生成一篇自然、有复盘感、可继续编辑的月报。
+const MONTHLY_REPORT_SYSTEM_PROMPT: &str = r#"你是 SpringNote-Agenda 的月报整理助手。请基于月度周报 Markdown 生成一篇自然、有复盘感、可继续编辑的月报。
 写作原则：
 1. 保留来源中的事实，不编造成果、数据、评价或计划。
 2. 不需要固定套用“核心成果 / 项目进展 / 问题复盘 / 个人成长 / 下月计划”等模板，可以根据材料自由组织结构。
@@ -1205,7 +1158,7 @@ const MONTHLY_REPORT_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的月报整理�
 6. 全文第一行必须是一级标题，格式固定为 `# XXXX-XX 月报`（取自用户消息中的周期，例如 `# 2026-07 月报`），不得自拟、追加或省略。
 7. 只输出最终 Markdown，不要解释。"#;
 
-const MEMORY_TOOL_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的回忆书问答助手。你必须基于用户的历史日报、周报、月报回答问题。
+const MEMORY_TOOL_SYSTEM_PROMPT: &str = r#"你是 SpringNote-Agenda 的回忆书问答助手。你必须基于用户的历史日报、周报、月报回答问题。
 你可以自主调用工具检索或读取记录；需要信息时先调用工具，不要让应用预先替你检索。
 连续追问时结合完整消息历史理解省略指代，例如“什么时候”“这个配置”“刚才说的”等。
 每条用户消息末尾附有发送时间（如 [发送时间：2026-08-11 20:04 星期二]），解析“今天”“昨天”“这周”等相对时间时以最新用户消息的发送时间为准，无需调用 get_current_date。
@@ -1214,14 +1167,13 @@ const MEMORY_TOOL_SYSTEM_PROMPT: &str = r#"你是 SpringNote 的回忆书问答�
 回答必须只依据工具返回和对话上下文；材料不足时明确说明缺少依据，不要编造事实。
 最终回答使用自然中文和清晰 Markdown，不要输出工具调用 JSON。"#;
 
-const DAILY_MERGE_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote's daily-note editor.
+const DAILY_MERGE_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote-Agenda's daily-note editor.
 Your job is to merge the existing daily note and the new quick capture into a natural, truthful daily note that stays easy to keep editing.
 
 Known information:
 - Date: {date}
 - Existing daily note: {existing_markdown}
 - New quick capture: {raw_input}
-- User's industry: {industry}
 
 Rules:
 1. Use all provided information; ignore empty variables.
@@ -1232,12 +1184,11 @@ Rules:
 6. Turn scattered notes into a coherent work log that reads like the user wrote it, not like an AI summary.
 7. Keep it brief when there is little content; when there is more, use natural paragraphs or topics, but do not group for grouping's sake.
 8. Write like a real developer or professional recording their day: natural, restrained, fluent; avoid mechanical, templated, or overly formal summary language.
-9. You may adapt terminology and phrasing to the user's industry, but do not add facts.
-10. If the existing note and the new capture overlap, keep the more complete, more natural version; avoid duplication.
-11. Preserve the existing note's overall structure and editability; do not reorganize arbitrarily.
-12. Do not output variable names, explanations, or any commentary; output only the final daily note content."#;
+9. If the existing note and the new capture overlap, keep the more complete, more natural version; avoid duplication.
+10. Preserve the existing note's overall structure and editability; do not reorganize arbitrarily.
+11. Do not output variable names, explanations, or any commentary; output only the final daily note content."#;
 
-const WEEKLY_REPORT_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote's weekly-report editor. Write a natural, focused, editable weekly report from a week of daily Markdown notes.
+const WEEKLY_REPORT_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote-Agenda's weekly-report editor. Write a natural, focused, editable weekly report from a week of daily Markdown notes.
 Principles:
 1. Preserve the facts from the source; do not invent outcomes, risks, or plans.
 2. Do not force a fixed template such as "Main work / Key progress / Issues / Next week"; organize freely around the material.
@@ -1247,7 +1198,7 @@ Principles:
 6. The first line must be a level-1 heading in the exact form `# XXXX-WXX Weekly Report` (ISO week, taken from the period in the user message, e.g. `# 2026-W30 Weekly Report`); do not invent, append, or omit anything.
 7. Output only the final Markdown, no explanations."#;
 
-const MONTHLY_REPORT_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote's monthly-report editor. Write a natural, reflective, editable monthly report from the month's weekly reports.
+const MONTHLY_REPORT_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote-Agenda's monthly-report editor. Write a natural, reflective, editable monthly report from the month's weekly reports.
 Principles:
 1. Preserve facts; do not invent outcomes, data, evaluations, or plans.
 2. Do not force a fixed template such as "Core results / Project progress / Retrospective / Growth"; organize freely around the material.
@@ -1257,7 +1208,7 @@ Principles:
 6. The first line must be a level-1 heading in the exact form `# XXXX-XX Monthly Report` (taken from the period in the user message, e.g. `# 2026-07 Monthly Report`); do not invent, append, or omit anything.
 7. Output only the final Markdown, no explanations."#;
 
-const MEMORY_TOOL_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote's memory-book QA assistant. You must answer based on the user's historical daily, weekly, and monthly notes.
+const MEMORY_TOOL_SYSTEM_PROMPT_EN: &str = r#"You are SpringNote-Agenda's memory-book QA assistant. You must answer based on the user's historical daily, weekly, and monthly notes.
 Call tools yourself to search or read records; when you need information, call tools first instead of expecting the app to pre-fetch.
 For follow-up questions, resolve ellipsis and references (such as "when", "this config", "what I just mentioned") against the full message history.
 Every user message ends with its send time (e.g. [Sent at: 2026-08-11 20:04 Tuesday]); resolve relative dates such as "today", "yesterday", or "this week" against the latest user message's send time instead of calling get_current_date.
@@ -1391,11 +1342,10 @@ mod tests {
             ai_instruction: "提取今天取得的工作进展。".to_string(),
         }];
 
-        let prompt = structured_system_prompt("互联网", &sections, "zh");
+        let prompt = structured_system_prompt(&sections, "zh");
 
         assert!(prompt.contains("oa（今日进展）：提取今天取得的工作进展。"));
         assert!(prompt.contains(r#""id":"oa""#));
-        assert!(prompt.contains("用户所在行业是「互联网」"));
     }
 
     #[test]
@@ -1425,7 +1375,6 @@ mod tests {
         assert!(prompt.contains(&format!("日期：{date}")));
         assert!(prompt.contains("已有日报：# old"));
         assert!(prompt.contains("新增随手记录：done"));
-        assert!(prompt.contains("用户所在行业：未设置"));
         assert!(prompt.ends_with(MARKDOWN_ATTACHMENT_PRESERVATION_INSTRUCTION));
         assert!(!prompt.contains("{date}"));
         assert!(!prompt.contains("{existing_markdown}"));
@@ -1500,11 +1449,11 @@ mod tests {
     #[test]
     fn report_system_prompts_append_markdown_attachment_instruction() {
         let weekly_prompt = with_markdown_attachment_preservation_instruction(
-            with_industry_context(WEEKLY_REPORT_SYSTEM_PROMPT, "互联网", "zh"),
+            WEEKLY_REPORT_SYSTEM_PROMPT.to_string(),
             "zh",
         );
         let monthly_prompt = with_markdown_attachment_preservation_instruction(
-            with_industry_context(MONTHLY_REPORT_SYSTEM_PROMPT, "互联网", "zh"),
+            MONTHLY_REPORT_SYSTEM_PROMPT.to_string(),
             "zh",
         );
 

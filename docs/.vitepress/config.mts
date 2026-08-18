@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'SpringNote',
+  title: 'SpringNote-Agenda',
   description: 'AI-native note taking for daily work, memory, and review.',
   base: process.env.DOCS_BASE || '/',
   cleanUrls: true,
@@ -14,13 +14,13 @@ export default defineConfig({
     root: {
       label: '简体中文',
       lang: 'zh-CN',
-      title: 'SpringNote',
+      title: 'SpringNote-Agenda',
       description: '面向工作记录、AI 整理和长期回顾的智能便签。',
       themeConfig: {
         nav: [
           { text: '首页', link: '/' },
           { text: '文档', link: '/guide/quick-start' },
-          { text: 'GitHub', link: 'https://github.com/Radiant303/SpringNote' }
+          { text: 'GitHub', link: 'https://github.com/Adorable-Qin/SpringNote-Agenda' }
         ],
         sidebar: [
           {
@@ -62,13 +62,6 @@ export default defineConfig({
                   { text: 'AI 能力介绍', link: '/guide/memory-ai' },
                   { text: 'AI 思考模式', link: '/guide/memory-thinking' },
                   { text: '回忆书对话', link: '/guide/memory-conversation' }
-                ]
-              },
-              {
-                text: '组件',
-                items: [
-                  { text: '组件设置', link: '/guide/widget-settings' },
-                  { text: '组件壁纸', link: '/guide/widget-wallpaper' }
                 ]
               },
               {
@@ -125,13 +118,13 @@ export default defineConfig({
     en: {
       label: 'English',
       lang: 'en-US',
-      title: 'SpringNote',
+      title: 'SpringNote-Agenda',
       description: 'AI-native notes for work logs, structured memory, and review.',
       themeConfig: {
         nav: [
           { text: 'Home', link: '/en/' },
           { text: 'Guide', link: '/en/guide/quick-start' },
-          { text: 'GitHub', link: 'https://github.com/Radiant303/SpringNote' }
+          { text: 'GitHub', link: 'https://github.com/Adorable-Qin/SpringNote-Agenda' }
         ],
         sidebar: [
           {
@@ -176,13 +169,6 @@ export default defineConfig({
                 ]
               },
               {
-                text: 'Widget',
-                items: [
-                  { text: 'Widget Settings', link: '/en/guide/widget-settings' },
-                  { text: 'Widget Wallpaper', link: '/en/guide/widget-wallpaper' }
-                ]
-              },
-              {
                 text: 'Settings',
                 items: [
                   { text: 'Preferences', link: '/en/guide/settings' },
@@ -209,14 +195,14 @@ export default defineConfig({
   themeConfig: {
     logo: '/images/logo.png',
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/Radiant303/SpringNote' }
+      { icon: 'github', link: 'https://github.com/Adorable-Qin/SpringNote-Agenda' }
     ],
     search: {
       provider: 'local'
     },
     footer: {
       message: 'Released under the AGPL-3.0 license.',
-      copyright: 'Copyright © SpringNote contributors'
+      copyright: 'Copyright © SpringNote-Agenda contributors'
     }
   }
 })

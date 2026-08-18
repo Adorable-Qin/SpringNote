@@ -8,7 +8,7 @@ import 'wallpaper_settings.dart';
 
 enum AppThemePreference { system, light, dark }
 
-const defaultDailyMergePrompt = '''你是 SpringNote 的日报整理助手。
+const defaultDailyMergePrompt = '''你是 SpringNote-Agenda 的日报整理助手。
 你的任务是根据已有日报和新增随手记录，整理生成一篇自然、真实、便于继续编辑的日报。
 
 已知信息：
@@ -29,7 +29,8 @@ const defaultDailyMergePrompt = '''你是 SpringNote 的日报整理助手。
 10. 保留已有日报的整体结构和可继续编辑性，不随意改变已有内容的组织方式。
 11. 不输出变量名称，不解释整理过程，不添加任何说明，仅输出最终日报内容。''';
 
-const defaultDailyMergePromptEn = '''You are SpringNote's daily-note editor.
+const defaultDailyMergePromptEn =
+    '''You are SpringNote-Agenda's daily-note editor.
 Your job is to merge the existing daily note and the new quick capture into a natural, truthful daily note that stays easy to keep editing.
 
 Known information:
@@ -55,7 +56,8 @@ String defaultDailyMergePromptFor(String language) {
   return language == 'en' ? defaultDailyMergePromptEn : defaultDailyMergePrompt;
 }
 
-const defaultGlobalSignPrompt = '''你是 SpringNote 的全局签整理助手。全局签是一份跨天的待办清单（ToDoList），记录需要持续跟进、尚未完成的事项。
+const defaultGlobalSignPrompt =
+    '''你是 SpringNote-Agenda 的全局签整理助手。全局签是一份跨天的待办清单（ToDoList），记录需要持续跟进、尚未完成的事项。
 
 已知信息：
 - 日期：{date}
@@ -74,7 +76,8 @@ const defaultGlobalSignPrompt = '''你是 SpringNote 的全局签整理助手。
 8. 不得随意扩展、引申或替换输入中提到的内容；事项涉及的对象、动作和范围必须来自输入中明确表达的信息，与输入保持一致。
 9. 只输出 JSON，格式固定为 {"items": [{"id": "...", "content": "..."}]}，不要输出任何解释或说明。''';
 
-const defaultGlobalSignPromptEn = '''You are SpringNote's global-sign editor. The global sign is a cross-day todo list of things that still need follow-up.
+const defaultGlobalSignPromptEn =
+    '''You are SpringNote-Agenda's global-sign editor. The global sign is a cross-day todo list of things that still need follow-up.
 
 Known information:
 - Date: {date}
@@ -98,7 +101,8 @@ String defaultGlobalSignPromptFor(String language) {
   return language == 'en' ? defaultGlobalSignPromptEn : defaultGlobalSignPrompt;
 }
 
-const defaultWeeklyReportPrompt = '''你是 SpringNote 的周报整理助手。请基于一周日报 Markdown 生成一篇自然、有重点、可直接编辑的周报。
+const defaultWeeklyReportPrompt =
+    '''你是 SpringNote-Agenda 的周报整理助手。请基于一周日报 Markdown 生成一篇自然、有重点、可直接编辑的周报。
 
 已知信息：
 - 周期：{period_label}
@@ -115,7 +119,8 @@ const defaultWeeklyReportPrompt = '''你是 SpringNote 的周报整理助手。�
 8. 全文第一行必须是一级标题，格式固定为 `# XXXX-WXX 周报`（ISO 周，取自上述周期信息，例如 `# 2026-W30 周报`），不得自拟、追加或省略。
 9. 只输出最终 Markdown，不要解释。''';
 
-const defaultWeeklyReportPromptEn = '''You are SpringNote's weekly-report editor. Write a natural, focused, editable weekly report from a week of daily Markdown notes.
+const defaultWeeklyReportPromptEn =
+    '''You are SpringNote-Agenda's weekly-report editor. Write a natural, focused, editable weekly report from a week of daily Markdown notes.
 
 Known information:
 - Period: {period_label}

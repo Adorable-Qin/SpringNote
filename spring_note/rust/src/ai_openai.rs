@@ -1000,7 +1000,10 @@ fn normalize_responses_reasoning_effort(effort: &str) -> &str {
 }
 
 fn disables_thinking(purpose: &str) -> bool {
-    matches!(purpose, "home_structured_note" | "daily_note_merge" | "global_sign")
+    matches!(
+        purpose,
+        "home_structured_note" | "daily_note_merge" | "global_sign"
+    )
 }
 
 /// 需要标准 JSON Output 的用途：OpenAI 兼容协议通过 response_format 约束。

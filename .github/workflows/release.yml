@@ -249,7 +249,7 @@ jobs:
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: SpringNote-${{ needs.prepare-release.outputs.version }}-windows-x64-setup
+          name: SpringNote-Agenda-${{ needs.prepare-release.outputs.version }}-windows-x64-setup
           path: spring_note/build/windows/installer/${{ needs.prepare-release.outputs.windows_asset }}
           if-no-files-found: error
 
@@ -322,7 +322,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          app_name="SpringNote"
+          app_name="SpringNote-Agenda"
           artifact_name="${MACOS_ASSET%.dmg}"
           release_dir="build/macos/Build/Products/Release"
           stage_dir="${release_dir}/${artifact_name}"
@@ -345,7 +345,7 @@ jobs:
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
-          name: SpringNote-${{ needs.prepare-release.outputs.version }}-macos-arm64
+          name: SpringNote-Agenda-${{ needs.prepare-release.outputs.version }}-macos-arm64
           path: spring_note/build/macos/Build/Products/Release/${{ needs.prepare-release.outputs.macos_asset }}
           if-no-files-found: error
 

@@ -19,4 +19,4 @@ The preview list is used to confirm what the candidate images actually contain. 
 3. Select the images to clean up.
 4. Click "Clean Up" and confirm deletion.
 
-Cleanup only targets images within the application data directory that are determined to be unused; it does not scan or delete files in other user directories. Deleted files cannot be recovered through SpringNote, so important images should be backed up first.
+Cleanup only targets images within the application data directory that are determined to be unused; it does not scan or delete files in other user directories. Deleted files cannot be recovered through SpringNote-Agenda, so important images should be backed up first.

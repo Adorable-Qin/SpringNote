@@ -39,7 +39,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get languageEn => 'English';
 
   @override
-  String get coreStartupFailedTitle => 'SpringNote 启动失败';
+  String get coreStartupFailedTitle => 'SpringNote-Agenda 启动失败';
 
   @override
   String get coreAutoSyncIssueMessage => '自动同步遇到问题，请手动同步';
@@ -137,7 +137,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coreUpdateInstalling => '正在安装更新...';
 
   @override
-  String get coreUpdateLaunchingWindows => '正在启动安装器，SpringNote 即将退出并重启...';
+  String get coreUpdateLaunchingWindows =>
+      '正在启动安装器，SpringNote-Agenda 即将退出并重启...';
 
   @override
   String get coreUpdateLaunching => '正在重启并替换为新版本...';

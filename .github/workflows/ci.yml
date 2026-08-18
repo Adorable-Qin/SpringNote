@@ -95,8 +95,8 @@ jobs:
 
           $version = $versionMatch.Groups[1].Value
           "version=$version" >> $env:GITHUB_OUTPUT
-          "asset_name=SpringNote-$version-windows-x64-setup.exe" >> $env:GITHUB_OUTPUT
-          "artifact_name=SpringNote-$version-windows-x64-setup" >> $env:GITHUB_OUTPUT
+          "asset_name=SpringNote-Agenda-$version-windows-x64-setup.exe" >> $env:GITHUB_OUTPUT
+          "artifact_name=SpringNote-Agenda-$version-windows-x64-setup" >> $env:GITHUB_OUTPUT
 
       - name: Install Inno Setup
         shell: pwsh
@@ -182,7 +182,7 @@ jobs:
             arch="x64"
           fi
 
-          app_name="SpringNote"
+          app_name="SpringNote-Agenda"
           artifact_name="${app_name}-${version}-macos-${arch}"
           release_dir="build/macos/Build/Products/Release"
           stage_dir="${release_dir}/${artifact_name}"

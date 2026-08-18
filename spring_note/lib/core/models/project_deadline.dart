@@ -10,6 +10,8 @@ class ProjectDeadline {
     required this.notePath,
     required this.noteKind,
     required this.lineNumber,
+    required this.isCompleted,
+    required this.sourceLine,
   });
 
   final DateTime dueDate;
@@ -18,9 +20,29 @@ class ProjectDeadline {
   final String notePath;
   final NoteKind noteKind;
   final int lineNumber;
+  final bool isCompleted;
+  final String sourceLine;
 
   bool isDueOn(DateTime date) =>
       dueDate.year == date.year &&
       dueDate.month == date.month &&
       dueDate.day == date.day;
+}
+
+class ProjectDateCandidate {
+  const ProjectDateCandidate({
+    required this.date,
+    required this.lineNumber,
+    required this.sourceLine,
+    required this.start,
+    required this.end,
+    required this.matchedText,
+  });
+
+  final DateTime date;
+  final int lineNumber;
+  final String sourceLine;
+  final int start;
+  final int end;
+  final String matchedText;
 }

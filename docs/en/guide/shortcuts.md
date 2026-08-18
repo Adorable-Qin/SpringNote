@@ -1,10 +1,10 @@
 # Shortcuts
 
-Shortcuts allow you to open SpringNote, hide the window, or quickly perform input operations without switching windows. Shortcut settings support Windows and macOS; key names are displayed according to the current platform.
+Shortcuts allow you to open SpringNote-Agenda, hide the window, or quickly perform input operations without switching windows. Shortcut settings support Windows and macOS; key names are displayed according to the current platform.
 
 ## Global Shortcuts
 
-Global shortcuts work even when SpringNote is not in the foreground, commonly used for quickly showing or hiding the window.
+Global shortcuts work even when SpringNote-Agenda is not in the foreground, commonly used for quickly showing or hiding the window.
 
 1. Open the Shortcuts page in Settings.
 2. Click the global shortcut recording area.
@@ -22,4 +22,4 @@ Windows uses platform key names such as Ctrl, Alt, Win; macOS uses names such as
 
 ## When Shortcuts Don't Work
 
-First confirm that SpringNote is still running and has not exited to the tray. Then verify that the shortcut is not occupied by other software. After modifying, save the change and test with an uncommon key combination.
+First confirm that SpringNote-Agenda is still running and has not exited to the tray. Then verify that the shortcut is not occupied by other software. After modifying, save the change and test with an uncommon key combination.

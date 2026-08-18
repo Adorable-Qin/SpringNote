@@ -1,12 +1,12 @@
 name: "🐛 报告 Bug / Bug Report"
 title: "[Bug]"
-description: 报告 SpringNote 中可复现的问题。/ Report a reproducible problem in SpringNote.
+description: 报告 SpringNote-Agenda 中可复现的问题。/ Report a reproducible problem in SpringNote-Agenda.
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        感谢你帮助改进 SpringNote。请提供足够的信息，方便我们复现和定位问题。缺少复现步骤或日志的问题可能会被关闭。/ Thanks for helping improve SpringNote. Please provide enough context for us to reproduce and diagnose the issue. Issues without clear reproduction steps or logs may be closed.
+        感谢你帮助改进 SpringNote-Agenda。请提供足够的信息，方便我们复现和定位问题。缺少复现步骤或日志的问题可能会被关闭。/ Thanks for helping improve SpringNote-Agenda. Please provide enough context for us to reproduce and diagnose the issue. Issues without clear reproduction steps or logs may be closed.
 
   - type: textarea
     attributes:
@@ -23,7 +23,7 @@ body:
       label: 如何复现？/ Steps to reproduce
       description: 请列出复现该问题的具体步骤。/ List the exact steps needed to reproduce the issue.
       placeholder: |
-        1. 打开 SpringNote
+        1. 打开 SpringNote-Agenda
         2. 进入……
         3. 点击……
         4. 看到错误
@@ -35,7 +35,7 @@ body:
       label: 环境信息 / Environment
       description: 请提供应用版本、系统、安装方式，以及相关 AI 提供商/模型配置。不要粘贴 API Key。/ Provide app version, OS, install method, and relevant AI provider/model settings. Do not paste your API key.
       placeholder: |
-        SpringNote version: 1.0.0
+        SpringNote-Agenda version: 1.0.0
         OS: Windows 11 23H2
         Install method: GitHub Release / Built from source
         AI provider: DeepSeek
@@ -47,7 +47,7 @@ body:
   - type: dropdown
     attributes:
       label: 受影响模块 / Affected area
-      description: 问题主要出现在哪个模块？/ Which part of SpringNote is affected?
+      description: 问题主要出现在哪个模块？/ Which part of SpringNote-Agenda is affected?
       multiple: true
       options:
         - "首页 / Home"
@@ -55,7 +55,6 @@ body:
         - "回忆书 / Memory Book"
         - "设置 / Settings"
         - "统计 / Statistics"
-        - "桌面组件 / Desktop Widget"
         - "AI 提供商 / AI Provider"
         - "Windows 构建 / Windows Build"
         - "其他 / Other"

@@ -240,7 +240,7 @@ final class TrayController: NSObject {
     } else {
       statusItem?.button?.title = "S"
     }
-    statusItem?.button?.toolTip = "SpringNote"
+    statusItem?.button?.toolTip = "SpringNote-Agenda"
   }
 
   private func loadStatusIcon() -> NSImage? {
@@ -264,7 +264,7 @@ final class TrayController: NSObject {
     let menu = NSMenu()
     menu.addItem(
       NSMenuItem(
-        title: "打开 SpringNote",
+        title: "打开 SpringNote-Agenda",
         action: #selector(openMenuItemClicked(_:)),
         keyEquivalent: ""
       )

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write SpringNote update metadata files for released installers."""
+"""Write SpringNote-Agenda update metadata files for released installers."""
 
 from __future__ import annotations
 
@@ -54,12 +54,12 @@ def write_appcast(
     ET.register_namespace("sparkle", SPARKLE_NS)
     root = ET.Element("rss", {"version": "2.0"})
     channel = ET.SubElement(root, "channel")
-    ET.SubElement(channel, "title").text = "SpringNote Updates"
-    ET.SubElement(channel, "description").text = "SpringNote desktop app updates"
+    ET.SubElement(channel, "title").text = "SpringNote-Agenda Updates"
+    ET.SubElement(channel, "description").text = "SpringNote-Agenda desktop app updates"
     ET.SubElement(channel, "language").text = "zh-CN"
 
     item = ET.SubElement(channel, "item")
-    ET.SubElement(item, "title").text = f"SpringNote v{version}"
+    ET.SubElement(item, "title").text = f"SpringNote-Agenda v{version}"
     ET.SubElement(item, f"{{{SPARKLE_NS}}}version").text = version
     ET.SubElement(item, f"{{{SPARKLE_NS}}}shortVersionString").text = version
     ET.SubElement(item, f"{{{SPARKLE_NS}}}releaseNotesLink").text = (

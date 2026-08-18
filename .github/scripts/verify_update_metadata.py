@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify SpringNote update metadata points at the released assets."""
+"""Verify SpringNote-Agenda update metadata points at the released assets."""
 
 from __future__ import annotations
 

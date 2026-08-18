@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useData } from 'vitepress'
 
 interface OverviewCard {
@@ -20,7 +20,11 @@ const copy = computed(() => {
       memoryBook: '回忆书',
       settings: '设置',
       more: '更多',
-      totalIncome: '累计总收益',
+      calendar: '项目日历',
+      currentWeek: '当前周',
+      pending: '待完成',
+      dueToday: '今日到期',
+      completed: '已完成',
       recentActivity: '最近活跃',
       weekAdded: '本周新增',
       articlesUnit: '篇',
@@ -45,7 +49,11 @@ const copy = computed(() => {
     memoryBook: 'Memory Book',
     settings: 'Settings',
     more: 'More',
-    totalIncome: 'Total',
+    calendar: 'Project calendar',
+    currentWeek: 'Current week',
+    pending: 'Pending',
+    dueToday: 'Due today',
+    completed: 'Completed',
     recentActivity: 'Recently active',
     weekAdded: 'Week',
     articlesUnit: 'notes',
@@ -110,19 +118,14 @@ function createOverview(zh: boolean): OverviewCard[] {
   ]
 }
 
-const level = ref(4)
-const experiencePercent = ref(75)
-const coins = ref(0)
-const targetCoins = ref(128)
-const totalCoins = ref(14250)
-const coinRate = ref(0.12)
+const pendingCount = ref(4)
+const completedCount = ref(6)
 const inputText = ref('')
 const isSubmitting = ref(false)
 const showNotice = ref(false)
 const lastSaved = ref('')
 const isFocused = ref(false)
 const showHeatmap = ref(false)
-const ringProgress = ref(0)
 
 const weekCount = ref(18)
 const streak = ref(12)
@@ -200,45 +203,15 @@ function onCellLeave() {
 const charCount = computed(() => inputText.value.length)
 const canSubmit = computed(() => inputText.value.trim().length > 0 && !isSubmitting.value)
 
-let coinTimer: number | undefined
-
-function formatCoins(value: number) {
-  const text = Math.round(value).toString()
-  const buffer: string[] = []
-  for (let index = 0; index < text.length; index++) {
-    if (index > 0 && (text.length - index) % 3 === 0) {
-      buffer.push(',')
-    }
-    buffer.push(text[index])
-  }
-  return buffer.join('')
+function getIsoWeek(date: Date) {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNumber = target.getUTCDay() || 7
+  target.setUTCDate(target.getUTCDate() + 4 - dayNumber)
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1))
+  return Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
 }
 
-function formatRate(value: number) {
-  return value < 1 ? value.toFixed(2) : value.toFixed(3)
-}
-
-function easeOutQuart(x: number) {
-  return 1 - Math.pow(1 - x, 4)
-}
-
-function animateCounter() {
-  const duration = 1600
-  let startTime: number | null = null
-
-  function step(timestamp: number) {
-    if (!startTime) startTime = timestamp
-    const elapsed = timestamp - startTime
-    const progress = Math.min(elapsed / duration, 1)
-    const eased = easeOutQuart(progress)
-    coins.value = Math.floor(eased * targetCoins.value)
-    if (progress < 1) {
-      requestAnimationFrame(step)
-    }
-  }
-
-  requestAnimationFrame(step)
-}
+const currentWeek = getIsoWeek(new Date())
 
 onMounted(() => {
   heatmapData.value = generateHeatmapData()
@@ -247,16 +220,6 @@ onMounted(() => {
     showHeatmap.value = true
   })
 
-  ringProgress.value = experiencePercent.value
-  animateCounter()
-
-  coinTimer = window.setInterval(() => {
-    totalCoins.value += coinRate.value
-  }, 1000)
-})
-
-onUnmounted(() => {
-  if (coinTimer) window.clearInterval(coinTimer)
 })
 
 async function onSubmit() {
@@ -275,10 +238,7 @@ async function onSubmit() {
     overview.value[0].count += 1
   }
 
-  const earned = Math.floor(Math.random() * 18) + 6
-  coins.value += earned
-  targetCoins.value += earned
-  totalCoins.value += earned
+  pendingCount.value += 1
   weekCount.value += 1
 
   const now = new Date()
@@ -344,45 +304,19 @@ async function onSubmit() {
 
       <section class="hero-card">
         <div class="hero-left">
-          <div class="level-ring">
-            <span class="level-label">Level {{ String(level).padStart(2, '0') }}</span>
-            <div class="ring-wrap">
-              <svg class="ring-svg" viewBox="0 0 36 36">
-                <path
-                  class="ring-track"
-                  stroke-width="2.5"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <path
-                  class="ring-progress"
-                  :stroke-dasharray="`${ringProgress}, 100`"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-              </svg>
-              <span class="ring-text">{{ experiencePercent }}%</span>
-            </div>
+          <div class="agenda-week">
+            <span class="agenda-week-label">{{ copy.currentWeek }}</span>
+            <span class="agenda-week-value">W{{ currentWeek }}</span>
           </div>
 
-          <div class="income-summary">
-            <span class="income-label">Earnings Today</span>
-            <div class="income-row">
-              <span class="income-value">{{ formatCoins(coins) }}</span>
-              <span class="income-rate">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                  <polyline points="16 7 22 7 22 13" />
-                </svg>
-                +{{ formatRate(coinRate) }} c/s
-              </span>
+          <div class="agenda-summary">
+            <span class="agenda-label">{{ copy.calendar }}</span>
+            <div class="agenda-row">
+              <span class="agenda-value">{{ pendingCount }}</span>
+              <span class="agenda-status">{{ copy.pending }}</span>
             </div>
-            <span class="income-total">
-              {{ copy.totalIncome }} <strong>{{ formatCoins(totalCoins) }}</strong> coins
+            <span class="agenda-total">
+              {{ copy.dueToday }} <strong>2</strong> · {{ copy.completed }} <strong>{{ completedCount }}</strong>
             </span>
           </div>
         </div>
@@ -633,66 +567,42 @@ async function onSubmit() {
   min-width: 0;
 }
 
-.level-ring {
+.agenda-week {
   align-items: center;
+  background: #f4f4f5;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+  justify-content: center;
+  min-height: 82px;
+  min-width: 88px;
   user-select: none;
 }
 
-.level-label {
+.agenda-week-label {
   color: #666666;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 1px;
   line-height: 1.5;
-  text-transform: uppercase;
 }
 
-.ring-wrap {
-  align-items: center;
-  display: flex;
-  height: 64px;
-  justify-content: center;
-  position: relative;
-  width: 64px;
-}
-
-.ring-svg {
-  color: #666666;
-  height: 64px;
-  left: 0;
-  position: absolute;
-  top: 0;
-  transform: rotate(-90deg);
-  width: 64px;
-}
-
-.ring-track {
-  color: #ededed;
-}
-
-.ring-progress {
-  transition: none;
-}
-
-.ring-text {
-  color: #4f4f4f;
-  font-size: 12px;
+.agenda-week-value {
+  color: #171717;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1;
-  position: relative;
-  z-index: 1;
 }
 
-.income-summary {
+.agenda-summary {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.income-label {
+.agenda-label {
   color: #8a8a8a;
   font-size: 11px;
   font-weight: 600;
@@ -703,14 +613,14 @@ async function onSubmit() {
   user-select: none;
 }
 
-.income-row {
+.agenda-row {
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
 
-.income-value {
+.agenda-value {
   color: #171717;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 56px;
@@ -720,7 +630,7 @@ async function onSubmit() {
   font-variant-numeric: tabular-nums;
 }
 
-.income-rate {
+.agenda-status {
   align-items: center;
   background: #ecfdf5;
   border-radius: 6px;
@@ -731,10 +641,9 @@ async function onSubmit() {
   gap: 4px;
   padding: 3px 8px;
   user-select: none;
-  font-variant-numeric: tabular-nums;
 }
 
-.income-total {
+.agenda-total {
   color: #8a8a8a;
   font-size: 12px;
   letter-spacing: 0.1px;
@@ -743,7 +652,7 @@ async function onSubmit() {
   user-select: none;
 }
 
-.income-total strong {
+.agenda-total strong {
   color: #666666;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
@@ -1155,7 +1064,7 @@ textarea::placeholder {
     width: 100%;
   }
 
-  .income-value {
+  .agenda-value {
     font-size: 42px;
   }
 

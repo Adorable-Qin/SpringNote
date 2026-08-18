@@ -1,6 +1,6 @@
 # Statistics
 
-The Statistics page displays SpringNote's usage records, note counts, desktop widget timer results, and AI model usage. The page data falls into two categories: note counts are read from the current note directory; usage counts, timer earnings, and model usage come from statistical records saved during application runtime.
+The Statistics page displays SpringNote-Agenda's usage records, note counts, and AI model usage. Note counts are read from the current note directory, while usage counts and model usage come from statistical records saved during application runtime.
 
 ## Statistics Range
 
@@ -24,7 +24,7 @@ The annual heatmap displays daily activity counts for the last year. Dates are a
 - 5–7: High activity;
 - 8 or more: Very high activity.
 
-Activity counts come from successful home page content organization events and edit completion events. Launching the application, opening pages, browsing existing notes, or simply starting the desktop widget do not increase heatmap counts. Hovering over a date cell shows the date and its corresponding activity count.
+Activity counts come from successful home page content organization events and edit completion events. Launching the application, opening pages, browsing existing notes do not increase heatmap counts. Hovering over a date cell shows the date and its corresponding activity count.
 
 The heatmap tracks application activity events, not daily note file counts, word counts, or AI token counts. If a daily note exists on a given date but no statistical events occurred, that date may still show zero.
 
@@ -66,12 +66,6 @@ The number of cached input tokens returned by the provider. If the provider does
 
 The number of application launch events. When "All" is selected, this is compatible with launch counts saved by older versions. When a limited date range is selected, only launch records that can be attributed to specific dates are counted.
 
-### Work Duration & Earnings
-
-Work duration comes from the desktop widget's accumulated timer. Earnings are calculated from the same timer based on current configuration. Accumulated portions are committed on pause, stop, or application exit. Brief unsaved timer data from abnormal exits may not be included in statistics.
-
-Earnings are an in-app estimate and do not represent actual salary or real income. Modifying configuration such as hourly wage only affects future timer calculations; it does not recalculate already-saved historical statistics.
-
 ## Usage Trends
 
 Usage trends display model token usage by date within the current range. The bar height for each day scales relative to the maximum token count in the current chart; bars are segmented by provider.
@@ -89,7 +83,7 @@ When no model calls are recorded, the trends area shows an empty state. Days wit
 
 ## Data Updates & Errors
 
-Statistical records are written to the local data directory after events occur. Home page organization, edit completions, app launches, desktop widget timer, and model requests are each recorded separately; failure of one type does not prevent other features from working.
+Statistical records are written to the local data directory after events occur. Home page organization, edit completions, app launches and and model requests are each recorded separately; failure of one type does not prevent other features from working.
 
 If the statistics file cannot be read, the statistics page shows empty results; this does not prevent note editing, app launches, or AI requests. Zero values in this case indicate that statistics were not obtained from the current read, not that historical data has been deleted.
 

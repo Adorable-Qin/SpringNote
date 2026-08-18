@@ -35,7 +35,7 @@ NOTIFYICONDATA BuildIconData(HWND window) {
       LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_APP_ICON),
                 IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
                 GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
-  wcscpy_s(data.szTip, L"SpringNote");
+  wcscpy_s(data.szTip, L"SpringNote-Agenda");
   return data;
 }
 
@@ -215,7 +215,7 @@ void TrayManager::ShowContextMenu() {
     return;
   }
 
-  AppendMenu(menu, MF_STRING, kOpenMenuId, L"\u6253\u5f00 SpringNote");
+  AppendMenu(menu, MF_STRING, kOpenMenuId, L"\u6253\u5f00 SpringNote-Agenda");
   AppendMenu(menu, MF_SEPARATOR, 0, nullptr);
   AppendMenu(menu, MF_STRING, kExitMenuId, L"\u9000\u51fa");
 

@@ -48,7 +48,7 @@ jobs:
 
       - name: Build docs
         env:
-          DOCS_BASE: ${{ github.event_name == 'pull_request' && '/' || '/SpringNote/' }}
+          DOCS_BASE: ${{ github.event_name == 'pull_request' && '/' || '/SpringNote-Agenda/' }}
         run: npm run build
 
       - name: Upload Pages artifact

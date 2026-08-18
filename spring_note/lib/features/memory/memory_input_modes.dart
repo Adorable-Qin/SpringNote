@@ -74,7 +74,7 @@ const MemoryInputMode mindMapInputMode = MemoryInputMode(
   * 根节点应优先使用以下类型：
     - 日期（如：2026-07-26 日报、2026-07 月度总结）
     - 主题名称（如：人工智能生态系统）
-    - 项目名称（如：SpringNote 项目开发）
+    - 项目名称（如：SpringNote-Agenda 项目开发）
     - 核心概念（如：机器学习知识体系）
   * 根节点不得为空。
   * 根节点不得使用无意义名称，例如：
@@ -116,7 +116,7 @@ const MemoryInputMode mindMapInputMode = MemoryInputMode(
   ```springtree
   - 2026-07-26 周报
     - 项目开发
-      - SpringNote
+      - SpringNote-Agenda
         - 完成 xxx 功能
         - 优化 xxx 模块
     - 技术研究
@@ -126,7 +126,7 @@ const MemoryInputMode mindMapInputMode = MemoryInputMode(
   错误示例：
   ```springtree
   - 项目开发
-    - SpringNote
+    - SpringNote-Agenda
   - 技术研究
     - MCP
   ```
@@ -136,7 +136,7 @@ const MemoryInputMode mindMapInputMode = MemoryInputMode(
   ```springtree
   - 2026-07-26 工作总结
     - 项目开发
-      - SpringNote
+      - SpringNote-Agenda
         - 完成功能开发
     - 技术研究
       - MCP

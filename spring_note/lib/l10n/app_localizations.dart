@@ -161,7 +161,7 @@ abstract class AppLocalizations {
   /// No description provided for @coreStartupFailedTitle.
   ///
   /// In zh, this message translates to:
-  /// **'SpringNote 启动失败'**
+  /// **'SpringNote-Agenda 启动失败'**
   String get coreStartupFailedTitle;
 
   /// No description provided for @coreAutoSyncIssueMessage.
@@ -341,7 +341,7 @@ abstract class AppLocalizations {
   /// No description provided for @coreUpdateLaunchingWindows.
   ///
   /// In zh, this message translates to:
-  /// **'正在启动安装器，SpringNote 即将退出并重启...'**
+  /// **'正在启动安装器，SpringNote-Agenda 即将退出并重启...'**
   String get coreUpdateLaunchingWindows;
 
   /// No description provided for @coreUpdateLaunching.

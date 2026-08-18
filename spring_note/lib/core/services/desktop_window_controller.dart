@@ -20,7 +20,9 @@ class DesktopWindowController {
     return !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
   }
 
-  static Future<void> initializeAndShow({String title = 'SpringNote'}) async {
+  static Future<void> initializeAndShow({
+    String title = 'SpringNote-Agenda',
+  }) async {
     if (!supportsWindowManager) {
       return;
     }

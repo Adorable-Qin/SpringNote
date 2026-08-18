@@ -112,7 +112,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     if (widget.localDataState != oldWidget.localDataState) {
       _localDataState = widget.localDataState;
       _noteUploadQueue.attach(_localDataState);
-        _syncAutoStart(_localDataState.config);
+      _syncAutoStart(_localDataState.config);
       _syncTray(_localDataState.config);
       _syncGlobalHotkey(_localDataState.config);
       unawaited(_runStartupReportGeneration(_localDataState));
@@ -520,6 +520,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           ProjectCalendarPage(
                             localDataState: _localDataState,
                             externalNoteUpdate: _noteExternalUpdate,
+                            onNoteSaved: _notifyNoteSaved,
                           ),
                           MemoryPage(localDataState: _localDataState),
                           SettingsPage(
@@ -760,7 +761,13 @@ IconData _legacyMaterialIcon(_SidebarIconType icon) {
   };
 }
 
-enum _SidebarIconType { layoutDashboard, stickyNote, calendarDays, bookOpen, settings }
+enum _SidebarIconType {
+  layoutDashboard,
+  stickyNote,
+  calendarDays,
+  bookOpen,
+  settings,
+}
 
 class _SidebarLucideIcon extends StatelessWidget {
   const _SidebarLucideIcon({

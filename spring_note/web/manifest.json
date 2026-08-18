@@ -1,6 +1,6 @@
 {
-    "name": "spring_note",
-    "short_name": "spring_note",
+    "name": "SpringNote-Agenda",
+    "short_name": "SpringNote-Agenda",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

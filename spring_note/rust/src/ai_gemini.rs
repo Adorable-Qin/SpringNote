@@ -998,7 +998,10 @@ pub fn build_generate_content_body(request: &AiChatRequest) -> Value {
 
 /// 与 OpenAI 侧一致:结构化日报与日报合并关闭思考,降低成本并避免思考 parts 干扰解析。
 fn disables_thinking(purpose: &str) -> bool {
-    matches!(purpose, "home_structured_note" | "daily_note_merge" | "global_sign")
+    matches!(
+        purpose,
+        "home_structured_note" | "daily_note_merge" | "global_sign"
+    )
 }
 
 fn gemini_image_part(image: &AiImageAttachment) -> Value {

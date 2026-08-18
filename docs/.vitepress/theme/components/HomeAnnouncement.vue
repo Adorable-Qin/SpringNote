@@ -9,16 +9,16 @@ const isZh = computed(() => lang.value.startsWith('zh'))
 const announcement = computed(() => {
   if (isZh.value) {
     return {
-      href: 'https://qm.qq.com/q/dxYq7p4e4w',
-      prefix: '预览版',
-      text: 'SpringNote，一个面向工作记忆的 AI 便签'
+      href: 'https://github.com/Adorable-Qin/SpringNote-Agenda/releases/latest',
+      prefix: 'SpringNote-Agenda',
+      text: '查看最新版本与更新说明'
     }
   }
 
   return {
-    href: 'https://qm.qq.com/q/dxYq7p4e4w',
-    prefix: 'Early Access',
-    text: 'SpringNote, AI notes for work memory'
+    href: 'https://github.com/Adorable-Qin/SpringNote-Agenda/releases/latest',
+    prefix: 'SpringNote-Agenda',
+    text: 'View the latest release and update notes'
   }
 })
 </script>

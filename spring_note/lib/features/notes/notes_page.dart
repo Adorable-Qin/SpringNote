@@ -9,11 +9,13 @@ import '../../core/models/app_config.dart';
 import '../../core/models/local_data_state.dart';
 import '../../core/models/note_external_update.dart';
 import '../../core/models/note_file.dart';
+import '../../core/models/project_deadline.dart';
 import '../../core/services/ai_client_service.dart';
 import '../../core/services/clipboard_image_service.dart';
 import '../../core/services/cloud_sync_service.dart';
 import '../../core/services/local_data_service.dart';
 import '../../core/services/note_service.dart';
+import '../../core/services/project_deadline_service.dart';
 import '../../core/services/note_upload_queue.dart';
 import '../../core/services/pasted_image_service.dart';
 import '../../core/theme/app_theme.dart';
@@ -82,6 +84,8 @@ class NotesPage extends StatefulWidget {
 class _NotesPageState extends State<NotesPage> {
   final _FimTextEditingController _editorController =
       _FimTextEditingController();
+  final ProjectDeadlineService _projectDeadlineService =
+      const ProjectDeadlineService();
   final TextEditingController _searchController = TextEditingController();
   late final FocusNode _editorFocusNode;
 
@@ -107,12 +111,14 @@ class _NotesPageState extends State<NotesPage> {
   bool _consumingFimPrediction = false;
   bool _insertingImage = false;
   bool _pastingClipboard = false;
+  final Set<String> _promptedImplicitCalendarCandidates = {};
   bool _regeneratingReport = false;
   int _notesLoadGeneration = 0;
   int _noteSelectionGeneration = 0;
   int _saveGeneration = 0;
   int _searchGeneration = 0;
   Timer? _searchDebounce;
+  Timer? _calendarPromptDebounce;
   List<NoteFile> _searchResults = [];
   bool _searching = false;
   Timer? _autoCloudSyncTimer;
@@ -198,6 +204,7 @@ class _NotesPageState extends State<NotesPage> {
     _editorFocusNode.dispose();
     _fimDebounce?.cancel();
     _searchDebounce?.cancel();
+    _calendarPromptDebounce?.cancel();
     _autoCloudSyncTimer?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -502,6 +509,7 @@ class _NotesPageState extends State<NotesPage> {
       return;
     }
 
+    final previousText = _lastEditorText;
     final text = _editorController.text;
     final selection = _editorController.selection;
     final textChanged = text != _lastEditorText;
@@ -520,6 +528,22 @@ class _NotesPageState extends State<NotesPage> {
     final currentSelection = _editorController.selection;
     _lastEditorText = currentText;
     _lastEditorSelection = currentSelection;
+
+    if (textChanged) {
+      _calendarPromptDebounce?.cancel();
+      _calendarPromptDebounce = Timer(const Duration(milliseconds: 700), () {
+        if (!mounted || !_samePath(_selectedNote?.path ?? '', selected.path)) {
+          return;
+        }
+        unawaited(
+          _maybePromptForImplicitCalendarDates(
+            selected,
+            previousText: previousText,
+            currentText: currentText,
+          ),
+        );
+      });
+    }
 
     if (_consumingFimPrediction) {
       if (textChanged) {
@@ -540,6 +564,115 @@ class _NotesPageState extends State<NotesPage> {
     }
 
     _saveEditorText(selected, currentText);
+  }
+
+  Future<void> _maybePromptForImplicitCalendarDates(
+    NoteFile selected, {
+    required String previousText,
+    required String currentText,
+  }) async {
+    final previousLines = previousText.split(RegExp(r'\r?\n')).toSet();
+    final candidates = _projectDeadlineService.findImplicitDates(
+      content: currentText,
+    );
+    for (final candidate in candidates) {
+      if (previousLines.contains(candidate.sourceLine)) {
+        continue;
+      }
+      final key =
+          '${selected.path}|${candidate.lineNumber}|${candidate.matchedText}';
+      if (!_promptedImplicitCalendarCandidates.add(key) || !mounted) {
+        continue;
+      }
+
+      final english = currentAppLanguage(context) == 'en';
+      final dateLabel = _formatCandidateDate(candidate.date);
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(english ? 'Add date to calendar?' : '将日期加入日历？'),
+          content: Text(
+            english
+                ? 'The date $dateLabel was found in this note. Add it as a project calendar reminder?'
+                : '检测到日期 $dateLabel。是否将它加入项目日历作为提醒？',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(english ? 'Not now' : '暂不加入'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(english ? 'Add to calendar' : '加入日历'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted ||
+          accepted != true ||
+          !_samePath(_selectedNote?.path ?? '', selected.path)) {
+        continue;
+      }
+
+      final transformed = _addCandidateToCalendar(
+        _editorController.text,
+        candidate,
+        english: english,
+      );
+      if (transformed == null || transformed == _editorController.text) {
+        continue;
+      }
+      _editorController.value = _editorController.value.copyWith(
+        text: transformed,
+        selection: TextSelection.collapsed(offset: transformed.length),
+        composing: TextRange.empty,
+      );
+    }
+  }
+
+  String _formatCandidateDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
+  String? _addCandidateToCalendar(
+    String text,
+    ProjectDateCandidate candidate, {
+    required bool english,
+  }) {
+    final lines = text.split(RegExp(r'\r?\n'));
+    var index = candidate.lineNumber - 1;
+    if (index < 0 ||
+        index >= lines.length ||
+        lines[index] != candidate.sourceLine) {
+      index = lines.indexOf(candidate.sourceLine);
+    }
+    if (index < 0) {
+      return null;
+    }
+
+    final line = lines[index];
+    final dateStart = line.indexOf(candidate.matchedText);
+    if (dateStart < 0) {
+      return null;
+    }
+    final dateEnd = dateStart + candidate.matchedText.length;
+    var before = line.substring(0, dateStart).trim();
+    final after = line.substring(dateEnd).trim();
+    before = before
+        .replaceFirst(RegExp(r'^[-*+]\s*'), '')
+        .replaceFirst(RegExp(r'^\[[ xX]\]\s*'), '')
+        .trim();
+    final body = [
+      if (before.isNotEmpty) before,
+      if (after.isNotEmpty) after,
+    ].join(' ');
+    final label = english ? 'Due: ' : '截止：';
+    lines[index] = body.isEmpty
+        ? '- [ ] $label${candidate.matchedText}'
+        : '- [ ] $body $label${candidate.matchedText}';
+    final newline = text.contains('\r\n') ? '\r\n' : '\n';
+    return lines.join(newline);
   }
 
   Future<void> _saveEditorText(NoteFile selected, String text) async {
@@ -816,7 +949,10 @@ class _NotesPageState extends State<NotesPage> {
       widget.localDataState.config,
     );
     if (unavailableReason != null) {
-      setState(() => _fimMessage = l10n(context).notesFimNotTriggered(unavailableReason));
+      setState(
+        () =>
+            _fimMessage = l10n(context).notesFimNotTriggered(unavailableReason),
+      );
       return;
     }
 
@@ -978,12 +1114,18 @@ class _NotesPageState extends State<NotesPage> {
           setState(() => _editorMessage = l10n(context).notesRegenerated);
         }
       } else {
-        setState(() => _editorMessage = l10n(context).notesRegenerateFailedMessage(result.errorMessage));
+        setState(
+          () => _editorMessage = l10n(
+            context,
+          ).notesRegenerateFailedMessage(result.errorMessage),
+        );
       }
     } catch (error, stackTrace) {
       debugPrint('Failed to regenerate report: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = l10n(context).notesRegenerateFailedRetry);
+        setState(
+          () => _editorMessage = l10n(context).notesRegenerateFailedRetry,
+        );
       }
     } finally {
       if (mounted) {
@@ -1005,7 +1147,9 @@ class _NotesPageState extends State<NotesPage> {
         return;
       }
       if (images.isEmpty) {
-        setState(() => _editorMessage = l10n(context).notesImageSelectionCanceled);
+        setState(
+          () => _editorMessage = l10n(context).notesImageSelectionCanceled,
+        );
         return;
       }
       final copiedImages = <NoteImageAttachment>[];
@@ -1037,7 +1181,9 @@ class _NotesPageState extends State<NotesPage> {
     } on ArgumentError catch (error, stackTrace) {
       debugPrint('Unsupported image selected: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = l10n(context).notesImageFormatUnsupported);
+        setState(
+          () => _editorMessage = l10n(context).notesImageFormatUnsupported,
+        );
       }
     } catch (error, stackTrace) {
       debugPrint('Failed to insert image: $error\n$stackTrace');
@@ -1136,12 +1282,18 @@ class _NotesPageState extends State<NotesPage> {
     } on ArgumentError catch (error, stackTrace) {
       debugPrint('Unsupported clipboard image file: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = l10n(context).notesClipboardImageFormatUnsupported);
+        setState(
+          () => _editorMessage = l10n(
+            context,
+          ).notesClipboardImageFormatUnsupported,
+        );
       }
     } catch (error, stackTrace) {
       debugPrint('Failed to paste clipboard image files: $error\n$stackTrace');
       if (mounted) {
-        setState(() => _editorMessage = l10n(context).notesClipboardImagePasteFailed);
+        setState(
+          () => _editorMessage = l10n(context).notesClipboardImagePasteFailed,
+        );
       }
     }
   }
@@ -1173,7 +1325,9 @@ class _NotesPageState extends State<NotesPage> {
       if (!mounted) {
         return;
       }
-      setState(() => _editorMessage = l10n(context).notesClipboardImagePasteFailed);
+      setState(
+        () => _editorMessage = l10n(context).notesClipboardImagePasteFailed,
+      );
     }
   }
 
@@ -1183,7 +1337,9 @@ class _NotesPageState extends State<NotesPage> {
       data = await Clipboard.getData(Clipboard.kTextPlain);
     } catch (_) {
       if (mounted) {
-        setState(() => _editorMessage = l10n(context).notesClipboardTextReadFailed);
+        setState(
+          () => _editorMessage = l10n(context).notesClipboardTextReadFailed,
+        );
       }
       return;
     }
@@ -1569,7 +1725,10 @@ class _NotesSidebar extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(l10n(context).notesNotebookTitle, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                l10n(context).notesNotebookTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1589,7 +1748,9 @@ class _NotesSidebar extends StatelessWidget {
           const SizedBox(height: 16),
           _NotesSearchField(
             controller: searchController,
-            hintText: l10n(context).notesSearchAllHint(noteKindLabel(context, kind)),
+            hintText: l10n(
+              context,
+            ).notesSearchAllHint(noteKindLabel(context, kind)),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -1648,7 +1809,9 @@ class _FilteredNoteList extends StatelessWidget {
     if (results.isEmpty) {
       return Center(
         child: Text(
-          searching ? l10n(context).notesSearching : l10n(context).notesNoSearchResults,
+          searching
+              ? l10n(context).notesSearching
+              : l10n(context).notesNoSearchResults,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
@@ -2008,7 +2171,10 @@ class _NotesKindMenuItem extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(noteKindLabel(context, kind), style: titleStyle),
+                                    Text(
+                                      noteKindLabel(context, kind),
+                                      style: titleStyle,
+                                    ),
                                     const SizedBox(height: 3),
                                     Text(
                                       _descriptionForKind(context, kind),

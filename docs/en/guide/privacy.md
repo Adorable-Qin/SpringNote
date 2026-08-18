@@ -1,6 +1,6 @@
 # Privacy & Security
 
-SpringNote handles local records and AI services separately. Notes and images are stored by default in the data directory you choose; files selected from the home page are not copied as local attachments, but file names and paths may be sent to model services per your configuration when using AI features.
+SpringNote-Agenda handles local records and AI services separately. Notes and images are stored by default in the data directory you choose; files selected from the home page are not copied as local attachments, but file names and paths may be sent to model services per your configuration when using AI features.
 
 ## Local Data
 
@@ -18,7 +18,7 @@ Provider API keys should only be entered in the application settings. Do not inc
 
 ## Images and File Paths
 
-When adding an image, SpringNote copies it to the current data directory; the original file is not deleted. Regular files currently send only the file name and path information — the application does not read file contents or copy the file. Deleting an image link from a note does not automatically delete the image from the data directory; cleanup must be confirmed in Storage Management.
+When adding an image, SpringNote-Agenda copies it to the current data directory; the original file is not deleted. Regular files currently send only the file name and path information — the application does not read file contents or copy the file. Deleting an image link from a note does not automatically delete the image from the data directory; cleanup must be confirmed in Storage Management.
 
 ## Cloud Sync
 

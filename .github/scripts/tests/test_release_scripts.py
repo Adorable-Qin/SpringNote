@@ -26,7 +26,7 @@ def run_script(*args: str) -> subprocess.CompletedProcess[str]:
 
 
 def write_valid_appcast(metadata_dir: Path, *, version: str = "1.2.3") -> None:
-    release_base = f"https://github.com/Radiant303/SpringNote/releases/download/{version}"
+    release_base = f"https://github.com/Adorable-Qin/SpringNote-Agenda/releases/download/{version}"
     metadata_dir.joinpath("appcast.xml").write_text(
         "\n".join(
             [
@@ -37,7 +37,7 @@ def write_valid_appcast(metadata_dir: Path, *, version: str = "1.2.3") -> None:
                 f"      <sparkle:version>{version}</sparkle:version>",
                 f"      <sparkle:shortVersionString>{version}</sparkle:shortVersionString>",
                 (
-                    f'      <enclosure url="{release_base}/SpringNote-{version}-macos-arm64.dmg" '
+                    f'      <enclosure url="{release_base}/SpringNote-Agenda-{version}-macos-arm64.dmg" '
                     'sparkle:edSignature="mac-signature" sparkle:os="macos" '
                     'length="123" type="application/octet-stream" />'
                 ),
@@ -100,9 +100,9 @@ class ReleaseScriptTests(unittest.TestCase):
                 [
                     "version=1.2.3",
                     "tag=1.2.3",
-                    "release_name=SpringNote v1.2.3：稳定发布",
-                    "macos_asset=SpringNote-1.2.3-macos-arm64.dmg",
-                    "windows_asset=SpringNote-1.2.3-windows-x64-setup.exe",
+                    "release_name=SpringNote-Agenda v1.2.3：稳定发布",
+                    "macos_asset=SpringNote-Agenda-1.2.3-macos-arm64.dmg",
+                    "windows_asset=SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                 ],
             )
 
@@ -196,11 +196,11 @@ class ReleaseScriptTests(unittest.TestCase):
                 "--version",
                 "1.2.3",
                 "--repo",
-                "Radiant303/SpringNote",
+                "Adorable-Qin/SpringNote-Agenda",
                 "--macos-asset",
-                "SpringNote-1.2.3-macos-arm64.dmg",
+                "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                 "--windows-asset",
-                "SpringNote-1.2.3-windows-x64-setup.exe",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                 "--notes",
                 str(notes),
                 "--output-dir",
@@ -217,11 +217,11 @@ class ReleaseScriptTests(unittest.TestCase):
                 "--version",
                 "1.2.3",
                 "--repo",
-                "Radiant303/SpringNote",
+                "Adorable-Qin/SpringNote-Agenda",
                 "--macos-asset",
-                "SpringNote-1.2.3-macos-arm64.dmg",
+                "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                 "--windows-asset",
-                "SpringNote-1.2.3-windows-x64-setup.exe",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                 "--metadata-dir",
                 str(output_dir),
             )
@@ -250,7 +250,7 @@ class ReleaseScriptTests(unittest.TestCase):
                     {
                         "version": "9.9.9",
                         "change_time": "2026年6月29日 13:30:00",
-                        "download_url": "https://github.com/Radiant303/SpringNote/releases/download/1.2.3/SpringNote-1.2.3-macos-arm64.dmg",
+                        "download_url": "https://github.com/Adorable-Qin/SpringNote-Agenda/releases/download/1.2.3/SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                     }
                 ),
                 encoding="utf-8",
@@ -260,7 +260,7 @@ class ReleaseScriptTests(unittest.TestCase):
                     {
                         "version": "1.2.3",
                         "change_time": "2026年6月29日 13:30:00",
-                        "download_url": "https://github.com/Radiant303/SpringNote/releases/download/1.2.3/SpringNote-1.2.3-windows-x64-setup.exe",
+                        "download_url": "https://github.com/Adorable-Qin/SpringNote-Agenda/releases/download/1.2.3/SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                     }
                 ),
                 encoding="utf-8",
@@ -276,11 +276,11 @@ class ReleaseScriptTests(unittest.TestCase):
                 "--version",
                 "1.2.3",
                 "--repo",
-                "Radiant303/SpringNote",
+                "Adorable-Qin/SpringNote-Agenda",
                 "--macos-asset",
-                "SpringNote-1.2.3-macos-arm64.dmg",
+                "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                 "--windows-asset",
-                "SpringNote-1.2.3-windows-x64-setup.exe",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                 "--metadata-dir",
                 str(metadata_dir),
             )
@@ -293,13 +293,13 @@ class ReleaseScriptTests(unittest.TestCase):
             tmp_path = Path(tmp)
             metadata_dir = tmp_path / "update"
             metadata_dir.mkdir()
-            release_base = "https://github.com/Radiant303/SpringNote/releases/download/1.2.3"
+            release_base = "https://github.com/Adorable-Qin/SpringNote-Agenda/releases/download/1.2.3"
             metadata_dir.joinpath("mac.json").write_text(
                 json.dumps(
                     {
                         "version": "1.2.3",
                         "change_time": "2026年6月29日 13:30:00",
-                        "download_url": f"{release_base}/SpringNote-1.2.3-macos-arm64.dmg",
+                        "download_url": f"{release_base}/SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                     }
                 ),
                 encoding="utf-8",
@@ -309,7 +309,7 @@ class ReleaseScriptTests(unittest.TestCase):
                     {
                         "version": "1.2.3",
                         "change_time": "2026年6月29日 13:30:00",
-                        "download_url": f"{release_base}/SpringNote-1.2.3-windows-x64-setup.exe",
+                        "download_url": f"{release_base}/SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                     }
                 ),
                 encoding="utf-8",
@@ -325,11 +325,11 @@ class ReleaseScriptTests(unittest.TestCase):
                 "--version",
                 "1.2.3",
                 "--repo",
-                "Radiant303/SpringNote",
+                "Adorable-Qin/SpringNote-Agenda",
                 "--macos-asset",
-                "SpringNote-1.2.3-macos-arm64.dmg",
+                "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                 "--windows-asset",
-                "SpringNote-1.2.3-windows-x64-setup.exe",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                 "--metadata-dir",
                 str(metadata_dir),
             )
@@ -342,13 +342,13 @@ class ReleaseScriptTests(unittest.TestCase):
             tmp_path = Path(tmp)
             metadata_dir = tmp_path / "update"
             metadata_dir.mkdir()
-            release_base = "https://github.com/Radiant303/SpringNote/releases/download/1.2.3"
+            release_base = "https://github.com/Adorable-Qin/SpringNote-Agenda/releases/download/1.2.3"
             metadata_dir.joinpath("mac.json").write_text(
                 json.dumps(
                     {
                         "version": "1.2.3",
                         "change_time": "2026年6月29日 13:30:00",
-                        "download_url": f"{release_base}/SpringNote-1.2.3-macos-arm64.dmg",
+                        "download_url": f"{release_base}/SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                     }
                 ),
                 encoding="utf-8",
@@ -358,7 +358,7 @@ class ReleaseScriptTests(unittest.TestCase):
                     {
                         "version": "1.2.3",
                         "change_time": "2026年6月29日 13:30:00",
-                        "download_url": f"{release_base}/SpringNote-1.2.3-windows-x64-setup.exe",
+                        "download_url": f"{release_base}/SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                     }
                 ),
                 encoding="utf-8",
@@ -375,7 +375,7 @@ class ReleaseScriptTests(unittest.TestCase):
                         "  <channel>",
                         "    <item>",
                         (
-                            f'      <enclosure url="{release_base}/SpringNote-1.2.3-windows-x64-setup.exe" '
+                            f'      <enclosure url="{release_base}/SpringNote-Agenda-1.2.3-windows-x64-setup.exe" '
                             'sparkle:os="windows" length="456" type="application/octet-stream" />'
                         ),
                         "    </item>",
@@ -392,11 +392,11 @@ class ReleaseScriptTests(unittest.TestCase):
                 "--version",
                 "1.2.3",
                 "--repo",
-                "Radiant303/SpringNote",
+                "Adorable-Qin/SpringNote-Agenda",
                 "--macos-asset",
-                "SpringNote-1.2.3-macos-arm64.dmg",
+                "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                 "--windows-asset",
-                "SpringNote-1.2.3-windows-x64-setup.exe",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                 "--metadata-dir",
                 str(metadata_dir),
             )
@@ -409,13 +409,13 @@ class ReleaseScriptTests(unittest.TestCase):
             tmp_path = Path(tmp)
             metadata_dir = tmp_path / "update"
             metadata_dir.mkdir()
-            release_base = "https://github.com/Radiant303/SpringNote/releases/download/1.2.3"
+            release_base = "https://github.com/Adorable-Qin/SpringNote-Agenda/releases/download/1.2.3"
             metadata_dir.joinpath("mac.json").write_text(
                 json.dumps(
                     {
                         "version": "1.2.3",
                         "change_time": "2026年6月29日 13:30:00",
-                        "download_url": f"{release_base}/SpringNote-1.2.3-macos-arm64.dmg",
+                        "download_url": f"{release_base}/SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                     }
                 ),
                 encoding="utf-8",
@@ -425,7 +425,7 @@ class ReleaseScriptTests(unittest.TestCase):
                     {
                         "version": "1.2.3",
                         "change_time": "2026年6月29日 13:30:00",
-                        "download_url": f"{release_base}/SpringNote-1.2.3-windows-x64-setup.exe",
+                        "download_url": f"{release_base}/SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                     }
                 ),
                 encoding="utf-8",
@@ -449,11 +449,11 @@ class ReleaseScriptTests(unittest.TestCase):
                 "--version",
                 "1.2.3",
                 "--repo",
-                "Radiant303/SpringNote",
+                "Adorable-Qin/SpringNote-Agenda",
                 "--macos-asset",
-                "SpringNote-1.2.3-macos-arm64.dmg",
+                "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                 "--windows-asset",
-                "SpringNote-1.2.3-windows-x64-setup.exe",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                 "--metadata-dir",
                 str(metadata_dir),
             )
@@ -470,11 +470,11 @@ class ReleaseScriptTests(unittest.TestCase):
             "--version",
             "1.2.3",
             "--repo",
-            "Radiant303/SpringNote",
+            "Adorable-Qin/SpringNote-Agenda",
             "--macos-asset",
-            "SpringNote-1.2.3-macos-arm64.dmg",
+            "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
             "--windows-asset",
-            "SpringNote-1.2.3-windows-x64-setup.exe",
+            "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
             "--metadata-dir",
             "update",
         )
@@ -488,11 +488,11 @@ class ReleaseScriptTests(unittest.TestCase):
             "--version",
             "1.2.3",
             "--repo",
-            "Radiant303/SpringNote",
+            "Adorable-Qin/SpringNote-Agenda",
             "--macos-asset",
-            "SpringNote-1.2.3-macos-arm64.dmg",
+            "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
             "--windows-asset",
-            "SpringNote-1.2.3-windows-x64-setup.exe",
+            "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
             "--metadata-dir",
             "update",
         )
@@ -516,11 +516,11 @@ class ReleaseScriptTests(unittest.TestCase):
                 "--version",
                 "1.2.3",
                 "--repo",
-                "Radiant303/SpringNote",
+                "Adorable-Qin/SpringNote-Agenda",
                 "--macos-asset",
-                "SpringNote-1.2.3-macos-arm64.dmg",
+                "SpringNote-Agenda-1.2.3-macos-arm64.dmg",
                 "--windows-asset",
-                "SpringNote-1.2.3-windows-x64-setup.exe",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
                 "--metadata-dir",
                 str(metadata_dir),
             )

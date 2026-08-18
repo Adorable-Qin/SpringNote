@@ -384,24 +384,15 @@ fn render_daily_merge_template(
     template: &str,
     date: &str,
     existing_markdown: &str,
-    industry: &str,
+    _industry: &str,
     language: &str,
 ) -> String {
     let english = language.trim().eq_ignore_ascii_case("en");
-    let (empty_text, no_industry) = if english {
-        ("(empty)", "Not set")
-    } else {
-        ("（空）", "未设置")
-    };
+    let empty_text = if english { "(empty)" } else { "（空）" };
     let existing = if existing_markdown.trim().is_empty() {
         empty_text
     } else {
         existing_markdown.trim()
-    };
-    let industry = if industry.trim().is_empty() {
-        no_industry
-    } else {
-        industry.trim()
     };
     template
         .replace("{date}", date)
@@ -410,7 +401,7 @@ fn render_daily_merge_template(
         .replace("{completed}", empty_text)
         .replace("{issues}", empty_text)
         .replace("{plans}", empty_text)
-        .replace("{industry}", industry)
+        .replace("{industry}", "")
 }
 
 /// 渲染周报整理自定义提示词模板；模板为空时返回空串，由生成逻辑回退到内置提示词。
@@ -418,32 +409,23 @@ fn render_weekly_report_template(
     template: &str,
     period_label: &str,
     source_markdown: &str,
-    industry: &str,
+    _industry: &str,
     language: &str,
 ) -> String {
     if template.trim().is_empty() {
         return String::new();
     }
     let english = language.trim().eq_ignore_ascii_case("en");
-    let (empty_text, no_industry) = if english {
-        ("(empty)", "Not set")
-    } else {
-        ("（空）", "未设置")
-    };
+    let empty_text = if english { "(empty)" } else { "（空）" };
     let source = if source_markdown.trim().is_empty() {
         empty_text
     } else {
         source_markdown.trim()
     };
-    let industry = if industry.trim().is_empty() {
-        no_industry
-    } else {
-        industry.trim()
-    };
     template
         .replace("{period_label}", period_label.trim())
         .replace("{source_markdown}", source)
-        .replace("{industry}", industry)
+        .replace("{industry}", "")
 }
 
 fn week_start(date: NaiveDate) -> NaiveDate {
@@ -616,7 +598,7 @@ mod tests {
     #[test]
     fn render_daily_merge_template_replaces_all_placeholders() {
         let rendered = render_daily_merge_template(
-            "日期:{date} 已有:{existing_markdown} 新增:{raw_input} 完成:{completed} 问题:{issues} 计划:{plans} 行业:{industry}",
+            "日期:{date} 已有:{existing_markdown} 新增:{raw_input} 完成:{completed} 问题:{issues} 计划:{plans}",
             "2026-07-22",
             "  已有内容。  ",
             "",
@@ -624,14 +606,14 @@ mod tests {
         );
         assert_eq!(
             rendered,
-            "日期:2026-07-22 已有:已有内容。 新增: 完成:（空） 问题:（空） 计划:（空） 行业:未设置"
+            "日期:2026-07-22 已有:已有内容。 新增: 完成:（空） 问题:（空） 计划:（空）"
         );
     }
 
     #[test]
     fn render_weekly_report_template_replaces_all_placeholders() {
         let rendered = render_weekly_report_template(
-            "周期:{period_label} 内容:{source_markdown} 行业:{industry}",
+            "周期:{period_label} 内容:{source_markdown}",
             "2026-W30（2026-07-20 至 2026-07-26）",
             "  日报内容。  ",
             "",
@@ -639,7 +621,7 @@ mod tests {
         );
         assert_eq!(
             rendered,
-            "周期:2026-W30（2026-07-20 至 2026-07-26） 内容:日报内容。 行业:未设置"
+            "周期:2026-W30（2026-07-20 至 2026-07-26） 内容:日报内容。"
         );
 
         let empty = render_weekly_report_template("  ", "p", "s", "", "zh");

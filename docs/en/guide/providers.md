@@ -73,4 +73,4 @@ Deleting a model does not delete the server-side model or modify already-generat
 
 Before deleting a provider, a confirmation popup is displayed. Confirming removes the provider's connection configuration, enabled status, and associated models; default model selections that depend on these models become invalid.
 
-Deleting a provider only affects local configuration saved in SpringNote; it does not delete the server-side account, remote models, existing notes, or images. Deletion cannot be undone through the provider page; the provider must be re-added and reconfigured.
+Deleting a provider only affects local configuration saved in SpringNote-Agenda; it does not delete the server-side account, remote models, existing notes, or images. Deletion cannot be undone through the provider page; the provider must be re-added and reconfigured.

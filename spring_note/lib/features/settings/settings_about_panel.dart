@@ -5,9 +5,9 @@ class _AboutPanel extends StatelessWidget {
 
   final UpdateCheckService updateCheckService;
 
-  static const _githubUrl = 'https://github.com/Radiant303/SpringNote';
+  static const _githubUrl = 'https://github.com/Adorable-Qin/SpringNote-Agenda';
   static const _licenseUrl =
-      'https://github.com/Radiant303/SpringNote/blob/main/LICENSE';
+      'https://github.com/Adorable-Qin/SpringNote-Agenda/blob/main/LICENSE';
   static const _externalLinkService = ExternalLinkService();
 
   @override
@@ -41,7 +41,7 @@ class _AboutPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'SpringNote',
+                    'SpringNote-Agenda',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Text(

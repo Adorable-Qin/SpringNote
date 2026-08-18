@@ -8,13 +8,13 @@
 namespace {
 
 constexpr wchar_t kSingleInstanceMutexName[] =
-    L"Local\\Radiant303.SpringNote.SingleInstance";
+    L"Local\\AdorableQin.SpringNoteAgenda.SingleInstance";
 constexpr wchar_t kMainWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
-constexpr wchar_t kMainWindowTitle[] = L"SpringNote";
+constexpr wchar_t kMainWindowTitle[] = L"SpringNote-Agenda";
 
 void RegisterRestartManagerRelaunch() {
   // Inno Setup uses Windows Restart Manager to close and relaunch apps during
-  // updates. Register this process so silent updates can bring SpringNote back.
+  // updates. Register this process so silent updates can bring SpringNote-Agenda back.
   RegisterApplicationRestart(L"", 0);
 }
 
@@ -67,7 +67,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 792);
-  if (!window.Create(L"SpringNote", origin, size)) {
+  if (!window.Create(L"SpringNote-Agenda", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

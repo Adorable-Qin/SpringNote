@@ -39,7 +39,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageEn => 'English';
 
   @override
-  String get coreStartupFailedTitle => 'SpringNote failed to start';
+  String get coreStartupFailedTitle => 'SpringNote-Agenda failed to start';
 
   @override
   String get coreAutoSyncIssueMessage =>
@@ -139,7 +139,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coreUpdateLaunchingWindows =>
-      'Launching installer; SpringNote will exit and restart...';
+      'Launching installer; SpringNote-Agenda will exit and restart...';
 
   @override
   String get coreUpdateLaunching =>

@@ -182,14 +182,13 @@
                     <div class="flex flex-col">
                         <span
                             class="text-[11px] font-medium tracking-wider text-slate-400 uppercase mb-1 select-none"
-                            >Earnings Today</span
+                            >CURRENT WEEK</span
                         >
                         <div class="flex items-baseline gap-3">
                             <span
-                                id="earningsCounter"
+                                id="currentWeek"
                                 class="text-[56px] font-bold tracking-tighter text-slate-900 leading-none font-mono"
-                                >0</span
-                            >
+                                >W34</span>
                             <span
                                 class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-0.5 select-none"
                             >
@@ -198,13 +197,12 @@
                             </span>
                         </div>
                         <span class="text-xs text-slate-400 mt-2 select-none"
-                            >累计总收益
+                            >已完成事项
                             <span
-                                id="totalCoins"
+                                id="completedItems"
                                 class="font-medium text-slate-600 font-mono"
-                                >14,250</span
-                            >
-                            coins</span
+                                >12</span
+                            ></span
                         >
                     </div>
                 </div>
@@ -457,57 +455,7 @@
                 heatmap.appendChild(wrapper);
             }
 
-            // ----------------------------------------------------
-            // 2. 核心联动主时间轴：大数字缓动计数器 + 圆环同步
-            // ----------------------------------------------------
-            const targetEarnings = 128;
-            const counterElement = document.getElementById("earningsCounter");
-            const progressCircle = document.getElementById("progressCircle");
-
-            const duration = 1600;
-            let startTime = null;
-
-            function easeOutQuart(x) {
-                return 1 - Math.pow(1 - x, 4);
-            }
-
-            function animate(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-
-                const easedProgress = easeOutQuart(progress);
-                const currentValue = Math.floor(easedProgress * targetEarnings);
-
-                counterElement.textContent = currentValue;
-
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            }
-
-            // 延迟主轴节点统一启动
-            setTimeout(() => {
-                requestAnimationFrame(animate);
-                progressCircle.setAttribute("stroke-dasharray", "75, 100");
-            }, TIMELINE_START);
-
-            // ----------------------------------------------------
-            // 3. 后台收益呼吸微增逻辑
-            // ----------------------------------------------------
-            const totalCoinsElement = document.getElementById("totalCoins");
-            let currentCoins = 14250.0;
-
-            setInterval(() => {
-                const previousInteger = Math.floor(currentCoins);
-                currentCoins += 0.12;
-                const currentInteger = Math.floor(currentCoins);
-
-                if (currentInteger > previousInteger) {
-                    totalCoinsElement.textContent =
-                        currentInteger.toLocaleString("en-US");
-                }
-            }, 1000);
+            // 当前周和项目事项由真实应用数据驱动。
         </script>
     </body>
 </html>

@@ -2,13 +2,13 @@
 
 ## Supported Platforms
 
-SpringNote provides desktop versions for Windows and macOS. Download the installer that matches your operating system and processor architecture; mismatched versions may fail to start or lack full system capabilities.
+SpringNote-Agenda provides desktop versions for Windows and macOS. Download the installer that matches your operating system and processor architecture; mismatched versions may fail to start or lack full system capabilities.
 
 ## Windows
 
 The Windows version requires 64-bit and a supported system update status. The installer places application files and required runtime components in the installation directory; if the system lacks necessary components, you may be prompted to install additional dependencies during setup or first launch.
 
-Desktop widget, tray, global shortcuts, and multi-monitor position persistence depend on the Windows desktop environment. Remote desktop, window management tools, or system policies may alter how these features behave.
+Tray behavior and global shortcuts depend on the Windows desktop environment. Remote desktop, window management tools, or system policies may alter how these features behave.
 
 ## macOS
 

@@ -2,15 +2,15 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 ; Non-commercial use only
 
-#define MyAppName "SpringNote"
+#define MyAppName "SpringNote-Agenda"
 #define EnvAppVersion GetEnv("SPRINGNOTE_APP_VERSION")
 #if EnvAppVersion != ""
   #define MyAppVersion EnvAppVersion
 #else
-  #define MyAppVersion "1.0.2"
+  #define MyAppVersion "1.0.10"
 #endif
-#define MyAppPublisher "Radiant303"
-#define MyAppURL "https://github.com/Radiant303/SpringNote"
+#define MyAppPublisher "Adorable-Qin"
+#define MyAppURL "https://github.com/Adorable-Qin/SpringNote-Agenda"
 #define MyAppExeName "SpringNote.exe"
 #define EnvBuildOutputDir GetEnv("SPRINGNOTE_BUILD_OUTPUT_DIR")
 #if EnvBuildOutputDir != ""
@@ -58,7 +58,7 @@ RestartApplications=no
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
 OutputDir={#SetupOutputDir}
-OutputBaseFilename=SpringNote-{#MyAppVersion}-windows-x64-setup
+OutputBaseFilename=SpringNote-Agenda-{#MyAppVersion}-windows-x64-setup
 SolidCompression=yes
 WizardStyle=modern
 LicenseFile=..\LICENSE

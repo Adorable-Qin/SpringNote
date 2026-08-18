@@ -12,7 +12,7 @@ Whether Smart Generation can process images depends on whether the selected mode
 
 File selection currently only generates file path information in the input. Upon submission, the file name and path are included as text content for daily note organization and AI requests, but the application does not read file contents, copy files, or create attachment references usable for note previews.
 
-Whether the model service can access the file path depends on the service and runtime environment. Sending a path to the model does not mean the model has read the file, nor that the file has been saved to the SpringNote data directory. File content parsing and true attachment management are not yet implemented.
+Whether the model service can access the file path depends on the service and runtime environment. Sending a path to the model does not mean the model has read the file, nor that the file has been saved to the SpringNote-Agenda data directory. File content parsing and true attachment management are not yet implemented.
 
 ## Smart Generation
 

@@ -1,6 +1,6 @@
 # Quick Start
 
->SpringNote's core functionality consists of three parts: recording, organizing, and reviewing.
+>SpringNote-Agenda's core functionality consists of three parts: recording, organizing, and reviewing.
 
 ## Step 1: Confirm Data Location
 
@@ -84,21 +84,7 @@ The thinking mode at the top of the Memory Book includes "Off", "High", and "Max
 
 Click "New Conversation" in the top-right corner to clear the current Memory Book session and start from an empty context. This does not delete local notes, search indices, or Memory Book configuration; the application currently does not provide old session history recovery.
 
-## Step 6: Use the Desktop Widget
-
-![Desktop Widget](/images/components.png)
-
-On Windows or macOS, SpringNote can display a standalone desktop widget. The widget shows the current timer, today's work duration and earnings, and controls the timer outside the main window.
-
-- Left-click the widget: Start or pause the timer;
-- Right-click the widget: Open the main window to the Home page;
-- Left-click drag the widget: Move the window position;
-- Hover over the widget in orb mode: Expand the widget;
-- Move the mouse away from the orb area: Collapse the widget.
-
-Widget position is saved after dragging; on multi-monitor setups it stays within the visible work area. Timer earnings are calculated from the daily work hours and daily wage in Settings; changing settings does not recalculate historical earnings.
-
-## Step 7: Configure Common Features
+## Step 6: Configure Common Features
 
 After getting started, continue configuring in Settings:
 
@@ -108,17 +94,14 @@ After getting started, continue configuring in Settings:
 - **Shortcuts**: Record global and input shortcuts via actual key presses;
 - **Cloud Sync**: Configure WebDAV connection and sync timing;
 - **Storage Management**: Scan, preview, and clean up images no longer referenced by notes;
-- **Statistics**: View heatmap, note counts, AI usage, work duration, and earnings.
+- **Statistics**: View heatmap, note counts, AI usage.
 
 ## Need Help?
 
 Whether you encounter issues or have ideas and suggestions, we welcome your feedback.
 
-We take every piece of feedback seriously and continuously improve SpringNote.
+We take every piece of feedback seriously and continuously improve SpringNote-Agenda.
 
-**Join the [SpringNote Official QQ Group](https://qm.qq.com/q/c6QiowtYSA) to share experiences and ideas.**
-
->QQ Group: **463423961**
 
 >[!TIP]When reporting issues, please include:
 >

@@ -24,4 +24,4 @@ If AI is unavailable or the refresh fails, edits are still saved locally, and co
 
 ## Prompt Settings
 
-The Global Sign prompt can be modified under "Settings > Preferences > Prompts". The prompt can use built-in information such as the current date, the day's daily note content, the current Global Sign JSON, new quick records, and industry. Modifications only affect future Global Sign organization and do not change the saved list content.
+The Global Sign prompt can be modified under "Settings > Preferences > Prompts". The prompt can use built-in information such as the current date, the day's daily note content, the current Global Sign JSON, and new quick records. Modifications only affect future Global Sign organization and do not change the saved list content.

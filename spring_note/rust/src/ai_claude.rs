@@ -880,7 +880,10 @@ pub fn build_messages_body(request: &AiChatRequest) -> Value {
 
 /// 与 OpenAI / Gemini 侧一致:结构化日报与日报合并关闭思考,降低成本并避免思考块干扰解析。
 fn disables_thinking(purpose: &str) -> bool {
-    matches!(purpose, "home_structured_note" | "daily_note_merge" | "global_sign")
+    matches!(
+        purpose,
+        "home_structured_note" | "daily_note_merge" | "global_sign"
+    )
 }
 
 /// 思考开启(显式配置或自适应模型默认开启)时不能自定义 temperature;
@@ -1178,7 +1181,6 @@ mod tests {
             thinking_enabled,
             reasoning_effort: effort.to_string(),
             language: "zh".to_string(),
-
 
             api_log_enabled: false,
         }

@@ -1,20 +1,6 @@
 # Preferences
 
-The Preferences page consists of eight independent cards. Each card only modifies its corresponding configuration and does not affect other cards' settings. Modified configurations are saved to the application configuration file and read by the relevant features. Desktop widget-related settings are grouped under "Widget" separately.
-
-## Personal Info
-
-Personal info includes daily work hours, daily wage, and industry. Daily work hours and daily wage are used for the desktop widget's earnings timer; the industry serves as background information for AI organization.
-
-Daily work hours are in hours, defaulting to 8. Daily wage is in RMB, defaulting to 200. Earnings are calculated using:
-
-```text
-Earnings per second = Daily wage ÷ (Daily work hours × 3600)
-```
-
-When daily work hours are less than or equal to 0, 8 hours is used for calculation. While the widget is running, earnings accumulate per second; accumulation stops when paused. After a local calendar date change, the current day's timer and earnings reset; cumulative statistics are retained.
-
-The default industry is "Internet". It serves as context for AI requests like daily note organization, adjusting terminology and expression without changing raw facts, and does not trigger separate AI requests. Modifying personal information does not regenerate existing documents.
+The Preferences page consists of independent configuration cards. Each card only modifies its corresponding configuration and does not affect other cards' settings. Modified configurations are saved to the application configuration file and read by the relevant features.
 
 ## Font & Display
 
@@ -34,7 +20,7 @@ Font & Display includes application font, theme mode, language, font size, and M
 
 Behavior & Startup includes auto-start on boot, show updates, and API network logging.
 
-**Auto-start on boot** launches SpringNote on system login. This option is only available on supported platforms; unsupported platforms show a platform restriction notice.
+**Auto-start on boot** launches SpringNote-Agenda on system login. This option is only available on supported platforms; unsupported platforms show a platform restriction notice.
 
 **Show updates** controls whether the application displays version update prompts. Disabling this does not prevent manual version and changelog viewing.
 
@@ -72,11 +58,11 @@ The Prompts card contains home column, daily note, weekly note, and Global Sign 
 
 Home columns allow editing the titles and AI descriptions of the three columns. Titles are used for home page display; AI descriptions tell the AI what each column should focus on. When an AI description is empty, the corresponding title is used as the description. After saving, these affect future organization and do not reprocess existing home page overviews.
 
-The daily note organization prompt controls how the AI merges the existing daily note with new input into the day's Markdown. The prompt can use built-in information such as the current date, existing daily note, new records, and industry. Modifications only affect future daily note organization and do not change already-saved daily notes.
+The daily note organization prompt controls how the AI merges the existing daily note with new input into the day's Markdown. The prompt can use built-in information such as the current date, existing daily note, new records. Modifications only affect future daily note organization and do not change already-saved daily notes.
 
-The weekly note organization prompt controls how the AI organizes the week's daily note content into a weekly note. The prompt can use built-in information such as the weekly period label, the week's daily note content, and industry. Modifications only affect future weekly note generation and do not change already-saved weekly notes.
+The weekly note organization prompt controls how the AI organizes the week's daily note content into a weekly note. The prompt can use built-in information such as the weekly period label, the week's daily note content. Modifications only affect future weekly note generation and do not change already-saved weekly notes.
 
-The Global Sign organization prompt controls how AI maintains the Global Sign list during Smart Generation on the home page. The prompt can use built-in information such as the current date, the day's daily note content, the current Global Sign JSON, new quick records, and industry. Modifications only affect future Global Sign organization and do not change the saved Global Sign content.
+The Global Sign organization prompt controls how AI maintains the Global Sign list during Smart Generation on the home page. The prompt can use built-in information such as the current date, the day's daily note content, the current Global Sign JSON, new quick records. Modifications only affect future Global Sign organization and do not change the saved Global Sign content.
 
 ## Memory Book Retrieval
 

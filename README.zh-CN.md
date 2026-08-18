@@ -1,22 +1,21 @@
 <!-- We've seen that note-taking tools usually just store text.
-But SpringNote treats notes as something that grows over time.
+But SpringNote-Agenda treats notes as something that grows over time.
 Instead of static records, we model a living system:
   .     *   .       .        o        .       *     .   .
     .   .      |     .    .        .     .     *   .     .
-       --o--           SpringNote           .      |   .
+       --o--           SpringNote-Agenda           .      |   .
     *    |      .   capture → organize → reflect → grow
  .    .     .     .        .        .     .   --*--   .
       .        *      .        .     .        |     .  .
-(ASCII art depicting scattered thoughts converging into SpringNote) -->
+(ASCII art depicting scattered thoughts converging into SpringNote-Agenda) -->
 
 <h1 align="center">
-  <img src="./snapshots/logo.png" width="48" alt="SpringNote Logo" style="vertical-align: -6px;">
-  SpringNote
+  <img src="./snapshots/logo.png" width="48" alt="SpringNote-Agenda Logo" style="vertical-align: -6px;">
+  SpringNote-Agenda
 </h1>
 
 <div align="center">
 <div>
-<a href="https://qm.qq.com/q/c6QiowtYSA"><img src="https://img.shields.io/badge/Group-170%20ONLINE-c9dce8?style=flat-square&labelColor=263a36&logo=qq&logoColor=white"></a>
 <img src="https://img.shields.io/badge/Flutter-3.x-d7e8e4?style=flat-square&labelColor=263a36&logo=flutter">
 <img src="https://img.shields.io/badge/Rust-2024-e8dfd8?style=flat-square&labelColor=263a36&logo=rust">
 <img src="https://img.shields.io/badge/License-AGPL--3.0-f2e8e5?style=flat-square&labelColor=5b403a">
@@ -24,40 +23,40 @@ Instead of static records, we model a living system:
 <p><a href="./README.md">English</a> | <a href="./README.zh-CN.md">简体中文</a></p>
 </div>
 
-## 为什么选择SpringNote
+## 为什么选择SpringNote-Agenda
 
 记录一件事很简单，但把多条记录整理到一起很花时间，也让很多人难以坚持用文字记录下自己。
 
-SpringNote 想省掉整理这一步：你可以随时记录想法和日常，AI 会帮你把这些内容整理成日报、周报和月报，让零散的记录自动汇总成一份完整的内容。
+SpringNote-Agenda 想省掉整理这一步：你可以随时记录想法和日常，AI 会帮你把这些内容整理成日报、周报和月报，让零散的记录自动汇总成一份完整的内容。
 
 通过「回忆书」，你还可以对过去的记录进行搜索和对话，随时找回曾经记下的信息。
 
-SpringNote 希望通过 AI 让记录这件事更容易长期坚持。
+SpringNote-Agenda 希望通过 AI 让记录这件事更容易长期坚持。
 
 
 ## 核心功能
 
 - **首页工作台**：活跃热力图、快速输入框和今日摘要卡片。
 
-  ![SpringNote 首页](./snapshots/index.png)
+  ![SpringNote-Agenda 首页](./snapshots/index.png)
 
 - **AI 智能生成**：在首页快速输入想法，由 AI 自动整理为结构化内容。
 
 - **便签编辑**：支持日报、周报、月报等记录类型，提供 Markdown 编辑、预览、代码块高亮和 AI 补全预测。
 
-  ![SpringNote 便签](./snapshots/note.png)
+  ![SpringNote-Agenda 便签](./snapshots/note.png)
 
 - **项目日历**：自动识别笔记中的截止日期，并在日历中显示逾期、今日到期和即将到期提醒。支持示例：`截止日期：2026-08-30`、`到期：2026/08/30`。
 
 - **回忆书对话**：以对话方式检索和整理记忆内容，支持思考过程、工具调用展示与 Markdown 渲染。
 
-  ![SpringNote 回忆书](./snapshots/memories.png)
+  ![SpringNote-Agenda 回忆书](./snapshots/memories.png)
 
 - **自动报告生成**：启动时可按日期补齐缺失的周报/月报，基于已有日报或周报生成总结。
 
 - **统计面板**：查看记录、活跃度、模型调用和时间范围内的数据概览。
 
-  ![SpringNote 统计面板](./snapshots/setting.png)
+  ![SpringNote-Agenda 统计面板](./snapshots/setting.png)
 
 
 - **桌面端极致体验**：支持自定义 Windows 标题栏、托盘、开机自启动、全局快捷键和系统字体切换。
@@ -68,7 +67,7 @@ SpringNote 希望通过 AI 让记录这件事更容易长期坚持。
 
 #### 通过 GitHub 下载
 
-请前往 [Release 页](https://github.com/Radiant303/SpringNote/releases/latest) 下载SpringNote
+请前往 [Release 页](https://github.com/Adorable-Qin/SpringNote-Agenda/releases/latest) 下载SpringNote-Agenda
 
 ### 第一步：确认数据位置
 
@@ -147,17 +146,13 @@ SpringNote 希望通过 AI 让记录这件事更容易长期坚持。
 
 ### 继续探索
 
-完成基本记录后，可以在设置中继续配置。更多使用说明请查看 [文档](https://radiant303.github.io/SpringNote/)
+完成基本记录后，可以在设置中继续配置。更多使用说明请查看 [文档](./docs)
 
 ## 🌍 社区
 
 无论你是在使用过程中遇到问题，还是有新的想法与建议，都欢迎与我们交流。
 
-我们会认真聆听每一条反馈，持续优化 SpringNote，让它变得更好。
-
-**加入 [SpringNote 官方交流群](https://qm.qq.com/q/c6QiowtYSA)，一起交流使用体验、分享想法。**
-
->QQ群号：**463423961**
+我们会认真聆听每一条反馈，持续优化 SpringNote-Agenda，让它变得更好。
 
 >[!TIP]
 >反馈问题时，请同时提供：
@@ -171,14 +166,14 @@ SpringNote 希望通过 AI 让记录这件事更容易长期坚持。
 
 ## 许可证
 
-SpringNote 及本仓库中的修改均以 **GNU Affero General Public License v3.0 only（AGPL-3.0-only）** 发布。分发修改版本，或通过网络向用户提供交互服务时，应按许可证要求提供对应源代码。详见 [LICENSE](./LICENSE)。
+SpringNote-Agenda 及本仓库中的修改均以 **GNU Affero General Public License v3.0 only（AGPL-3.0-only）** 发布。分发修改版本，或通过网络向用户提供交互服务时，应按许可证要求提供对应源代码。详见 [LICENSE](./LICENSE)。
 
 ## ❤️ Special Thanks
 
-特别感谢所有 Contributors和社区成员对 SpringNote 的支持 ❤️
+特别感谢所有 Contributors和社区成员对 SpringNote-Agenda 的支持 ❤️
 
-<a href="https://github.com/Radiant303/SpringNote/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Radiant303/SpringNote&max=300&columns=15" />
+<a href="https://github.com/Adorable-Qin/SpringNote-Agenda/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Adorable-Qin/SpringNote-Agenda&max=300&columns=15" />
 </a>
 
 ## ⭐ Star History
@@ -187,7 +182,7 @@ SpringNote 及本仓库中的修改均以 **GNU Affero General Public License v3
 > 如果本项目对您的生活 / 工作产生了帮助，或者您关注本项目的未来发展，请给项目 Star，这是我们维护这个开源项目的动力 <3
 
 <p align="center">
-  <img src="https://count.getloli.com/@SpringNote?name=SpringNote&theme=miku&padding=7&offset=0&align=center&scale=0.3&pixelated=1&darkmode=auto" alt="visitor count" />
+  <img src="https://count.getloli.com/@SpringNote-Agenda?name=SpringNote-Agenda&theme=miku&padding=7&offset=0&align=center&scale=0.3&pixelated=1&darkmode=auto" alt="visitor count" />
 </p>
 
-[![Star History Chart](https://api.star-history.com/chart?repos=Radiant303/SpringNote&type=date&legend=top-left&sealed_token=GD4g7Mlo0LVV9WahCTkgmdeB4LneMiVy1HvOlv59QgOYv9GbY7C2yT5b4TK0fvbgxLJLKR7jglKhMek04iRyeh6_NkURNIkQrpqVqGe9KQKBbm6StCexBQ)](https://www.star-history.com/?repos=Radiant303%2FSpringNote&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/chart?repos=Adorable-Qin/SpringNote-Agenda&type=date&legend=top-left)](https://www.star-history.com/?repos=Adorable-Qin%2FSpringNote-Agenda&type=date&legend=top-left)

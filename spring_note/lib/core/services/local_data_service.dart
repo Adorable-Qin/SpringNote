@@ -25,8 +25,7 @@ class DataDirectoryMigrationException implements Exception {
     final message = switch (error) {
       DataDirectoryMigrationError.nestedInsideCurrent =>
         'Save directory cannot be inside the current data directory.',
-      DataDirectoryMigrationError.isAFile =>
-        'Save directory cannot be a file.',
+      DataDirectoryMigrationError.isAFile => 'Save directory cannot be a file.',
       DataDirectoryMigrationError.macOSSecurityScopedAccessFailed =>
         'Failed to save the macOS folder access grant. '
             'Please choose the save directory again.',
@@ -256,7 +255,7 @@ class LocalDataService {
     final basePath = appDataPath ?? _platformDataDirectoryPath();
     if (basePath == null || basePath.trim().isEmpty) {
       throw StateError(
-        'No user data directory is available; cannot initialize SpringNote data.',
+        'No user data directory is available; cannot initialize SpringNote-Agenda data.',
       );
     }
     return Directory(_join(basePath, _appDataDirectoryName));

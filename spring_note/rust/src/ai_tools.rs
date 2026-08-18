@@ -4,7 +4,7 @@
 //! 各供应商模块（ai_openai / ai_claude / ai_gemini）只负责把这些定义
 //! 转换为各自接口的线上格式，不再各自维护一份工具清单。
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// 日期参数的格式约束（YYYY-MM-DD，年份限 20xx）。
 const DATE_PATTERN: &str = r"^20\d{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$";
@@ -41,25 +41,25 @@ pub fn memory_tools() -> Vec<AiToolDefinition> {
         },
         AiToolDefinition {
             name: "keyword_search",
-            description: "Run one global indexed search across SpringNote daily, weekly, and monthly Markdown records. Use this only when the record type is unknown or the answer may span multiple types; prefer a scoped search when the user names daily, weekly, or monthly records. When calling keyword_search, submit all distinctive keywords in this single call. Every keyword must contain at least two Unicode characters. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
+            description: "Run one global indexed search across SpringNote-Agenda daily, weekly, and monthly Markdown records. Use this only when the record type is unknown or the answer may span multiple types; prefer a scoped search when the user names daily, weekly, or monthly records. When calling keyword_search, submit all distinctive keywords in this single call. Every keyword must contain at least two Unicode characters. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
             parameters: keyword_parameters("global"),
             strict: true,
         },
         AiToolDefinition {
             name: "search_daily_notes",
-            description: "Search only SpringNote daily Markdown notes. Use this instead of keyword_search when the request is limited to daily notes or day-level records. Submit all distinctive keywords in this single call. Every keyword must contain at least two Unicode characters. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
+            description: "Search only SpringNote-Agenda daily Markdown notes. Use this instead of keyword_search when the request is limited to daily notes or day-level records. Submit all distinctive keywords in this single call. Every keyword must contain at least two Unicode characters. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
             parameters: keyword_parameters("daily-note"),
             strict: true,
         },
         AiToolDefinition {
             name: "search_weekly_notes",
-            description: "Search only SpringNote weekly Markdown reports. Use this instead of keyword_search when the request is limited to weekly reports. Submit all distinctive keywords in this single call. Every keyword must contain at least two Unicode characters. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
+            description: "Search only SpringNote-Agenda weekly Markdown reports. Use this instead of keyword_search when the request is limited to weekly reports. Submit all distinctive keywords in this single call. Every keyword must contain at least two Unicode characters. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
             parameters: keyword_parameters("weekly-report"),
             strict: true,
         },
         AiToolDefinition {
             name: "search_monthly_notes",
-            description: "Search only SpringNote monthly Markdown reports. Use this instead of keyword_search when the request is limited to monthly reports. Submit all distinctive keywords in this single call. Every keyword must contain at least two Unicode characters. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
+            description: "Search only SpringNote-Agenda monthly Markdown reports. Use this instead of keyword_search when the request is limited to monthly reports. Submit all distinctive keywords in this single call. Every keyword must contain at least two Unicode characters. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
             parameters: keyword_parameters("monthly-report"),
             strict: true,
         },
@@ -104,7 +104,7 @@ pub fn memory_tools() -> Vec<AiToolDefinition> {
         },
         AiToolDefinition {
             name: "read_weekly_note",
-            description: "Read only the SpringNote weekly report Markdown for a specific ISO week. Do not return daily notes. The result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
+            description: "Read only the SpringNote-Agenda weekly report Markdown for a specific ISO week. Do not return daily notes. The result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
             parameters: json!({
                 "type": "object",
                 "properties": {
@@ -121,7 +121,7 @@ pub fn memory_tools() -> Vec<AiToolDefinition> {
         },
         AiToolDefinition {
             name: "read_month_weekly_notes",
-            description: "Read all available SpringNote weekly report Markdown files whose ISO weeks overlap a specific calendar month. Return weekly reports only, not daily notes or the monthly report. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
+            description: "Read all available SpringNote-Agenda weekly report Markdown files whose ISO weeks overlap a specific calendar month. Return weekly reports only, not daily notes or the monthly report. Each result includes truncated and totalCharacters fields: truncated is true when the snippet is clipped to a character limit (clipped parts are marked with '...'), and totalCharacters is the record's full length.",
             parameters: json!({
                 "type": "object",
                 "properties": {
@@ -175,7 +175,7 @@ pub fn memory_tools() -> Vec<AiToolDefinition> {
             description: "Run several dependent tools in order as one call. A later step can reference an earlier step's result with placeholders inside its string arguments: $steps[N].field reads that field from step N's result (N is the zero-based step index), array elements use $steps[N].field[0], and a placeholder filling the whole string keeps the referenced value's original JSON type. Example: step 1 resolve_iso_week with {week: \"2026-W28\"}, step 2 read_week_daily_notes with {startDate: \"$steps[0].startDate\", endDate: \"$steps[0].endDate\"}. Execution stops at the first failing step. For independent calls use run_tool_batch instead. Cannot call run_tool_sequence or run_tool_batch.",
             parameters: orchestration_parameters(
                 "steps",
-                "The tools to run in order, each reusing earlier results via placeholders."
+                "The tools to run in order, each reusing earlier results via placeholders.",
             ),
             strict: false,
         },
@@ -184,7 +184,7 @@ pub fn memory_tools() -> Vec<AiToolDefinition> {
             description: "Run several independent tools concurrently as one call. Every entry runs with its own arguments and returns its own result or error; no data flows between entries. For dependent calls use run_tool_sequence instead. Cannot call run_tool_sequence or run_tool_batch.",
             parameters: orchestration_parameters(
                 "calls",
-                "The tools to run concurrently; entries must not depend on each other."
+                "The tools to run concurrently; entries must not depend on each other.",
             ),
             strict: false,
         },
@@ -309,12 +309,16 @@ mod tests {
         assert_eq!(keywords["minItems"], 1);
         assert_eq!(keywords["maxItems"], 8);
         assert_eq!(keywords["items"]["minLength"], 2);
-        assert!(keyword_search
-            .description
-            .contains("prefer a scoped search"));
-        assert!(keyword_search
-            .description
-            .contains("submit all distinctive keywords in this single call"));
+        assert!(
+            keyword_search
+                .description
+                .contains("prefer a scoped search")
+        );
+        assert!(
+            keyword_search
+                .description
+                .contains("submit all distinctive keywords in this single call")
+        );
     }
 
     #[test]

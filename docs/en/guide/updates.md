@@ -1,6 +1,6 @@
 # Updates & Versions
 
-SpringNote is continuously improved with new features, bug fixes, and stability enhancements. Before upgrading, we recommend reviewing the changelog for the target version to understand new features, behavior changes, and any configuration that may need to be rechecked.
+SpringNote-Agenda is continuously improved with new features, bug fixes, and stability enhancements. Before upgrading, we recommend reviewing the changelog for the target version to understand new features, behavior changes, and any configuration that may need to be rechecked.
 
 ## Check Current Version
 
@@ -8,12 +8,12 @@ Open `Settings > About` to view the current version, system information, and pro
 
 ## Install Updates
 
-Download the installer matching your platform and system architecture from the [releases page](https://github.com/Radiant303/SpringNote/releases/latest) or the [QQ group](https://qm.qq.com/q/c6QiowtYSA).
+Download the installer matching your platform and system architecture from the [releases page](https://github.com/Adorable-Qin/SpringNote-Agenda/releases/latest).
 
 Before updating:
 
-1. Exit the running SpringNote instance.
-2. If using the desktop widget, tray, or sync features, wait for related operations to complete.
+1. Exit the running SpringNote-Agenda instance.
+2. If using tray or sync features, wait for related operations to complete.
 3. Regularly back up important data according to your storage strategy.
 
 ## Post-Update Checks
@@ -25,7 +25,7 @@ After entering the main interface, we recommend confirming:
 1. The data directory is correct.
 2. Recent daily notes and images open properly.
 3. Provider configurations and default models are still present.
-4. Shortcuts, tray, and desktop widget behave as expected.
+4. Shortcuts and tray behave as expected.
 
 If some AI features are unavailable after upgrading, check:
 
@@ -206,4 +206,4 @@ Do not delete existing configuration directly.
 
 - Implemented application update functionality.
 - Improved default application icon.
-- SpringNote officially released.
+- SpringNote-Agenda officially released.

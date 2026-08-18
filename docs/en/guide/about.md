@@ -6,11 +6,8 @@ When encountering issues, first note the current version and steps to reproduce,
 
 Of course, whether you encounter issues during use or have new ideas and suggestions, we welcome your feedback.
 
-We take every piece of feedback seriously and continuously improve SpringNote.
+We take every piece of feedback seriously and continuously improve SpringNote-Agenda.
 
-**Join the [SpringNote Official QQ Group](https://qm.qq.com/q/c6QiowtYSA) to share experiences and ideas.**
-
->QQ Group: **463423961**
 
 >[!TIP]When reporting issues, please include:
 >

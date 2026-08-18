@@ -70,7 +70,7 @@ class _SpringNoteAppState extends State<SpringNoteApp> {
   Widget build(BuildContext context) {
     final fontScale = AppTheme.fontScaleFactor(_config.fontScale);
     return MaterialApp(
-      title: 'SpringNote',
+      title: 'SpringNote-Agenda',
       debugShowCheckedModeBanner: false,
       locale: _resolveLocale(_config.language),
       localizationsDelegates: const [
@@ -108,7 +108,9 @@ class _SpringNoteAppState extends State<SpringNoteApp> {
               countryCode: 'CN',
             ),
             delegates: const [
-              _ForceEnglishDelegate<AppLocalizations>(AppLocalizations.delegate),
+              _ForceEnglishDelegate<AppLocalizations>(
+                AppLocalizations.delegate,
+              ),
               _ForceEnglishDelegate<MaterialLocalizations>(
                 GlobalMaterialLocalizations.delegate,
               ),

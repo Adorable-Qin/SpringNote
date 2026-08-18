@@ -11,7 +11,7 @@ Cloud sync uses a WebDAV service as remote storage. Connection settings include:
 - **Account**: Enter the account used for the WebDAV service.
 - **Password or App Token**: Enter the password or app-specific token required by the service.
 
-Once cloud sync is enabled, connection information can be edited and tested. Testing the connection checks whether the remote service is accessible and attempts to prepare the remote directory used by SpringNote. The test process does not modify local notes or images. If the test fails, the page retains local data and the current configuration.
+Once cloud sync is enabled, connection information can be edited and tested. Testing the connection checks whether the remote service is accessible and attempts to prepare the remote directory used by SpringNote-Agenda. The test process does not modify local notes or images. If the test fails, the page retains local data and the current configuration.
 
 Connection failures typically manifest as incorrect URL format, account or token without permission, network connection failure, request timeout, or unrecognized content returned by the remote service. A successful connection test only indicates that the current connection and directory preparation can complete; it does not guarantee that all subsequent sync operations will succeed.
 
@@ -46,7 +46,7 @@ Sync identifies changes on both sides based on file content, not just file names
 - When only one side has been modified, changes are synced to the other side.
 - When both sides have been modified simultaneously, the local version is retained and the cloud version is saved as a conflict copy, with the conflict count recorded in the sync results.
 
-Sync only processes the remote directory used by SpringNote and files within the sync scope; it does not import other directories in the WebDAV account as note content.
+Sync only processes the remote directory used by SpringNote-Agenda and files within the sync scope; it does not import other directories in the WebDAV account as note content.
 
 ## Deletion Confirmation
 

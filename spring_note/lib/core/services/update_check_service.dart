@@ -168,7 +168,7 @@ class UpdateCheckService {
 
   static const _timeout = Duration(seconds: 10);
   static const _defaultUpdateBaseUrl =
-      'https://api.github.com/repos/Radiant303/SpringNote/contents/update';
+      'https://api.github.com/repos/Adorable-Qin/SpringNote-Agenda/contents/update';
   static const _configuredUpdateBaseUrl = String.fromEnvironment(
     'SPRINGNOTE_UPDATE_BASE_URL',
   );
@@ -378,9 +378,7 @@ class UpdateCheckService {
     final app = File(Platform.resolvedExecutable);
     final updater = File(_joinPath(app.parent.path, 'SpringNoteUpdater.exe'));
     if (!await updater.exists()) {
-      throw const UpdateInstallException(
-        UpdateInstallErrorCode.updaterMissing,
-      );
+      throw const UpdateInstallException(UpdateInstallErrorCode.updaterMissing);
     }
     final updaterCopy = File(_joinPath(tempDir.path, 'SpringNoteUpdater.exe'));
     await updater.copy(updaterCopy.path);
@@ -470,9 +468,7 @@ class UpdateCheckService {
     final expected = await _readExpectedSha256(latest);
     final actual = await _calculateWindowsSha256(installer);
     if (actual.toLowerCase() != expected.toLowerCase()) {
-      throw const UpdateInstallException(
-        UpdateInstallErrorCode.checksumFailed,
-      );
+      throw const UpdateInstallException(UpdateInstallErrorCode.checksumFailed);
     }
   }
 
@@ -514,9 +510,7 @@ class UpdateCheckService {
       'SHA256',
     ]);
     if (result.exitCode != 0) {
-      throw const UpdateInstallException(
-        UpdateInstallErrorCode.checksumFailed,
-      );
+      throw const UpdateInstallException(UpdateInstallErrorCode.checksumFailed);
     }
 
     final output = '${result.stdout}\n${result.stderr}';
@@ -527,9 +521,7 @@ class UpdateCheckService {
       }
     }
 
-    throw const UpdateInstallException(
-      UpdateInstallErrorCode.checksumFailed,
-    );
+    throw const UpdateInstallException(UpdateInstallErrorCode.checksumFailed);
   }
 
   String _safeFileName(String fileName) {
@@ -537,7 +529,9 @@ class UpdateCheckService {
       RegExp(r'[<>:"/\\|?*\x00-\x1F]'),
       '_',
     );
-    return sanitized.trim().isEmpty ? 'SpringNote-update.exe' : sanitized;
+    return sanitized.trim().isEmpty
+        ? 'SpringNote-Agenda-update.exe'
+        : sanitized;
   }
 
   String _joinPath(String directory, String name) {

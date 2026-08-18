@@ -33,8 +33,8 @@
 
 ### 检查清单 / Checklist
 
-<!--如果分支被合并，你的代码可能会被 SpringNote 用户使用。提交前请核查以下内容。-->
-<!--If merged, your code may be used by SpringNote users. Please double-check the following items before submitting.-->
+<!--如果分支被合并，你的代码可能会被 SpringNote-Agenda 用户使用。提交前请核查以下内容。-->
+<!--If merged, your code may be used by SpringNote-Agenda users. Please double-check the following items before submitting.-->
 
 - [ ] 😊 本 PR 范围清晰，不包含无关改动。/ This PR has a clear scope and does not include unrelated changes.
 - [ ] 👀 我已测试受影响功能，或说明了为什么不适用测试。/ I have tested the affected feature or explained why testing is not applicable.

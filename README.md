@@ -1,22 +1,21 @@
 <!-- We've seen that note-taking tools usually just store text.
-But SpringNote treats notes as something that grows over time.
+But SpringNote-Agenda treats notes as something that grows over time.
 Instead of static records, we model a living system:
   .     *   .       .        o        .       *     .   .
     .   .      |     .    .        .     .     *   .     .
-       --o--           SpringNote           .      |   .
+       --o--           SpringNote-Agenda           .      |   .
     *    |      .   capture → organize → reflect → grow
  .    .     .     .        .        .     .   --*--   .
       .        *      .        .     .        |     .  .
-(ASCII art depicting scattered thoughts converging into SpringNote) -->
+(ASCII art depicting scattered thoughts converging into SpringNote-Agenda) -->
 
 <h1 align="center">
-  <img src="./snapshots/logo.png" width="48" alt="SpringNote Logo" style="vertical-align: -6px;">
-  SpringNote
+  <img src="./snapshots/logo.png" width="48" alt="SpringNote-Agenda Logo" style="vertical-align: -6px;">
+  SpringNote-Agenda
 </h1>
 
 <div align="center">
 <div>
-<a href="https://qm.qq.com/q/c6QiowtYSA"><img src="https://img.shields.io/badge/Group-170%20ONLINE-c9dce8?style=flat-square&labelColor=263a36&logo=qq&logoColor=white"></a>
 <img src="https://img.shields.io/badge/Flutter-3.x-d7e8e4?style=flat-square&labelColor=263a36&logo=flutter">
 <img src="https://img.shields.io/badge/Rust-2024-e8dfd8?style=flat-square&labelColor=263a36&logo=rust">
 <img src="https://img.shields.io/badge/License-AGPL--3.0-f2e8e5?style=flat-square&labelColor=5b403a">
@@ -24,40 +23,40 @@ Instead of static records, we model a living system:
 <p><a href="./README.md">English</a> | <a href="./README.zh-CN.md">简体中文</a></p>
 </div>
 
-## Why SpringNote
+## Why SpringNote-Agenda
 
 Writing down one thing is easy — but organizing many scattered notes together takes time, and it's why many people struggle to keep a consistent journaling habit.
 
-SpringNote removes the organizing step: record your thoughts and daily moments anytime, and AI organizes them into daily, weekly, and monthly reports — turning scattered fragments into a complete whole automatically.
+SpringNote-Agenda removes the organizing step: record your thoughts and daily moments anytime, and AI organizes them into daily, weekly, and monthly reports — turning scattered fragments into a complete whole automatically.
 
 With "Memories", you can also search and chat with your past notes, bringing back anything you once wrote down.
 
-SpringNote aims to make recording your life easier to stick with, with the help of AI.
+SpringNote-Agenda aims to make recording your life easier to stick with, with the help of AI.
 
 
 ## Core Features
 
 - **Home Dashboard**: Activity heatmap, quick input box, and today's summary card.
 
-  ![SpringNote Home](./snapshots/index.png)
+  ![SpringNote-Agenda Home](./snapshots/index.png)
 
 - **AI-Powered Generation**: Quickly jot down ideas on the home page, and AI automatically organizes them into structured content.
 
 - **Note Editor**: Supports daily, weekly, and monthly notes, with Markdown editing, preview, code block highlighting, and AI completion suggestions.
 
-  ![SpringNote Note](./snapshots/note.png)
+  ![SpringNote-Agenda Note](./snapshots/note.png)
 
 - **Project Calendar**: Detects deadlines written in notes and displays them in a calendar with overdue, due-today, and upcoming reminders. Supported examples: `Due: 2026-08-30`, `Deadline: 2026/08/30`.
 
 - **Memories Chat**: Retrieve and organize your memories through conversation, with visible thinking process, tool call display, and Markdown rendering.
 
-  ![SpringNote Memories](./snapshots/memories.png)
+  ![SpringNote-Agenda Memories](./snapshots/memories.png)
 
 - **Automatic Report Generation**: On startup, fills in missing weekly/monthly reports based on existing daily or weekly notes.
 
 - **Statistics Panel**: View records, activity, model calls, and data overviews across time ranges.
 
-  ![SpringNote Statistics](./snapshots/setting.png)
+  ![SpringNote-Agenda Statistics](./snapshots/setting.png)
 
 
 - **Polished Desktop Experience**: Custom Windows title bar, system tray, launch on boot, global shortcuts, and system font switching.
@@ -68,7 +67,7 @@ SpringNote aims to make recording your life easier to stick with, with the help 
 
 #### Download from GitHub
 
-Go to the [Releases page](https://github.com/Radiant303/SpringNote/releases/latest) to download SpringNote.
+Go to the [Releases page](https://github.com/Adorable-Qin/SpringNote-Agenda/releases/latest) to download SpringNote-Agenda.
 
 ### Step 1: Confirm the Data Directory
 
@@ -145,17 +144,13 @@ Open **Project Calendar** from the sidebar to see overdue, due-today, and upcomi
 
 ### Keep Exploring
 
-After finishing the basics, you can continue configuring in Settings. For more usage instructions, see the [documentation](https://radiant303.github.io/SpringNote/).
+After finishing the basics, you can continue configuring in Settings. For more usage instructions, see the [documentation](./docs).
 
 ## 🌍 Community
 
-Whether you've run into an issue while using SpringNote, or you have new ideas and suggestions, you're welcome to talk with us.
+Whether you've run into an issue while using SpringNote-Agenda, or you have new ideas and suggestions, you're welcome to talk with us.
 
-We read every piece of feedback carefully and keep improving SpringNote to make it better.
-
-**Join the [SpringNote official community group](https://qm.qq.com/q/c6QiowtYSA) to share your experience and ideas.**
-
-> QQ Group: **463423961**
+We read every piece of feedback carefully and keep improving SpringNote-Agenda to make it better.
 
 > [!TIP]
 > When reporting an issue, please also provide:
@@ -169,14 +164,14 @@ We read every piece of feedback carefully and keep improving SpringNote to make 
 
 ## License
 
-SpringNote and the modifications in this repository are distributed under **GNU Affero General Public License v3.0 only (AGPL-3.0-only)**. If you distribute a modified version or make it available for users to interact with over a network, provide the corresponding source code as required by the license. See [LICENSE](./LICENSE).
+SpringNote-Agenda and the modifications in this repository are distributed under **GNU Affero General Public License v3.0 only (AGPL-3.0-only)**. If you distribute a modified version or make it available for users to interact with over a network, provide the corresponding source code as required by the license. See [LICENSE](./LICENSE).
 
 ## ❤️ Special Thanks
 
-Special thanks to all Contributors and community members for supporting SpringNote ❤️
+Special thanks to all Contributors and community members for supporting SpringNote-Agenda ❤️
 
-<a href="https://github.com/Radiant303/SpringNote/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Radiant303/SpringNote&max=300&columns=15" />
+<a href="https://github.com/Adorable-Qin/SpringNote-Agenda/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Adorable-Qin/SpringNote-Agenda&max=300&columns=15" />
 </a>
 
 ## ⭐ Star History
@@ -185,7 +180,7 @@ Special thanks to all Contributors and community members for supporting SpringNo
 > If this project has helped your life or work, or if you're following its future development, please give it a Star — that's what keeps us maintaining this open-source project <3
 
 <p align="center">
-  <img src="https://count.getloli.com/@SpringNote?name=SpringNote&theme=miku&padding=7&offset=0&align=center&scale=0.3&pixelated=1&darkmode=auto" alt="visitor count" />
+  <img src="https://count.getloli.com/@SpringNote-Agenda?name=SpringNote-Agenda&theme=miku&padding=7&offset=0&align=center&scale=0.3&pixelated=1&darkmode=auto" alt="visitor count" />
 </p>
 
-[![Star History Chart](https://api.star-history.com/chart?repos=Radiant303/SpringNote&type=date&legend=top-left&sealed_token=GD4g7Mlo0LVV9WahCTkgmdeB4LneMiVy1HvOlv59QgOYv9GbY7C2yT5b4TK0fvbgxLJLKR7jglKhMek04iRyeh6_NkURNIkQrpqVqGe9KQKBbm6StCexBQ)](https://www.star-history.com/?repos=Radiant303%2FSpringNote&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/chart?repos=Adorable-Qin/SpringNote-Agenda&type=date&legend=top-left)](https://www.star-history.com/?repos=Adorable-Qin%2FSpringNote-Agenda&type=date&legend=top-left)

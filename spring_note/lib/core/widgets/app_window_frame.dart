@@ -115,7 +115,7 @@ class _AppWindowTitleBarState extends State<AppWindowTitleBar>
                             filterQuality: FilterQuality.medium,
                           ),
                           const SizedBox(width: 8),
-                          Text('SpringNote', style: textStyle),
+                          Text('SpringNote-Agenda', style: textStyle),
                         ],
                       ),
                     ),

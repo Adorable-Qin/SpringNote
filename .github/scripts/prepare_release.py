@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare SpringNote release metadata from pubspec and CHANGELOG."""
+"""Prepare SpringNote-Agenda release metadata from pubspec and CHANGELOG."""
 
 from __future__ import annotations
 
@@ -99,9 +99,9 @@ def main() -> None:
             "Missing release title suffix. Add it to the CHANGELOG heading "
             "as `## vX.Y.Z (YYYY-MM-DD)：标题`."
         )
-    release_name = f"SpringNote v{version}：{title_suffix}"
-    macos_asset = f"SpringNote-{version}-macos-arm64.dmg"
-    windows_asset = f"SpringNote-{version}-windows-x64-setup.exe"
+    release_name = f"SpringNote-Agenda v{version}：{title_suffix}"
+    macos_asset = f"SpringNote-Agenda-{version}-macos-arm64.dmg"
+    windows_asset = f"SpringNote-Agenda-{version}-windows-x64-setup.exe"
 
     append_output(args.outputs_file, "version", version)
     append_output(args.outputs_file, "tag", version)
