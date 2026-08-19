@@ -727,7 +727,15 @@ fn build_chat_body_with_mode(request: &AiChatRequest, json_mode: bool) -> Value 
 
 pub fn build_responses_chat_body(request: &AiChatRequest) -> Value {
     let input = if request.images.is_empty() {
-        Value::String(request.user_prompt.clone())
+        // Responses API（以及部分兼容实现）会把空字符串视为没有提供 input，
+        // 从而返回 missing_required_parameter。日报/周报的自定义提示词
+        // 可能会把全部内容放进 instructions，因此这里必须仍提供非空 input。
+        let user_prompt = request.user_prompt.trim();
+        Value::String(if user_prompt.is_empty() {
+            "Please follow the instructions above and produce the final result.".to_string()
+        } else {
+            request.user_prompt.clone()
+        })
     } else {
         json!([{
             "role": "user",
@@ -2255,6 +2263,33 @@ mod tests {
         });
 
         assert_eq!(responses_output_text(&value), "直接答案");
+    }
+
+    #[test]
+    fn supplies_non_empty_input_for_responses_when_user_prompt_is_empty() {
+        let request = AiChatRequest {
+            user_prompt: String::new(),
+            images: vec![],
+            ..request()
+        };
+
+        let body = build_responses_chat_body(&request);
+        assert_eq!(
+            body["input"],
+            "Please follow the instructions above and produce the final result."
+        );
+        assert!(!body["input"].as_str().unwrap().trim().is_empty());
+    }
+
+    #[test]
+    fn preserves_responses_user_prompt() {
+        let request = AiChatRequest {
+            user_prompt: "请整理日报".to_string(),
+            ..request()
+        };
+
+        let body = build_responses_chat_body(&request);
+        assert_eq!(body["input"], "请整理日报");
     }
 
     #[test]
