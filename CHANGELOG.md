@@ -1,5 +1,10 @@
 # 更新日志
 
+## v1.0.11 (2026-08-19)：兼容推理模型请求参数
+
+* 修复推理模型不接受 `temperature` 参数导致连接测试和对话请求失败的问题。
+* 更新 Windows 文件版本信息，显示 SpringNote-Agenda 与 Adorable-Qin。
+
 ## v1.0.10 (2026-08-18)：SpringNote-Agenda
 
 * 新增项目日历、日期识别、完成状态和 ISO 周数显示。
