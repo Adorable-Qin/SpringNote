@@ -168,7 +168,7 @@ class UpdateCheckService {
 
   static const _timeout = Duration(seconds: 10);
   static const _defaultUpdateBaseUrl =
-      'https://api.github.com/repos/Adorable-Qin/SpringNote-Agenda/contents/update';
+      'https://raw.githubusercontent.com/Adorable-Qin/SpringNote-Agenda/main/update';
   static const _configuredUpdateBaseUrl = String.fromEnvironment(
     'SPRINGNOTE_UPDATE_BASE_URL',
   );
