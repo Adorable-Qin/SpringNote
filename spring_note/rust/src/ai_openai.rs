@@ -738,8 +738,7 @@ pub fn build_responses_chat_body(request: &AiChatRequest) -> Value {
     json!({
         "model": request.model.model_id,
         "instructions": request.system_prompt,
-        "input": input,
-        "temperature": 0.2
+        "input": input
     })
 }
 
@@ -975,8 +974,6 @@ fn apply_responses_thinking_options(body: &mut Value, enabled: bool, effort: &st
             "effort": normalize_responses_reasoning_effort(effort),
             "summary": "auto"
         });
-    } else {
-        body["temperature"] = Value::from(0.2);
     }
 }
 
@@ -1768,6 +1765,7 @@ mod tests {
         assert_eq!(body["instructions"], "system");
         assert_eq!(body["input"], "user");
         assert!(body.get("messages").is_none());
+        assert!(body.get("temperature").is_none());
     }
 
     #[test]
@@ -1994,6 +1992,34 @@ mod tests {
         assert_eq!(body["reasoning"]["summary"], "auto");
         assert!(body.get("thinking").is_none());
         assert!(body.get("reasoning_effort").is_none());
+    }
+
+    #[test]
+    fn omits_temperature_when_responses_thinking_is_disabled() {
+        let request = MemoryToolChatRequest {
+            app_data_dir: ".".to_string(),
+            provider: AiProvider {
+                id: "p".to_string(),
+                name: "OpenAI Responses".to_string(),
+                protocol: "openaiCompatible".to_string(),
+                api_key: "key".to_string(),
+                base_url: "https://api.example.com/v1".to_string(),
+                api_path: "/responses".to_string(),
+            },
+            model: AiModel {
+                model_id: "gpt-test".to_string(),
+                display_name: "GPT Test".to_string(),
+            },
+            messages: vec![],
+            thinking_enabled: false,
+            reasoning_effort: "none".to_string(),
+            language: "zh".to_string(),
+            api_log_enabled: false,
+        };
+
+        let body = build_memory_tool_responses_body(&request, "system");
+        assert!(body.get("reasoning").is_none());
+        assert!(body.get("temperature").is_none());
     }
 
     #[test]

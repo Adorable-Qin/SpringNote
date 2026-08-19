@@ -727,7 +727,6 @@ class AiClientService {
               'instructions':
                   'You are a connection test endpoint. Reply with OK only.',
               'input': 'Say OK.',
-              'temperature': 0.2,
               'stream': true,
             }
           : {
