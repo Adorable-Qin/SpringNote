@@ -64,7 +64,7 @@ class ProjectDeadlineService {
     final deadlines = <ProjectDeadline>[];
     final seen = <String>{};
     final lines = content.split(RegExp(r'\r?\n'));
-    final reference = _dateOnly(referenceDate ?? DateTime.now());
+    final reference = _dateOnly(referenceDate ?? referenceDateForNote(note));
     for (var index = 0; index < lines.length; index++) {
       final line = lines[index];
       final labelMatch = _deadlineLabel.firstMatch(line);
@@ -142,6 +142,62 @@ class ProjectDeadlineService {
       );
     }
     return candidates;
+  }
+
+  /// Returns a stable reference date for dates that omit the year.
+  ///
+  /// Daily, weekly, and monthly notes use the date encoded in their filename.
+  /// This prevents an overdue `8月20日` from being reinterpreted as next year
+  /// merely because the calendar was refreshed after August 20.
+  DateTime referenceDateForNote(NoteFile note) {
+    final stem = note.name.replaceFirst(
+      RegExp(r'\.md$', caseSensitive: false),
+      '',
+    );
+    switch (note.kind) {
+      case NoteKind.daily:
+        final match = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})$').firstMatch(stem);
+        if (match != null) {
+          final date = _tryDate(
+            int.parse(match.group(1)!),
+            int.parse(match.group(2)!),
+            int.parse(match.group(3)!),
+          );
+          if (date != null) {
+            return date;
+          }
+        }
+        break;
+      case NoteKind.weekly:
+        final match = RegExp(
+          r'^(\d{4})-W(\d{1,2})$',
+          caseSensitive: false,
+        ).firstMatch(stem);
+        if (match != null) {
+          final date = _dateFromIsoWeek(
+            int.parse(match.group(1)!),
+            int.parse(match.group(2)!),
+          );
+          if (date != null) {
+            return date;
+          }
+        }
+        break;
+      case NoteKind.monthly:
+        final match = RegExp(r'^(\d{4})-(\d{1,2})$').firstMatch(stem);
+        if (match != null) {
+          final date = _tryDate(
+            int.parse(match.group(1)!),
+            int.parse(match.group(2)!),
+            1,
+          );
+          if (date != null) {
+            return date;
+          }
+        }
+        break;
+    }
+    return _dateOnly(note.modifiedAt);
   }
 
   /// Updates the Markdown checkbox for a calendar item.
@@ -249,6 +305,21 @@ class ProjectDeadlineService {
       return null;
     }
     return date;
+  }
+
+  DateTime? _dateFromIsoWeek(int year, int week) {
+    if (week < 1 || week > 53) {
+      return null;
+    }
+    final januaryFourth = DateTime(year, 1, 4);
+    final firstWeekMonday = januaryFourth.subtract(
+      Duration(days: januaryFourth.weekday - DateTime.monday),
+    );
+    final monday = firstWeekMonday.add(Duration(days: (week - 1) * 7));
+    if (monday.add(const Duration(days: 3)).year != year) {
+      return null;
+    }
+    return monday;
   }
 
   DateTime _dateOnly(DateTime date) =>

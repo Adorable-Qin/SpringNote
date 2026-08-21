@@ -164,4 +164,40 @@ void main() {
       expect(await noteService.readMarkdown(path), contains('- [ ] 提交方案'));
     },
   );
+
+  test('keeps a month-day deadline tied to the dated daily note', () {
+    final oldDailyNote = NoteFile(
+      path: '/notes/daily/2026-08-18.md',
+      name: '2026-08-18.md',
+      title: '2026-08-18 日报',
+      modifiedAt: DateTime(2026, 8, 21),
+      kind: NoteKind.daily,
+    );
+
+    final deadline = service
+        .parseMarkdown(note: oldDailyNote, content: '- 处理遗留事项 截止：8月20日')
+        .single;
+
+    expect(deadline.dueDate, DateTime(2026, 8, 20));
+  });
+
+  test('derives stable reference dates from weekly and monthly filenames', () {
+    final weeklyNote = NoteFile(
+      path: '/notes/weekly/2026-W34.md',
+      name: '2026-W34.md',
+      title: '2026-W34 周报',
+      modifiedAt: DateTime(2026, 8, 21),
+      kind: NoteKind.weekly,
+    );
+    final monthlyNote = NoteFile(
+      path: '/notes/monthly/2026-08.md',
+      name: '2026-08.md',
+      title: '2026-08 月报',
+      modifiedAt: DateTime(2026, 8, 21),
+      kind: NoteKind.monthly,
+    );
+
+    expect(service.referenceDateForNote(weeklyNote), DateTime(2026, 8, 17));
+    expect(service.referenceDateForNote(monthlyNote), DateTime(2026, 8));
+  });
 }

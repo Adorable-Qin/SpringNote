@@ -35,6 +35,7 @@ class ProjectCalendarPage extends StatefulWidget {
 class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
   late DateTime _focusedMonth = _monthStart(DateTime.now());
   late DateTime _selectedDate = _dateOnly(DateTime.now());
+  _AgendaView _agendaView = _AgendaView.selectedDate;
   List<ProjectDeadline> _deadlines = const [];
   bool _loading = true;
   String? _error;
@@ -222,6 +223,7 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
                   deadlines: _deadlinesFor(date),
                   onTap: () => setState(() {
                     _selectedDate = date;
+                    _agendaView = _AgendaView.selectedDate;
                     if (date.month != _focusedMonth.month ||
                         date.year != _focusedMonth.year) {
                       _focusedMonth = _monthStart(date);
@@ -239,32 +241,53 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
 
   Widget _buildAgendaCard(_CalendarStrings strings, {bool bounded = true}) {
     final colors = AppTheme.colors(context);
-    final selectedDeadlines = _deadlinesFor(_selectedDate);
     final today = _dateOnly(DateTime.now());
-    final overdue = _deadlines
+    final selectedDeadlines = _deadlinesFor(_selectedDate);
+    final overdueDeadlines = _deadlines
         .where(
           (deadline) =>
               !deadline.isCompleted && deadline.dueDate.isBefore(today),
         )
-        .length;
-    final dueToday = _deadlinesFor(
+        .toList();
+    final dueTodayDeadlines = _deadlinesFor(
       today,
-    ).where((deadline) => !deadline.isCompleted).length;
-    final completed = _deadlines
+    ).where((deadline) => !deadline.isCompleted).toList();
+    final completedDeadlines = _deadlines
         .where((deadline) => deadline.isCompleted)
-        .length;
+        .toList();
+    final visibleDeadlines = switch (_agendaView) {
+      _AgendaView.selectedDate => selectedDeadlines,
+      _AgendaView.overdue => overdueDeadlines,
+      _AgendaView.dueToday => dueTodayDeadlines,
+      _AgendaView.completed => completedDeadlines,
+    };
+    final agendaTitle = switch (_agendaView) {
+      _AgendaView.selectedDate => strings.selectedDateLabel(_selectedDate),
+      _AgendaView.overdue => strings.overdueTitle,
+      _AgendaView.dueToday => strings.dueTodayTitle,
+      _AgendaView.completed => strings.completedTitle,
+    };
+    final emptyMessage = switch (_agendaView) {
+      _AgendaView.selectedDate => strings.noDeadlineOnDate,
+      _AgendaView.overdue => strings.noOverdueDeadlines,
+      _AgendaView.dueToday => strings.noDeadlinesDueToday,
+      _AgendaView.completed => strings.noCompletedDeadlines,
+    };
+    final emptyDetail = _agendaView == _AgendaView.selectedDate
+        ? strings.selectAnotherDate
+        : strings.selectDateViewHint;
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          strings.selectedDateLabel(_selectedDate),
+          agendaTitle,
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 6),
         Text(
-          strings.deadlineCount(selectedDeadlines.length),
+          strings.deadlineCount(visibleDeadlines.length),
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: colors.textSubtle),
@@ -275,16 +298,22 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
           runSpacing: 8,
           children: [
             _StatusChip(
-              label: strings.overdue(overdue),
+              label: strings.overdue(overdueDeadlines.length),
               color: const Color(0xFFDC2626),
+              selected: _agendaView == _AgendaView.overdue,
+              onTap: () => _toggleAgendaView(_AgendaView.overdue),
             ),
             _StatusChip(
-              label: strings.dueToday(dueToday),
+              label: strings.dueToday(dueTodayDeadlines.length),
               color: const Color(0xFFD97706),
+              selected: _agendaView == _AgendaView.dueToday,
+              onTap: () => _toggleAgendaView(_AgendaView.dueToday),
             ),
             _StatusChip(
-              label: strings.completed(completed),
+              label: strings.completed(completedDeadlines.length),
               color: const Color(0xFF16A34A),
+              selected: _agendaView == _AgendaView.completed,
+              onTap: () => _toggleAgendaView(_AgendaView.completed),
             ),
           ],
         ),
@@ -301,23 +330,24 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
             message: strings.noDeadlines,
             detail: strings.formatHint,
           )
-        else if (selectedDeadlines.isEmpty)
+        else if (visibleDeadlines.isEmpty)
           _EmptyAgenda(
             icon: Icons.event_available_outlined,
-            message: strings.noDeadlineOnDate,
-            detail: strings.selectAnotherDate,
+            message: emptyMessage,
+            detail: emptyDetail,
           )
         else
-          for (var index = 0; index < selectedDeadlines.length; index++) ...[
+          for (var index = 0; index < visibleDeadlines.length; index++) ...[
             _DeadlineCard(
-              deadline: selectedDeadlines[index],
+              deadline: visibleDeadlines[index],
               strings: strings,
+              showDueDate: _agendaView != _AgendaView.selectedDate,
               updating: _updatingDeadlines.contains(
-                _deadlineKey(selectedDeadlines[index]),
+                _deadlineKey(visibleDeadlines[index]),
               ),
-              onToggle: () => _toggleDeadline(selectedDeadlines[index]),
+              onToggle: () => _toggleDeadline(visibleDeadlines[index]),
             ),
-            if (index != selectedDeadlines.length - 1)
+            if (index != visibleDeadlines.length - 1)
               const SizedBox(height: 10),
           ],
       ],
@@ -328,6 +358,12 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
       withShadow: false,
       child: bounded ? SingleChildScrollView(child: content) : content,
     );
+  }
+
+  void _toggleAgendaView(_AgendaView view) {
+    setState(() {
+      _agendaView = _agendaView == view ? _AgendaView.selectedDate : view;
+    });
   }
 
   Future<void> _toggleDeadline(ProjectDeadline deadline) async {
@@ -380,6 +416,7 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
         _focusedMonth.month + offset,
       );
       _selectedDate = _focusedMonth;
+      _agendaView = _AgendaView.selectedDate;
     });
   }
 
@@ -388,6 +425,7 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
     setState(() {
       _focusedMonth = _monthStart(today);
       _selectedDate = today;
+      _agendaView = _AgendaView.selectedDate;
     });
   }
 
@@ -396,6 +434,8 @@ class _ProjectCalendarPageState extends State<ProjectCalendarPage> {
       left.weeklyNotesDirectory != right.weeklyNotesDirectory ||
       left.monthlyNotesDirectory != right.monthlyNotesDirectory;
 }
+
+enum _AgendaView { selectedDate, overdue, dueToday, completed }
 
 class _CalendarDayTile extends StatelessWidget {
   const _CalendarDayTile({
@@ -525,12 +565,14 @@ class _DeadlineCard extends StatelessWidget {
   const _DeadlineCard({
     required this.deadline,
     required this.strings,
+    required this.showDueDate,
     required this.onToggle,
     required this.updating,
   });
 
   final ProjectDeadline deadline;
   final _CalendarStrings strings;
+  final bool showDueDate;
   final VoidCallback onToggle;
   final bool updating;
 
@@ -585,7 +627,9 @@ class _DeadlineCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${deadline.title} · ${strings.kind(deadline.noteKind)} · ${strings.line(deadline.lineNumber)}',
+                  '${showDueDate ? '${strings.dueDateLabel(deadline.dueDate)} · ' : ''}'
+                  '${deadline.title} · ${strings.kind(deadline.noteKind)} · '
+                  '${strings.line(deadline.lineNumber)}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(
@@ -612,24 +656,41 @@ class _DeadlineCard extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label, required this.color});
+  const _StatusChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final Color color;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+    return Material(
+      color: selected
+          ? color.withValues(alpha: 0.18)
+          : color.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: selected ? Border.all(color: color) : null,
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );
@@ -685,8 +746,16 @@ class _CalendarStrings {
   String get noDeadlines => english ? 'No deadlines found' : '没有找到截止日期';
   String get noDeadlineOnDate =>
       english ? 'No reminder on this date' : '这一天没有提醒';
+  String get noOverdueDeadlines => english ? 'No overdue reminders' : '没有已逾期事项';
+  String get noDeadlinesDueToday =>
+      english ? 'No reminders due today' : '今天没有到期事项';
+  String get noCompletedDeadlines =>
+      english ? 'No completed reminders' : '没有已完成事项';
   String get selectAnotherDate =>
       english ? 'Select another date to view its reminders.' : '请选择其他日期查看提醒。';
+  String get selectDateViewHint => english
+      ? 'Select a calendar date or tap the active status again to return.'
+      : '选择日历日期，或再次点击当前状态标签返回按日期查看。';
   String get loadFailed => english ? 'Unable to load deadlines' : '截止日期加载失败';
   String get formatHint => english
       ? 'Add “Due: 2026-08-30” or “Due: 8/30”. Plain dates can also be added from the editor prompt.'
@@ -709,6 +778,9 @@ class _CalendarStrings {
 
   String deadlineCount(int count) =>
       english ? '$count reminder${count == 1 ? '' : 's'}' : '$count 条截止提醒';
+  String get overdueTitle => english ? 'Overdue reminders' : '已逾期记录';
+  String get dueTodayTitle => english ? 'Due today' : '今天到期';
+  String get completedTitle => english ? 'Completed reminders' : '已完成记录';
   String overdue(int count) => english ? '$count overdue' : '$count 条已逾期';
   String dueToday(int count) => english ? '$count due today' : '$count 条今天到期';
   String completed(int count) => english ? '$count completed' : '$count 条已完成';
@@ -717,6 +789,9 @@ class _CalendarStrings {
   String get markIncomplete => english ? 'Mark as incomplete' : '标记为未完成';
   String get markedCompleted => english ? 'Marked as completed' : '已标记为完成';
   String get markedIncomplete => english ? 'Marked as incomplete' : '已取消完成标记';
+  String dueDateLabel(DateTime date) => english
+      ? 'Due ${_englishMonths[date.month - 1]} ${date.day}, ${date.year}'
+      : '截止 ${date.year}年${date.month}月${date.day}日';
   String line(int lineNumber) =>
       english ? 'line $lineNumber' : '第 $lineNumber 行';
   String kind(NoteKind kind) => switch (kind) {

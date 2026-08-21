@@ -574,6 +574,7 @@ class _NotesPageState extends State<NotesPage> {
     final previousLines = previousText.split(RegExp(r'\r?\n')).toSet();
     final candidates = _projectDeadlineService.findImplicitDates(
       content: currentText,
+      referenceDate: _projectDeadlineService.referenceDateForNote(selected),
     );
     for (final candidate in candidates) {
       if (previousLines.contains(candidate.sourceLine)) {
