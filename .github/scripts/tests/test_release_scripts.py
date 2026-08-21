@@ -240,6 +240,92 @@ class ReleaseScriptTests(unittest.TestCase):
             self.assertIn('sparkle:edSignature="mac-signature"', appcast)
             self.assertNotIn('sparkle:os="windows"', appcast)
 
+    def test_windows_only_update_metadata_round_trip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            notes = tmp_path / "notes.md"
+            output_dir = tmp_path / "update"
+            notes.write_text("### 修复\n\n* 发布 Windows 安装包。\n", encoding="utf-8")
+
+            write_result = run_script(
+                str(WRITE_UPDATE_METADATA),
+                "--version",
+                "1.2.3",
+                "--repo",
+                "Adorable-Qin/SpringNote-Agenda",
+                "--windows-asset",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
+                "--notes",
+                str(notes),
+                "--output-dir",
+                str(output_dir),
+                "--windows-only",
+                "--change-time",
+                "2026年6月29日 13:30:00",
+            )
+            self.assertEqual(write_result.returncode, 0, write_result.stderr)
+            self.assertTrue(output_dir.joinpath("windows.json").is_file())
+            self.assertTrue(output_dir.joinpath("LATESTCHANGELOG.md").is_file())
+            self.assertFalse(output_dir.joinpath("mac.json").exists())
+            self.assertFalse(output_dir.joinpath("appcast.xml").exists())
+
+            verify_result = run_script(
+                str(VERIFY_UPDATE_METADATA),
+                "--version",
+                "1.2.3",
+                "--repo",
+                "Adorable-Qin/SpringNote-Agenda",
+                "--windows-asset",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
+                "--metadata-dir",
+                str(output_dir),
+                "--windows-only",
+            )
+            self.assertEqual(verify_result.returncode, 0, verify_result.stderr)
+
+            windows = json.loads(
+                output_dir.joinpath("windows.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(windows["version"], "1.2.3")
+            self.assertEqual(
+                windows["download_url"],
+                "https://github.com/Adorable-Qin/SpringNote-Agenda/releases/download/1.2.3/SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
+            )
+
+    def test_windows_only_verification_rejects_wrong_download_url(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            metadata_dir = Path(tmp) / "update"
+            metadata_dir.mkdir()
+            metadata_dir.joinpath("windows.json").write_text(
+                json.dumps(
+                    {
+                        "version": "1.2.3",
+                        "change_time": "2026年6月29日 13:30:00",
+                        "download_url": "https://example.com/wrong.exe",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            metadata_dir.joinpath("LATESTCHANGELOG.md").write_text(
+                "## ✨ 更新日志\n\n* 内容。\n", encoding="utf-8"
+            )
+
+            result = run_script(
+                str(VERIFY_UPDATE_METADATA),
+                "--version",
+                "1.2.3",
+                "--repo",
+                "Adorable-Qin/SpringNote-Agenda",
+                "--windows-asset",
+                "SpringNote-Agenda-1.2.3-windows-x64-setup.exe",
+                "--metadata-dir",
+                str(metadata_dir),
+                "--windows-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("download_url", result.stderr)
+
     def test_verify_update_metadata_rejects_wrong_version(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -504,7 +590,7 @@ class ReleaseScriptTests(unittest.TestCase):
             metadata_dir = tmp_path / "update"
             metadata_dir.mkdir()
             metadata_dir.joinpath("mac.json").write_text("[]", encoding="utf-8")
-            metadata_dir.joinpath("windows.json").write_text("{}", encoding="utf-8")
+            metadata_dir.joinpath("windows.json").write_text("[]", encoding="utf-8")
             metadata_dir.joinpath("LATESTCHANGELOG.md").write_text(
                 "## ✨ 更新日志\n\n* 内容。\n",
                 encoding="utf-8",

@@ -254,136 +254,12 @@ jobs:
           path: spring_note/build/windows/installer/${{ needs.prepare-release.outputs.windows_asset }}
           if-no-files-found: error
 
-  macos-build:
-    name: macOS Release Build
-    runs-on: macos-26
-    needs:
-      - prepare-release
-      - release-checks
-    defaults:
-      run:
-        working-directory: spring_note
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-
-      - name: Verify macOS runner architecture
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "$(uname -m)" != "arm64" ]; then
-            echo "The current release format expects a macos-arm64 DMG."
-            exit 1
-          fi
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Configure Sparkle public key
-        shell: bash
-        env:
-          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
-        run: |
-          set -euo pipefail
-          if [ -z "${SPARKLE_PUBLIC_ED_KEY}" ]; then
-            echo "Missing SPARKLE_PUBLIC_ED_KEY secret."
-            exit 1
-          fi
-          SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY}" python3 - <<'PY'
-          import os
-          import plistlib
-          from pathlib import Path
-
-          path = Path("macos/Runner/Info.plist")
-          data = plistlib.loads(path.read_bytes())
-          data["SUPublicEDKey"] = os.environ["SPARKLE_PUBLIC_ED_KEY"]
-          path.write_bytes(plistlib.dumps(data, sort_keys=False))
-          PY
-
-      - name: Build macOS release
-        run: flutter build macos --release --dart-define SPRINGNOTE_UPDATE_BASE_URL=https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.repository.default_branch }}/update
-
-      - name: Package macOS DMG
-        shell: bash
-        env:
-          VERSION: ${{ needs.prepare-release.outputs.version }}
-          MACOS_ASSET: ${{ needs.prepare-release.outputs.macos_asset }}
-        run: |
-          set -euo pipefail
-
-          app_name="SpringNote-Agenda"
-          artifact_name="${MACOS_ASSET%.dmg}"
-          release_dir="build/macos/Build/Products/Release"
-          stage_dir="${release_dir}/${artifact_name}"
-          dmg_path="${release_dir}/${MACOS_ASSET}"
-
-          rm -rf "$stage_dir" "$dmg_path"
-          mkdir -p "$stage_dir"
-          ditto "${release_dir}/spring_note.app" "${stage_dir}/${app_name}.app"
-          ln -s /Applications "${stage_dir}/Applications"
-
-          hdiutil create \
-            -volname "$app_name" \
-            -srcfolder "$stage_dir" \
-            -ov \
-            -format UDZO \
-            "$dmg_path"
-
-          hdiutil verify "$dmg_path"
-
-      - name: Upload macOS DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: SpringNote-Agenda-${{ needs.prepare-release.outputs.version }}-macos-arm64
-          path: spring_note/build/macos/Build/Products/Release/${{ needs.prepare-release.outputs.macos_asset }}
-          if-no-files-found: error
-
-      - name: Sign macOS update
-        shell: bash
-        env:
-          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
-          MACOS_ASSET: ${{ needs.prepare-release.outputs.macos_asset }}
-        run: |
-          set -euo pipefail
-          if [ -z "${SPARKLE_ED_PRIVATE_KEY}" ]; then
-            echo "Missing SPARKLE_ED_PRIVATE_KEY secret."
-            exit 1
-          fi
-          asset_path="build/macos/Build/Products/Release/${MACOS_ASSET}"
-          ed_signature="$(printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | macos/Pods/Sparkle/bin/sign_update --ed-key-file - -p "$asset_path" | tr -d '\r\n')"
-          length="$(stat -f '%z' "$asset_path")"
-          if [ -z "$ed_signature" ] || [ -z "$length" ]; then
-            echo "Failed to generate macOS update signature."
-            exit 1
-          fi
-          ED_SIGNATURE="$ed_signature" UPDATE_LENGTH="$length" python3 -c 'import json, os, pathlib; pathlib.Path(os.environ["GITHUB_WORKSPACE"], "macos-update-signature.json").write_text(json.dumps({"edSignature": os.environ["ED_SIGNATURE"], "length": os.environ["UPDATE_LENGTH"]}), encoding="utf-8")'
-
-      - name: Upload macOS update signature
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-update-signature
-          path: macos-update-signature.json
-          if-no-files-found: error
-
   publish-release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
     needs:
       - prepare-release
       - windows-build
-      - macos-build
 
     steps:
       - name: Checkout
@@ -402,41 +278,34 @@ jobs:
           python3 .github/scripts/write_update_metadata.py \
             --version "${{ needs.prepare-release.outputs.version }}" \
             --repo "${{ github.repository }}" \
-            --macos-asset "${{ needs.prepare-release.outputs.macos_asset }}" \
             --windows-asset "${{ needs.prepare-release.outputs.windows_asset }}" \
             --notes release-assets/release-notes.md \
             --output-dir release-assets/update \
-            --macos-signature-file release-assets/macos-update-signature.json
+            --windows-only
 
       - name: Generate SHA256 checksums
         working-directory: release-assets
         run: |
           set -euo pipefail
           sha256sum \
-            "${{ needs.prepare-release.outputs.macos_asset }}" \
             "${{ needs.prepare-release.outputs.windows_asset }}" \
-            update/mac.json \
             update/windows.json \
-            update/appcast.xml \
             update/LATESTCHANGELOG.md \
             > SHA256SUMS.txt
 
       - name: Verify release assets
         run: |
           set -euo pipefail
-          test -s "release-assets/${{ needs.prepare-release.outputs.macos_asset }}"
           test -s "release-assets/${{ needs.prepare-release.outputs.windows_asset }}"
-          test -s "release-assets/update/mac.json"
           test -s "release-assets/update/windows.json"
-          test -s "release-assets/update/appcast.xml"
           test -s "release-assets/update/LATESTCHANGELOG.md"
           test -s "release-assets/SHA256SUMS.txt"
           python3 .github/scripts/verify_update_metadata.py \
             --version "${{ needs.prepare-release.outputs.version }}" \
             --repo "${{ github.repository }}" \
-            --macos-asset "${{ needs.prepare-release.outputs.macos_asset }}" \
             --windows-asset "${{ needs.prepare-release.outputs.windows_asset }}" \
-            --metadata-dir release-assets/update
+            --metadata-dir release-assets/update \
+            --windows-only
           cd release-assets
           sha256sum --check SHA256SUMS.txt
 
@@ -452,11 +321,8 @@ jobs:
           overwrite_files: true
           fail_on_unmatched_files: true
           files: |
-            release-assets/${{ needs.prepare-release.outputs.macos_asset }}
             release-assets/${{ needs.prepare-release.outputs.windows_asset }}
-            release-assets/update/mac.json
             release-assets/update/windows.json
-            release-assets/update/appcast.xml
             release-assets/update/LATESTCHANGELOG.md
             release-assets/SHA256SUMS.txt
 
@@ -470,27 +336,25 @@ jobs:
           for attempt in 1 2 3; do
             git fetch origin "${{ github.event.repository.default_branch }}:refs/remotes/origin/${{ github.event.repository.default_branch }}" --depth=1
             git switch -C release-metadata "origin/${{ github.event.repository.default_branch }}"
-            current_update_version="$(python3 -c 'import json, pathlib, re; versions = [json.loads(path.read_text(encoding="utf-8")).get("version", "0.0.0") for name in ("mac.json", "windows.json") for path in [pathlib.Path("update") / name] if path.exists()]; parts = lambda version: tuple(int(part) for part in str(version).split("+", 1)[0].strip().split(".")) if re.fullmatch(r"\d+\.\d+\.\d+", str(version).split("+", 1)[0].strip()) else (0, 0, 0); print(max(versions or ["0.0.0"], key=parts))')"
+            current_update_version="$(python3 -c 'import json, pathlib; path = pathlib.Path("update/windows.json"); print(json.loads(path.read_text(encoding="utf-8")).get("version", "0.0.0") if path.exists() else "0.0.0")')"
             if python3 .github/scripts/verify_update_metadata.py \
               --is-newer-than "$current_update_version" "${{ needs.prepare-release.outputs.version }}" \
               --version "${{ needs.prepare-release.outputs.version }}" \
               --repo "${{ github.repository }}" \
-              --macos-asset "${{ needs.prepare-release.outputs.macos_asset }}" \
               --windows-asset "${{ needs.prepare-release.outputs.windows_asset }}" \
-              --metadata-dir update
+              --metadata-dir update \
+              --windows-only
             then
               echo "Update metadata is already newer (${current_update_version}); skipping metadata write for ${{ needs.prepare-release.outputs.version }}."
               exit 0
             fi
-            cp release-assets/update/mac.json update/mac.json
             cp release-assets/update/windows.json update/windows.json
-            cp release-assets/update/appcast.xml update/appcast.xml
             cp release-assets/update/LATESTCHANGELOG.md update/LATESTCHANGELOG.md
-            if git diff --quiet -- update/mac.json update/windows.json update/appcast.xml update/LATESTCHANGELOG.md; then
+            if git diff --quiet -- update/windows.json update/LATESTCHANGELOG.md; then
               echo "Update metadata is already current."
               exit 0
             fi
-            git add update/mac.json update/windows.json update/appcast.xml update/LATESTCHANGELOG.md
+            git add update/windows.json update/LATESTCHANGELOG.md
             git commit -m "chore: update release metadata for ${{ needs.prepare-release.outputs.version }}"
             if git push origin HEAD:${{ github.event.repository.default_branch }}; then
               exit 0

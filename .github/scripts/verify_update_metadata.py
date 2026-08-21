@@ -53,11 +53,7 @@ def verify_appcast(
     version: str,
     expected_macos_url: str,
 ) -> None:
-    """Verify the macOS Sparkle appcast.
-
-    Windows updates intentionally use windows.json plus Authenticode-signed
-    installers and do not consume appcast items.
-    """
+    """Verify the macOS Sparkle appcast."""
     namespaces = {"sparkle": "http://www.andymatuschak.org/xml-namespaces/sparkle"}
     root = ET.parse(path).getroot()
     items = root.findall("./channel/item")
@@ -78,16 +74,24 @@ def verify_appcast(
         if os_name == "macos":
             seen.add("macos")
             if url != expected_macos_url:
-                raise SystemExit(f"{path} macOS url {url!r} does not match {expected_macos_url!r}")
+                raise SystemExit(
+                    f"{path} macOS url {url!r} does not match {expected_macos_url!r}"
+                )
             if not enclosure.attrib.get(f"{sparkle_ns}edSignature", "").strip():
                 raise SystemExit(f"{path} macOS edSignature is empty")
-            short_version = item.findtext("sparkle:shortVersionString", namespaces=namespaces)
+            short_version = item.findtext(
+                "sparkle:shortVersionString", namespaces=namespaces
+            )
             if short_version != version:
-                raise SystemExit(f"{path} macOS shortVersionString does not match {version!r}")
+                raise SystemExit(
+                    f"{path} macOS shortVersionString does not match {version!r}"
+                )
 
     missing = {"macos"} - seen
     if missing:
-        raise SystemExit(f"{path} is missing update items for {', '.join(sorted(missing))}")
+        raise SystemExit(
+            f"{path} is missing update items for {', '.join(sorted(missing))}"
+        )
 
 
 def main() -> None:
@@ -95,22 +99,17 @@ def main() -> None:
     parser.add_argument("--is-newer-than", nargs=2, metavar=("LEFT", "RIGHT"))
     parser.add_argument("--version", required=True)
     parser.add_argument("--repo", required=True)
-    parser.add_argument("--macos-asset", required=True)
+    parser.add_argument("--macos-asset")
     parser.add_argument("--windows-asset", required=True)
     parser.add_argument("--metadata-dir", type=Path, required=True)
+    parser.add_argument("--windows-only", action="store_true")
     args = parser.parse_args()
 
     if args.is_newer_than:
         raise SystemExit(0 if is_newer_version(*args.is_newer_than) else 1)
 
     release_base = f"https://github.com/{args.repo}/releases/download/{args.version}"
-    expected_macos_url = f"{release_base}/{args.macos_asset}"
     expected_windows_url = f"{release_base}/{args.windows_asset}"
-    verify_platform(
-        args.metadata_dir / "mac.json",
-        version=args.version,
-        expected_url=expected_macos_url,
-    )
     verify_platform(
         args.metadata_dir / "windows.json",
         version=args.version,
@@ -122,6 +121,18 @@ def main() -> None:
     )
     if not changelog.strip():
         raise SystemExit("LATESTCHANGELOG.md is empty")
+
+    if args.windows_only:
+        return
+    if not args.macos_asset:
+        raise SystemExit("--macos-asset is required unless --windows-only is used")
+
+    expected_macos_url = f"{release_base}/{args.macos_asset}"
+    verify_platform(
+        args.metadata_dir / "mac.json",
+        version=args.version,
+        expected_url=expected_macos_url,
+    )
     verify_appcast(
         args.metadata_dir / "appcast.xml",
         version=args.version,

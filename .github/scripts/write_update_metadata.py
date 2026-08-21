@@ -62,9 +62,7 @@ def write_appcast(
     ET.SubElement(item, "title").text = f"SpringNote-Agenda v{version}"
     ET.SubElement(item, f"{{{SPARKLE_NS}}}version").text = version
     ET.SubElement(item, f"{{{SPARKLE_NS}}}shortVersionString").text = version
-    ET.SubElement(item, f"{{{SPARKLE_NS}}}releaseNotesLink").text = (
-        release_notes_url
-    )
+    ET.SubElement(item, f"{{{SPARKLE_NS}}}releaseNotesLink").text = release_notes_url
     ET.SubElement(item, "pubDate").text = format_datetime(pub_date)
     ET.SubElement(
         item,
@@ -87,11 +85,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", required=True)
     parser.add_argument("--repo", required=True)
-    parser.add_argument("--macos-asset", required=True)
+    parser.add_argument("--macos-asset")
     parser.add_argument("--windows-asset", required=True)
     parser.add_argument("--notes", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--macos-signature-file", type=Path, required=True)
+    parser.add_argument("--macos-signature-file", type=Path)
+    parser.add_argument("--windows-only", action="store_true")
     parser.add_argument("--change-time", default="")
     args = parser.parse_args()
 
@@ -104,14 +103,7 @@ def main() -> None:
         )
 
     release_base = f"https://github.com/{args.repo}/releases/download/{args.version}"
-    macos_url = f"{release_base}/{args.macos_asset}"
     windows_url = f"{release_base}/{args.windows_asset}"
-    write_json(
-        args.output_dir / "mac.json",
-        version=args.version,
-        change_time=change_time,
-        download_url=macos_url,
-    )
     write_json(
         args.output_dir / "windows.json",
         version=args.version,
@@ -126,6 +118,23 @@ def main() -> None:
     args.output_dir.joinpath("LATESTCHANGELOG.md").write_text(
         "## ✨ 更新日志\n\n" + changelog + "\n",
         encoding="utf-8",
+    )
+
+    if args.windows_only:
+        return
+    if not args.macos_asset:
+        raise SystemExit("--macos-asset is required unless --windows-only is used")
+    if not args.macos_signature_file:
+        raise SystemExit(
+            "--macos-signature-file is required unless --windows-only is used"
+        )
+
+    macos_url = f"{release_base}/{args.macos_asset}"
+    write_json(
+        args.output_dir / "mac.json",
+        version=args.version,
+        change_time=change_time,
+        download_url=macos_url,
     )
     macos_signature = read_signature_file(args.macos_signature_file)
     release_notes_url = f"{release_base}/LATESTCHANGELOG.md"
